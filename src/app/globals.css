@@ -1,6 +1,18 @@
 @import "tailwindcss";
 
+@custom-variant hover (&:hover);
+@custom-variant focus (&:focus);
+@custom_variant disabled (&:disabled);
+
 @theme {
   --color-primary: #fffff0;
   --color-secondary: #ff4081;
+
+  --font-family: "Arial", sans-serif;
+  --font-size-base: 16px;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: bold;
 }
