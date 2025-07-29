@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import TextInput from "./atoms/TextInput";
-import { is } from "../../node_modules/immer/src/utils/common";
 import apiClient from "@/lib/axios";
 
 const formatTime = (seconds: number) => {
@@ -29,12 +28,12 @@ export default function RegisterForm() {
   // 이메일 인증 코드 로딩
   const [emailLoading, setEmailLoading] = useState(false);
 
-  // 이메일 주소 입력 Ref
-  const emailRef = useRef<HTMLInputElement>(null);
-
   // 타이머 상태
   const [timerSeconds, setTimerSeconds] = useState(180);
   const [isTimerActive, setIsTimerActive] = useState(false);
+
+  // 제출 버튼 활성화 상태
+  const [isSubmittable, setIsSubmittable] = useState(false);
 
   // 타이머 useEffect
   useEffect(() => {
@@ -49,16 +48,28 @@ export default function RegisterForm() {
     }
     // 타이머가 0초가 되면 타이머 비활성화
     else if (timerSeconds === 0) {
-      setTimerSeconds(180);
       setIsTimerActive(false);
-      setEmailSent(false);
-      setIsVerified(false);
-      if (emailRef.current) {
-        emailRef.current.disabled = false;
-      }
+
       alert("인증 시간이 만료되었습니다. 인증 코드를 다시 받아주세요.");
     }
   }, [isTimerActive, timerSeconds]);
+
+  // 항목 검사 useEffect
+  useEffect(() => {
+    const { name, email, password, password_check } = formData;
+    const isFormValid =
+      name &&
+      email &&
+      password &&
+      password_check &&
+      password === password_check;
+
+    if (isFormValid && isVerified) {
+      setIsSubmittable(true);
+    } else {
+      setIsSubmittable(false);
+    }
+  }, [formData, isVerified]);
 
   // 폼 데이터 onChanger
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,7 +116,7 @@ export default function RegisterForm() {
 
     try {
       const res = await apiClient.post("/api/auth/signup", submitData);
-      if (res.status === 200) {
+      if (res.data.status === 200) {
         alert("회원가입이 완료되었습니다.");
         // window.location.href 대신 Next.js의 useRouter 사용을 권장합니다.
         window.location.href = "/";
@@ -142,24 +153,14 @@ export default function RegisterForm() {
       if (data.status === 200) {
         alert("인증 이메일이 발송되었습니다.");
         setEmailSent(true);
-        // 이메일 입력 비활성화
-        if (emailRef.current) {
-          emailRef.current.disabled = true;
-        }
         setTimerSeconds(180);
         setIsTimerActive(true);
       } else {
         console.log(res);
-        if (emailRef.current) {
-          emailRef.current.disabled = false;
-        }
         alert("인증 이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
       }
     } catch (error) {
       console.error("이메일 발송 API 요청 실패:", error);
-      if (emailRef.current) {
-        emailRef.current.disabled = false;
-      }
       alert("오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
       setEmailLoading(false);
@@ -231,7 +232,7 @@ export default function RegisterForm() {
             error={errors.email}
             value={formData.email}
             placeholder="example@example.com"
-            ref={emailRef}
+            disabled={isTimerActive || isVerified}
             onChange={handleChange}
             onFocus={() => clearErrors("email")}
             button={
@@ -240,7 +241,7 @@ export default function RegisterForm() {
                 className="text-sm bg-gray-200 border-gray-600 hover:bg-gray-700 hover:text-white rounded-md border-[1px] px-4 flex-shrink-0 cursor-pointer flex items-center justify-center
                   disabled:opacity-60 disabled:border-gray-200"
                 onClick={sendEmailAuthCode}
-                disabled={emailLoading || isVerified}
+                disabled={emailLoading || isVerified || isTimerActive}
               >
                 {emailLoading ? (
                   <>
@@ -345,7 +346,7 @@ export default function RegisterForm() {
         {/** 제출 버튼 */}
         <button
           type="submit"
-          disabled
+          disabled={!isSubmittable}
           className=" w-full mt-8 h-10 rounded-xl border-2 border-gray-900 bg-gray-400 text-white font-bold hover:bg-gray-700 cursor-pointer disabled:opacity-50"
         >
           회원가입
