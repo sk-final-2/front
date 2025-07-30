@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import TextInput from "./atoms/TextInput";
 import apiClient from "@/lib/axios";
+import { useRouter } from "next/navigation";
 
 const formatTime = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
@@ -13,6 +14,9 @@ const formatTime = (seconds: number) => {
 };
 
 export default function RegisterForm() {
+  const router = useRouter();
+
+  // 폼 데이터 상태
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -89,7 +93,7 @@ export default function RegisterForm() {
     verification: "",
   });
 
-  // 폼 제출 핸들러 수정
+  /** 폼 제출 핸들러 */
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const newErrors = { ...errors };
@@ -118,8 +122,8 @@ export default function RegisterForm() {
       const res = await apiClient.post("/api/auth/signup", submitData);
       if (res.data.status === 200) {
         alert("회원가입이 완료되었습니다.");
-        // window.location.href 대신 Next.js의 useRouter 사용을 권장합니다.
-        window.location.href = "/";
+        // 라우
+        router.push("/");
       }
     } catch (error) {
       console.error("회원가입 API 요청 실패:", error);
