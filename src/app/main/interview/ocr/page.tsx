@@ -2,15 +2,12 @@
 
 import DocumentUploadForm from "@/components/interview/DocumentUploadForm";
 import JobSelectorForm from "@/components/interview/JobSelectorForm";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const OcrPage = () => {
-  // 단계 상태
-  const [step, setStep] = useState(1);
-
-  const nextStep = () => {
-    setStep((prev) => prev + 1);
-  };
+  
+  const router = useRouter();
 
   // 직군 상태
   const [selectedCategory, setSelectedCategory] = useState<string>("");
@@ -27,6 +24,11 @@ const OcrPage = () => {
   const handleJobChange = (job: string) => {
     setSelectedJob(job);
   };
+
+  // 다음 페이지로 넘어가기 버튼
+  const nextButtonHandler = () => {
+    router.push("")
+  }
 
   return (
     <div className="w-screen flex flex-col justify-center items-center min-h-screen overflow-y-auto">
@@ -49,12 +51,13 @@ const OcrPage = () => {
           {/** 카메라 & 마이크 권한 + 질문 횟수 컴포넌트 */}
 
         </div>
-        {/** 이전 다음 버튼 */}
       </div>
       <button
+      type="button"
         className="cursor-pointer my-10 transition-all bg-blue-500 text-white px-6 py-2 rounded-lg
 border-blue-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px]
 active:border-b-[2px] active:brightness-90 active:translate-y-[2px]"
+onClick={}
       >
         다음 단계로
       </button>
