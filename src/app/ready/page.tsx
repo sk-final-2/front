@@ -25,6 +25,8 @@ const ReadyPage = () => {
 
   // 파일 상태
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  // 파일 요약 상태
+  const [fileText, setFileText] = useState<string>("");
 
   // 질문 갯수 상태
   const [questionCount, setQuestionCount] = useState<number>(3);
@@ -56,6 +58,11 @@ const ReadyPage = () => {
   const handleUploadComplete = (file: File) => {
     setUploadedFile(file);
   };
+
+  // 파일 요약문 핸들러
+  const handleFileText = (fileText: string) => {
+    setFileText(fileText);
+  }
 
   // 질문 갯수 핸들러
   const handleQuestionCount = (questionCount: number) => {
@@ -95,6 +102,7 @@ const ReadyPage = () => {
       return;
     }
     // 첫 질문 생성 요청
+    console.log(fileText)
 
     router.replace("/interview");
   };
@@ -117,6 +125,7 @@ const ReadyPage = () => {
             <DocumentUploadForm
               uploadedFile={uploadedFile}
               onUploadComplete={handleUploadComplete}
+              handleFileText={handleFileText}
             />
             <QuestionCountDropdown
               selectedCount={questionCount}

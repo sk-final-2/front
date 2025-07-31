@@ -1,18 +1,25 @@
 "use client";
 
+import axios from "axios";
 import { useEffect, useState } from "react";
 import { FiUpload } from "react-icons/fi";
 
 interface DocumentUploadFormProps {
   uploadedFile: File | null;
   onUploadComplete: (file: File) => void;
+  handleFileText: (fileText: string) => void;
 }
 
 const DocumentUploadForm = ({
   uploadedFile,
   onUploadComplete,
+  handleFileText,
 }: DocumentUploadFormProps) => {
+  // 파일 이름 상태
   const [fileName, setFileName] = useState<string>("");
+
+  // 로딩 상태
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (uploadedFile) {
@@ -20,22 +27,67 @@ const DocumentUploadForm = ({
     }
   }, [uploadedFile]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setLoading(true);
       const allowedExtensions = ["pdf", "docx", "txt"];
       const fileExtension = file.name.split(".").pop()?.toLowerCase();
+      // 파일 형식이 pdf, docx, txt 인 경우에만 업로드
       if (fileExtension && allowedExtensions.includes(fileExtension)) {
-        setFileName(file.name);
-        onUploadComplete(file);
+        const formData = new FormData();
+        formData.append("File", file);
+
+        try {
+          const client = await axios.create({
+            baseURL: process.env.NEXT_PUBLIC_API_URL,
+            withCredentials: true,
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          });
+          const res = await client.post("/api/interview/ocr", formData);
+          if (res.status === 200) {
+            handleFileText(res.data.ocrOutPut);
+            setFileName(file.name);
+            onUploadComplete(file);
+          } else {
+            alert("파일 업로드에 실패했습니다.");
+            console.error(res.data.message);
+            return;
+          }
+        } catch (error) {
+          alert(`오류: ${error}`);
+          console.error(error);
+        } finally {
+          setLoading(false);
+        }
       } else {
         alert(
           "허용되지 않은 파일 형식입니다. PDF, DOCX, TXT 파일만 업로드할 수 있습니다.",
         );
+        setLoading(false);
         return;
       }
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex min-w-md flex-1 items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 bg-white px-6 py-10">
+        <div className="flex flex-col items-center justify-center gap-5">
+          <div className="flex flex-row gap-3">
+            <div className="h-4 w-4 animate-bounce rounded-full bg-blue-700 [animation-delay:.3s]"></div>
+            <div className="h-4 w-4 animate-bounce rounded-full bg-blue-700 [animation-delay:.5s]"></div>
+            <div className="h-4 w-4 animate-bounce rounded-full bg-blue-700 [animation-delay:.7s]"></div>
+          </div>
+          <span className="mt-4 text-center font-semibold text-zinc-700">
+            파일 업로드중...
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
