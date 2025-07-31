@@ -3,49 +3,105 @@
 import { useState } from "react";
 import { FiUpload } from "react-icons/fi";
 
-const DocumentUploadForm = () => {
+interface DocumentUploadFormProps {
+  onUploadComplete: (file: File) => void;
+}
+
+const DocumentUploadForm = ({ onUploadComplete }: DocumentUploadFormProps) => {
   const [fileName, setFileName] = useState<string>("");
 
-const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // 파일이 선택되면 파일명을 상태에 저장
-    if (e.target.files && e.target.files.length > 0) {
-      setFileName(e.target.files[0].name);
-    } else {
-      setFileName("");
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const allowedExtensions = ["pdf", "docx", "txt"];
+      const fileExtension = file.name.split(".").pop()?.toLowerCase();
+      if (fileExtension && allowedExtensions.includes(fileExtension)) {
+        setFileName(file.name);
+        onUploadComplete(file);
+      } else {
+        alert(
+          "허용되지 않은 파일 형식입니다. PDF, DOCX, TXT 파일만 업로드할 수 있습니다.",
+        );
+        return;
+      }
     }
   };
 
   return (
-    <div className="min-w-md">
-      <label
-        htmlFor="file-upload"
-        className="group flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 bg-white px-6 py-10 transition-colors hover:border-blue-500 hover:bg-blue-50"
-      >
-        <div className="space-y-4 text-center">
-          <FiUpload className="mx-auto h-10 w-10 text-zinc-400 transition-colors group-hover:text-blue-500" />
-          <div className="space-y-1">
-            <p className="font-semibold text-zinc-700">
-              파일을 드래그하거나 클릭하여 업로드하세요
-            </p>
-            <p className="text-sm text-zinc-500 ">PDF, DOCS, TXT up to 10MB</p>
-          </div>
-        </div>
-      </label>
-      <input
-        id="file-upload"
-        name="file-upload"
-        type="file"
-        accept=".pdf, .docs, .txt"
-        className="sr-only"
-        onChange={handleFileChange}
-      />
+    <>
+      {/** 파일 업로드  */}
+      {fileName.length == 0 ? (
+        <div className="min-w-md">
+          <label
+            htmlFor="file-upload"
+            className="group flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 bg-white px-6 py-10 transition-colors hover:border-blue-500 hover:bg-blue-50"
+          >
+            <div className="space-y-4 text-center">
+              <FiUpload className="mx-auto h-10 w-10 text-zinc-400 transition-colors group-hover:text-blue-500" />
+              <div className="space-y-1">
+                <p className="font-semibold text-zinc-700">
+                  파일을 드래그하거나 클릭하여 업로드하세요
+                </p>
+                <p className="text-sm text-zinc-500 ">
+                  PDF, DOCS, TXT up to 10MB
+                </p>
+              </div>
+            </div>
+          </label>
+          <input
+            id="file-upload"
+            name="file-upload"
+            type="file"
+            accept=".pdf, .docs, .txt"
+            className="sr-only"
+            onChange={handleFileChange}
+          />
 
-      {fileName && (
-        <div className="mt-4 rounded-md bg-zinc-100 p-3 text-sm font-medium text-zinc-700">
-          <p>선택된 파일: {fileName}</p>
+          {fileName && (
+            <div className="mt-4 rounded-md bg-zinc-100 p-3 text-sm font-medium text-zinc-700">
+              <p>선택된 파일: {fileName}</p>
+            </div>
+          )}
         </div>
+      ) : (
+        <>
+          {/** 파일 업로드 후 */}
+          <div className="min-w-md">
+            <div className="flex flex-col gap-5 justify-center items-center w-full h-[15rem] bg-gray-50 border-2 border-gray-600 rounded-2xl">
+              <div>
+                현재 업로드된 파일 :{" "}
+                <span className="text-lg font-bold text-blue-500">
+                  {fileName}
+                </span>
+              </div>
+              <label
+                htmlFor="file-upload"
+                className="group flex cursor-pointer w-auto items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 bg-white px-6 py-10 transition-colors hover:border-blue-500 hover:bg-blue-50"
+              >
+                <div className="space-y-4 text-center">
+                  <div className="space-y-1">
+                    <p className="font-semibold text-zinc-700">
+                      다른 파일 업로드하기
+                    </p>
+                    <p className="text-sm text-zinc-500 ">
+                      PDF, DOCS, TXT up to 10MB
+                    </p>
+                  </div>
+                </div>
+              </label>
+              <input
+                id="file-upload"
+                name="file-upload"
+                type="file"
+                accept=".pdf, .docs, .txt"
+                className="sr-only"
+                onChange={handleFileChange}
+              />
+            </div>
+          </div>
+        </>
       )}
-    </div>
+    </>
   );
 };
 
