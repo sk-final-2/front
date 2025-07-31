@@ -1,3 +1,5 @@
+"use client"
+
 import React from "react";
 
 interface ReadyStepBarProps {
@@ -16,7 +18,7 @@ const ReadyStepBar = ({ step, handleChangeStep }: ReadyStepBarProps) => {
   const steps = Object.keys(content); // content 객체의 키(1, 2, 3)를 배열로 가져옵니다.
 
   return (
-    <div className="w-4/6 mb-20 flex justify-center items-center">
+    <div className="w-4/6 mt-14 mb-10 flex justify-center items-center">
       {steps.map((key, index) => {
         const stepNumber = Number(key);
         // 현재 단계(isActive)인지, 이미 완료된 단계(isCompleted)인지 확인합니다.

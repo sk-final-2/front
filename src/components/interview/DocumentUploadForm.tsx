@@ -1,14 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FiUpload } from "react-icons/fi";
 
 interface DocumentUploadFormProps {
+  uploadedFile: File | null;
   onUploadComplete: (file: File) => void;
 }
 
-const DocumentUploadForm = ({ onUploadComplete }: DocumentUploadFormProps) => {
+const DocumentUploadForm = ({
+  uploadedFile,
+  onUploadComplete,
+}: DocumentUploadFormProps) => {
   const [fileName, setFileName] = useState<string>("");
+
+  useEffect(() => {
+    if (uploadedFile) {
+      setFileName(uploadedFile?.name);
+    }
+  }, [uploadedFile]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -31,7 +41,7 @@ const DocumentUploadForm = ({ onUploadComplete }: DocumentUploadFormProps) => {
     <>
       {/** 파일 업로드  */}
       {fileName.length == 0 ? (
-        <div className="min-w-md">
+        <div className="min-w-md flex-1">
           <label
             htmlFor="file-upload"
             className="group flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 bg-white px-6 py-10 transition-colors hover:border-blue-500 hover:bg-blue-50"
