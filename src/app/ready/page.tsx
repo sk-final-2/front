@@ -1,12 +1,15 @@
 "use client";
 
-import CameraMicCheck from "@/components/interview/CameraMicCheck";
-import DocumentUploadForm from "@/components/interview/DocumentUploadForm";
-import JobSelectorForm from "@/components/interview/JobSelectorForm";
-import QuestionCountDropdown from "@/components/interview/QuestionCountDropdown";
-import ReadyStepBar from "@/components/interview/readyStepBar";
+import CameraMicCheck from "@/components/ready/CameraMicCheck";
+import DocumentUploadForm from "@/components/ready/DocumentUploadForm";
+import JobSelectorForm from "@/components/ready/JobSelectorForm";
+import QuestionCountDropdown from "@/components/ready/QuestionCountDropdown";
+import ReadyStepBar from "@/components/ready/readyStepBar";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+// 권한 상태를 나타내는 타입 정의
+type PermissionState = "prompt" | "granted" | "denied";
 
 const ReadyPage = () => {
   // 리다이렉션 라우터
@@ -26,13 +29,12 @@ const ReadyPage = () => {
   // 질문 갯수 상태
   const [questionCount, setQuestionCount] = useState<number>(3);
 
-  // 파일 상세 정보 확인 useEffect
-  useEffect(() => {
-    if (uploadedFile) {
-      console.log(uploadedFile.name);
-      console.log(uploadedFile.type);
-    }
-  }, [uploadedFile]);
+  // 카메라 권한 상태
+  const [cameraPermission, setCameraPermission] =
+    useState<PermissionState>("prompt");
+
+  // 마이크 권한 상태
+  const [micPermission, setMicPermission] = useState<PermissionState>("prompt");
 
   // 단계 변경 핸들러
   const handleChangeStep = (step: number) => {
@@ -58,7 +60,17 @@ const ReadyPage = () => {
   // 질문 갯수 핸들러
   const handleQuestionCount = (questionCount: number) => {
     setQuestionCount(questionCount);
-  }
+  };
+
+  // 카메라 권한 핸들러
+  const handleCameraCheck = (cameraPermission: PermissionState) => {
+    setCameraPermission(cameraPermission);
+  };
+
+  // 마이크 권한 핸들러
+  const handleMicCheck = (micPermission: PermissionState) => {
+    setMicPermission(micPermission);
+  };
 
   // 다음 단계 버튼 핸들러
   const nextStepHandler = () => {
@@ -73,6 +85,18 @@ const ReadyPage = () => {
     if (step > 1) {
       setStep((prev) => prev - 1);
     }
+  };
+
+  // 면접 페이지로 이동하는 핸들러
+  const goToInterviewPage = () => {
+    if (selectedCategory === "" || selectedJob === "") {
+      handleChangeStep(1);
+      alert("직군을 입력해주세요.");
+      return;
+    }
+    // 첫 질문 생성 요청
+
+    router.replace("/interview");
   };
 
   // 현재 단계에 맞는 컴포넌트를 렌더링하는 함수
@@ -94,14 +118,21 @@ const ReadyPage = () => {
               uploadedFile={uploadedFile}
               onUploadComplete={handleUploadComplete}
             />
-            <QuestionCountDropdown 
+            <QuestionCountDropdown
               selectedCount={questionCount}
               onCountChange={handleQuestionCount}
             />
           </div>
         );
       case 3:
-        return <CameraMicCheck />;
+        return (
+          <CameraMicCheck
+            cameraPermission={cameraPermission}
+            micPermission={micPermission}
+            handleCameraCheck={handleCameraCheck}
+            handleMicCheck={handleMicCheck}
+          />
+        );
       default:
         return null;
     }
@@ -140,7 +171,7 @@ const ReadyPage = () => {
         ) : (
           <button
             className="flex items-center bg-green-500 text-white gap-1 px-4 py-2 cursor-pointer font-semibold tracking-widest rounded-md hover:bg-green-600 duration-300"
-            onClick={() => router.push("/")}
+            onClick={goToInterviewPage}
           >
             면접 시작하기
           </button>
