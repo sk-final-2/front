@@ -5,6 +5,8 @@ import DocumentUploadForm from "@/components/ready/DocumentUploadForm";
 import JobSelectorForm from "@/components/ready/JobSelectorForm";
 import QuestionCountDropdown from "@/components/ready/QuestionCountDropdown";
 import ReadyStepBar from "@/components/ready/readyStepBar";
+import apiClient from "@/lib/axios";
+import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -95,16 +97,45 @@ const ReadyPage = () => {
   };
 
   // 면접 페이지로 이동하는 핸들러
-  const goToInterviewPage = () => {
+  const goToInterviewPage = async () => {
     if (selectedCategory === "" || selectedJob === "") {
       handleChangeStep(1);
       alert("직군을 입력해주세요.");
       return;
     }
     // 첫 질문 생성 요청
-    console.log(fileText)
+    // job : String,
+    // count: int,
+    // ocr_text: TEXT,
+    // seq: 1,
 
-    router.replace("/interview");
+    try {
+      // 전송 body 폼 생성
+      const form = {
+        job: selectedJob,
+        count: questionCount,
+        ocr_text: fileText.length == 0 ? fileText : "참고 문서가 없습니다.",
+        seq: 1,
+      };
+
+      const res = await apiClient.post("/first-question", form);
+      if (res.status === 200) {
+        const data = await res.data;
+        console.log("첫 질문 : ", data.question);
+
+        // 첫 질문을 가지고 /interview 로 이동
+        router.replace(`/interview?question=${encodeURIComponent(data.question)}`);
+      } else {
+        alert(res?.data?.message || "통신 오류");
+        return;
+      }
+    } catch (error: unknown) {
+      console.error(error);
+      alert("첫 질문 생성 통신 오류");
+    }
+    console.log(fileText);
+
+    
   };
 
   // 현재 단계에 맞는 컴포넌트를 렌더링하는 함수
