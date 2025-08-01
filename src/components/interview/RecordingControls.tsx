@@ -6,7 +6,7 @@ interface Props {
   questionStarted: boolean;
   onAutoSubmit: (video: Blob) => void;
   onManualSubmit: (video: Blob) => void;
-  stream: MediaStream | null; // UserVideo 컴포넌트에서 전달받은 스트림
+  stream: MediaStream | null;
 }
 
 export default function RecordingControls({
@@ -20,6 +20,7 @@ export default function RecordingControls({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const hasSubmitted = useRef(false); // ✅ 중복 제출 방지용 ref
 
   // 🔴 녹화 시작
   const startRecording = () => {
@@ -30,39 +31,51 @@ export default function RecordingControls({
     mediaRecorderRef.current = recorder;
 
     recorder.ondataavailable = (e) => {
-      chunksRef.current.push(e.data);
+      if (e.data.size > 0) {
+        chunksRef.current.push(e.data);
+      }
     };
 
-    recorder.start();
+    recorder.start(); // 또는 recorder.start(1000) for chunk every 1s
   };
 
-  // ⏹ 녹화 종료 및 Blob 반환
-  const stopRecording = (): Blob => {
-    const recorder = mediaRecorderRef.current;
-    if (recorder && recorder.state !== "inactive") {
+  // 🟢 녹화 종료 및 Blob 반환
+  const stopRecording = (): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const recorder = mediaRecorderRef.current;
+      if (!recorder || recorder.state === "inactive") {
+        resolve(new Blob());
+        return;
+      }
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "video/webm" });
+        resolve(blob);
+      };
+
       recorder.stop();
-    }
-    const blob = new Blob(chunksRef.current, { type: "video/webm" });
-    return blob;
+    });
   };
 
-  // 🔁 질문 시작되면 타이머 + 녹화
+  // 🕒 질문 시작 시 타이머 + 녹화 시작
   useEffect(() => {
     if (questionStarted && stream) {
       startRecording();
       setTimeLeft(60);
       setCanSubmit(false);
+      hasSubmitted.current = false; // ✅ 새로운 질문 시작할 때 초기화
 
       timerRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             clearInterval(timerRef.current!);
-            const blob = stopRecording();
-            onAutoSubmit(blob); // 자동 제출
+            stopRecording().then((blob) => {
+              onAutoSubmit(blob);
+            });
             return 0;
           }
           if (prev === 55) {
-            setCanSubmit(true); // 5초 경과 후 제출 가능
+            setCanSubmit(true);
           }
           return prev - 1;
         });
@@ -74,18 +87,18 @@ export default function RecordingControls({
     };
   }, [questionStarted, stream]);
 
-  // 🟡 수동 제출 클릭
-  const handleManualSubmit = () => {
+  // 🧍 수동 제출
+  const handleManualSubmit = async () => {
+    if (hasSubmitted.current) return; // ✅ 중복 방지
+    hasSubmitted.current = true;
     clearInterval(timerRef.current!);
-    const blob = stopRecording();
+    const blob = await stopRecording();
     onManualSubmit(blob);
   };
 
   return (
     <div className="flex flex-col items-center gap-2 mt-4">
-      <div className="text-xl font-semibold">
-        ⏱️ {timeLeft}초
-      </div>
+      <div className="text-xl font-semibold">⏱️ {timeLeft}초</div>
       <button
         className={`px-4 py-2 rounded ${
           canSubmit ? "bg-blue-500 text-white" : "bg-gray-300 text-gray-600"
