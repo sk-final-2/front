@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+<<<<<<< HEAD:src/components/register/RegisterForm.tsx
 import TextInput from "@/components/atoms/TextInput";
+=======
+import TextInput from "./atoms/TextInput";
+>>>>>>> d45c78c4c581310da0687777e7495365d05beae9:src/components/RegisterForm.tsx
 import apiClient from "@/lib/axios";
 
 const formatTime = (seconds: number) => {
