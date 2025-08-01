@@ -36,7 +36,7 @@ const DocumentUploadForm = ({
       // 파일 형식이 pdf, docx, txt 인 경우에만 업로드
       if (fileExtension && allowedExtensions.includes(fileExtension)) {
         const formData = new FormData();
-        formData.append("File", file);
+        formData.append("file", file);
 
         try {
           const client = await axios.create({

@@ -101,7 +101,7 @@ const ReadyPage = () => {
       alert("직군을 입력해주세요.");
       return;
     }
-    // 첫 질문 생성 요청
+    // TODO: 첫 질문 생성 요청
     console.log(fileText)
 
     router.replace("/interview");
