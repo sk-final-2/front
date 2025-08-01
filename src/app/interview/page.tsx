@@ -67,7 +67,7 @@ export default function InterviewPage() {
     });
 
     const formData = new FormData();
-    formData.append("File", file); // 백엔드 명세에 맞춰 'File'로!
+    formData.append("file", file); // 백엔드 명세에 맞춰 'file'로!
     formData.append("seq", currentSeq.toString()); // 질문 순서
     formData.append("interviewId", interviewId.toString()); // 인터뷰 고유 ID
 
@@ -84,7 +84,7 @@ export default function InterviewPage() {
       );
 
       console.log("✅ 제출 성공:", response.data);
-      // goToNextQuestion(); // 다음 질문으로 진행
+      // goToNextQuestion(); // 다음 질문으로 진행 (나중엔 살려야 함)
     } catch (err) {
       console.error("❌ 제출 실패:", err);
     } finally {

@@ -100,9 +100,13 @@ export default function RecordingControls({
     <div className="flex flex-col items-center gap-2 mt-4">
       <div className="text-xl font-semibold">⏱️ {timeLeft}초</div>
       <button
-        className={`px-4 py-2 rounded ${
-          canSubmit ? "bg-blue-500 text-white" : "bg-gray-300 text-gray-600"
-        }`}
+        className={`px-6 py-2 rounded-lg transition-all
+          ${canSubmit
+            ? `cursor-pointer bg-blue-500 text-white border-blue-600 border-b-[4px]
+            hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px]
+            active:border-b-[2px] active:brightness-90 active:translate-y-[2px]`
+            : `bg-gray-300 text-gray-600 cursor-not-allowed`
+          }`}
         onClick={handleManualSubmit}
         disabled={!canSubmit}
       >
