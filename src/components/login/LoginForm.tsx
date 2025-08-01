@@ -62,7 +62,7 @@ export default function LoginForm() {
       console.log("로그인 성공:", res.data);
       //localStorage.setItem('token', res.data.token);
       router.push("/");
-    } catch (error: any) {
+    } catch (error: unknown) {
       setLoginError("이메일 또는 비밀번호가 올바르지 않습니다.");
       console.error("로그인 실패:", error);
     } finally {

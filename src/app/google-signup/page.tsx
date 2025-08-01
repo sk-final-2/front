@@ -1,4 +1,4 @@
-import GoogleForm from '@/components/google/GoogleForm';
+import GoogleForm from '@/components/login/google/GoogleForm';
 
 export default function GooglePage() {
   return (

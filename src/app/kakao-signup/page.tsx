@@ -1,4 +1,4 @@
-import KakaoForm from '@/components/kakao/KakaoForm';
+import KakaoForm from '@/components/login/kakao/KakaoForm';
 
 export default function KakaoPage() {
   return (

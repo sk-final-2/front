@@ -5,9 +5,24 @@ import { useEffect, useState, useRef } from "react";
 import { googleSignup } from "@/services/auth";
 import { useRouter } from "next/navigation";
 
+interface DaumPostcodeData {
+  zonecode: string;
+  roadAddress: string;
+  jibunAddress: string;
+  userSelectedType: "R" | "J";
+}
+
+interface DaumPostcodeOptions {
+  oncomplete: (data: DaumPostcodeData) => void;
+}
+
 declare global {
   interface Window {
-    daum: any;
+    daum: {
+      Postcode: new (options: DaumPostcodeOptions) => {
+        open: () => void;
+      };
+    };
   }
 }
 
@@ -37,7 +52,7 @@ export default function GoogleForm() {
 
   const handleAddressSearch = () => {
     new window.daum.Postcode({
-      oncomplete: function (data: any) {
+      oncomplete: function (data: DaumPostcodeData) {
         setZipcode(data.zonecode);
         setAddress1(data.roadAddress || data.jibunAddress);
         addressRef.current?.focus();
@@ -68,11 +83,9 @@ export default function GoogleForm() {
         alert("회원가입이 완료되었습니다.");
         router.push("/");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("회원가입 오류:", error);
-      alert(
-        error.response?.data?.message || "회원가입 중 오류가 발생했습니다.",
-      );
+      alert("회원가입 중 오류가 발생했습니다.");
     }
   };
 
