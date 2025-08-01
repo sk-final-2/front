@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import TextInput from "./atoms/TextInput";
 import apiClient from "@/lib/axios";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,27 @@ const formatTime = (seconds: number) => {
   ).padStart(2, "0")}`;
 };
 
+interface DaumPostcodeData {
+  zonecode: string;
+  roadAddress: string;
+  jibunAddress: string;
+  userSelectedType: "R" | "J";
+}
+
+interface DaumPostcodeOptions {
+  oncomplete: (data: DaumPostcodeData) => void;
+}
+
+declare global {
+  interface Window {
+    daum: {
+      Postcode: new (options: DaumPostcodeOptions) => {
+        open: () => void;
+      };
+    };
+  }
+}
+
 export default function RegisterForm() {
   const router = useRouter();
 
@@ -22,6 +43,11 @@ export default function RegisterForm() {
     email: "",
     password: "",
     password_check: "",
+    gender: "MALE",
+    birth: "",
+    zipcode: "",
+    address1: "",
+    address2: "",
   });
   // 이메일 인증 코드 전송 여부
   const [emailSent, setEmailSent] = useState(false);
@@ -35,6 +61,19 @@ export default function RegisterForm() {
   // 타이머 상태
   const [timerSeconds, setTimerSeconds] = useState(180);
   const [isTimerActive, setIsTimerActive] = useState(false);
+
+  // 성
+  const [gender, setGender] = useState("MALE");
+  // 생년월일
+  const [birth, setBirth] = useState("");
+
+  // 주소 상태
+  const [zipcode, setZipcode] = useState("");
+  const [address1, setAddress1] = useState("");
+  const [address2, setAddress2] = useState("");
+
+  // 주소 Ref
+  const addressRef = useRef<HTMLInputElement>(null);
 
   // 제출 버튼 활성화 상태
   const [isSubmittable, setIsSubmittable] = useState(false);
@@ -60,13 +99,26 @@ export default function RegisterForm() {
 
   // 항목 검사 useEffect
   useEffect(() => {
-    const { name, email, password, password_check } = formData;
+    const {
+      name,
+      email,
+      password,
+      password_check,
+      gender,
+      zipcode,
+      address1,
+      address2,
+    } = formData;
     const isFormValid =
       name &&
       email &&
       password &&
       password_check &&
-      password === password_check;
+      password === password_check &&
+      gender &&
+      zipcode &&
+      address1 &&
+      address2;
 
     if (isFormValid && isVerified) {
       setIsSubmittable(true);
@@ -84,6 +136,24 @@ export default function RegisterForm() {
     }));
   };
 
+  // 주소 핸들러
+  const handleAddressSearch = () => {
+    new window.daum.Postcode({
+      oncomplete: function (data: DaumPostcodeData) {
+        setZipcode(data.zonecode);
+        setAddress1(data.roadAddress || data.jibunAddress);
+        setFormData((prev) => ({
+          ...prev,
+          zipcode: data.zonecode,
+          address1: data.roadAddress || data.jibunAddress,
+        }));
+        if (addressRef != null) {
+          addressRef.current?.focus();
+        }
+      },
+    }).open();
+  };
+
   // 에러 메시지 상태
   const [errors, setErrors] = useState({
     name: "",
@@ -91,6 +161,8 @@ export default function RegisterForm() {
     password: "",
     password_check: "",
     verification: "",
+    birth: "",
+    address: "",
   });
 
   /** 폼 제출 핸들러 */
@@ -101,13 +173,16 @@ export default function RegisterForm() {
     // 필드 검증
     if (!formData.name) newErrors.name = "이름을 입력해주세요.";
     if (!formData.email) newErrors.email = "이메일을 입력해주세요.";
-    if (!isVerified) newErrors.verification = "이메일 인증을 진행해주세요.";
+    // if (!isVerified) newErrors.verification = "이메일 인증을 진행해주세요.";
     if (!formData.password) newErrors.password = "비밀번호를 입력해주세요.";
     if (formData.password !== formData.password_check) {
       newErrors.password_check = "비밀번호가 일치하지 않습니다.";
     } else if (formData.password.length < 8) {
       newErrors.password = "비밀번호는 최소 8자 이상이어야 합니다.";
     }
+    if (!formData.birth) newErrors.birth = "생년월일을 입력해주세요.";
+    if (!formData.address1 || !formData.address2)
+      newErrors.address = "주소 입력해주세요.";
 
     // 에러가 하나라도 있으면 상태 업데이트 후 종료
     if (Object.values(newErrors).some((error) => error)) {
@@ -118,12 +193,14 @@ export default function RegisterForm() {
     // 서버에 전송할 데이터에서 password_check 제외
     const { password_check, ...submitData } = formData;
 
+    console.log(formData);
+
     try {
       const res = await apiClient.post("/api/auth/signup", submitData);
       if (res.data.status === 200) {
         alert("회원가입이 완료되었습니다.");
-        // 라우
-        router.push("/");
+        // 라우팅
+        router.push("/login");
       }
     } catch (error) {
       console.error("회원가입 API 요청 실패:", error);
@@ -149,11 +226,17 @@ export default function RegisterForm() {
 
     setEmailLoading(true);
 
+    // ====================================================
+    // 임시 허락 코드
+    setIsVerified(true);
+    // ====================================================
+
     try {
       const res = await apiClient.post("/api/email/send", {
         email: formData.email,
       });
       const data = res.data;
+
       if (data.status === 200) {
         alert("인증 이메일이 발송되었습니다.");
         setEmailSent(true);
@@ -223,8 +306,108 @@ export default function RegisterForm() {
         />
 
         {/** 성별 선택 */}
+        <div className="mb-4 flex flex-row justify-between mt-6 items-center w-full h-auto gap-4">
+          <label className="block text-sm font-semibold mb-1">성별</label>
+          <div className="flex gap-10">
+            <label className="flex items-center gap-2 ml-4">
+              <input
+                type="radio"
+                name="gender"
+                value="MALE"
+                checked={gender === "MALE"}
+                onChange={(e) => {
+                  setGender(e.target.value);
+                  setFormData((prev) => ({
+                    ...prev,
+                    gender: e.target.value,
+                  }));
+                }}
+              />
+              남성
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="gender"
+                value="FEMALE"
+                checked={gender === "FEMALE"}
+                onChange={(e) => {
+                  setGender(e.target.value);
+                  setFormData((prev) => ({
+                    ...prev,
+                    gender: e.target.value,
+                  }));
+                }}
+              />
+              여성
+            </label>
+          </div>
+        </div>
 
         {/** 생년월일 */}
+        <div className="mb-4 flex flex-row justify-between mt-6 items-center w-full h-auto gap-4">
+          <label className="flex-1 block text-sm font-semibold mb-1">
+            생년월일
+          </label>
+          <input
+            type="date"
+            value={birth}
+            onChange={(e) => {
+              setBirth(e.target.value);
+              setFormData((prev) => ({
+                ...prev,
+                birth: e.target.value,
+              }));
+            }}
+            className="flex-1 border px-3 py-2 rounded"
+          />
+        </div>
+
+        {/* 우편번호 */}
+        <div className="mt-10">
+          <label className="block text-sm font-semibold mb-1">우편번호</label>
+          <div className="flex gap-2">
+            <input
+              value={zipcode}
+              readOnly
+              className="flex-1 border px-3 py-2 rounded bg-gray-100"
+            />
+            <button
+              type="button"
+              onClick={handleAddressSearch}
+              className="bg-[#F6C61E] text-black text-sm font-semibold px-4 py-2 rounded hover:bg-[#e5b500]"
+            >
+              주소찾기
+            </button>
+          </div>
+        </div>
+
+        {/* 주소 */}
+        <div className="mt-4">
+          <label className="block text-sm font-semibold mb-1">주소</label>
+          <input
+            value={address1}
+            readOnly
+            className="w-full border px-3 py-2 rounded bg-gray-100"
+          />
+        </div>
+
+        {/* 상세 주소 */}
+        <div className="mt-4 mb-5">
+          <label className="block text-sm font-semibold mb-1">상세 주소</label>
+          <input
+            ref={addressRef}
+            value={address2}
+            onChange={(e) => {
+              setAddress2(e.target.value);
+              setFormData((prev) => ({
+                ...prev,
+                address2: e.target.value,
+              }));
+            }}
+            className="w-full border px-3 py-2 rounded"
+          />
+        </div>
 
         {/** 이메일 입력 */}
         <div className="flex flex-row">
