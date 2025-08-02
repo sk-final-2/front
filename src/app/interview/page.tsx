@@ -136,14 +136,8 @@ export default function InterviewPage() {
         alert("다음 질문을 받아오지 못했습니다.");
       }
       goToNextQuestion(); // 다음 질문으로 진행
-    } catch (err: any) {
+    } catch (err) {
       console.error("❌ 제출 실패:", err);
-
-      if (err.response) {
-        console.error("🔁 응답 전체:", err.response);
-        console.error("📨 응답 데이터:", err.response.data);
-        console.error("🔢 응답 상태:", err.response.status);
-      }
     } finally {
       // goToNextQuestion(); // ✅ 다음 질문으로는 무조건 진행 (테스트 상황) 나중엔 지울 예정
       setIsSubmitting(false);
