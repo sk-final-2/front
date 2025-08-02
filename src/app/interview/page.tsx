@@ -1,7 +1,7 @@
 "use client";
 
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import RecordingControls from "@/components/interview/RecordingControls";
 import DeviceSettings from "@/components/interview/DeviceSettings";
 import QuestionDisplay from "@/components/interview/QuestionDisplay";
@@ -24,6 +24,8 @@ export default function InterviewPage() {
   const [currentSeq, setCurrentSeq] = useState(1);
   const [interviewId, setInterviewId] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const submitInProgressRef = useRef(false); // ✅ 중복 제출 방지용 ref
 
   // 사용자 카메라 스트림 가져오기
   useEffect(() => {
@@ -56,7 +58,8 @@ export default function InterviewPage() {
 
   // 영상 제출 핸들러
   const handleSubmit = async (blob: Blob) => {
-    if (isSubmitting) return; // 중복 제출 방지
+    if (submitInProgressRef.current) return; // ✅ 중복 제출 즉시 차단
+    submitInProgressRef.current = true;
     setIsSubmitting(true);
 
     const videoURL = URL.createObjectURL(blob);
@@ -71,9 +74,21 @@ export default function InterviewPage() {
     formData.append("seq", currentSeq.toString()); // 질문 순서
     formData.append("interviewId", interviewId.toString()); // 인터뷰 고유 ID
 
+    const fileInForm = formData.get("file");
+    if (fileInForm instanceof File) {
+      console.log("📦 파일 이름:", fileInForm.name);
+      console.log("📦 파일 타입:", fileInForm.type);
+      console.log("📦 파일 크기:", fileInForm.size, "bytes");
+    }
+
+    // 또는 전체 FormData 확인
+    for (const [key, value] of formData.entries()) {
+      console.log("🧾 FormData:", key, value);
+    }
+
     try {
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/interview/answer`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/interview/answer`,
         formData,
         {
           headers: {
@@ -90,6 +105,7 @@ export default function InterviewPage() {
     } finally {
       goToNextQuestion(); // ✅ 다음 질문으로는 무조건 진행 (테스트 상황) 나중엔 지울 예정
       setIsSubmitting(false);
+      submitInProgressRef.current = false; // ✅ 다시 제출 가능 상태로
     }
   };
 

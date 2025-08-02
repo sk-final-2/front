@@ -69,9 +69,7 @@ export default function RecordingControls({
         setTimeLeft((prev) => {
           if (prev <= 1) {
             clearInterval(timerRef.current!);
-            stopRecording().then((blob) => {
-              onAutoSubmit(blob);
-            });
+            handleAutoSubmit();
             return 0;
           }
           if (prev === 55) {
@@ -86,6 +84,15 @@ export default function RecordingControls({
       clearInterval(timerRef.current!);
     };
   }, [questionStarted, stream]);
+  
+  // 자동 제출
+  const handleAutoSubmit = async () => {
+    if (hasSubmitted.current) return;
+    hasSubmitted.current = true;
+
+    const blob = await stopRecording();
+    onAutoSubmit(blob);
+  };
 
   // 🧍 수동 제출
   const handleManualSubmit = async () => {
