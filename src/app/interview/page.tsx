@@ -7,13 +7,8 @@ import DeviceSettings from "@/components/interview/DeviceSettings";
 import QuestionDisplay from "@/components/interview/QuestionDisplay";
 import UserVideo from "@/components/interview/UserVideo";
 import InterviewerView from "@/components/interview/InterviewerView";
+import { useSearchParams } from "next/navigation";
 
-// 첫 질문은 ready에서 받고 이후 질문은 영상 보내고 받기
-const questionList = [
-  "자기소개 해주세요.",
-  "우리 회사에 지원한 이유는 무엇인가요?",
-  "최근에 했던 프로젝트를 설명해주세요.",
-];
 
 export default function InterviewPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -22,10 +17,34 @@ export default function InterviewPage() {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [currentSeq, setCurrentSeq] = useState(1);
+  // 면접 id 상
   const [interviewId, setInterviewId] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // 질문 리스트 상태
+  const [questionList, setQuestionList] = useState<string[]>([]);
+
+  // 쿼리
+  const searchParams = useSearchParams();
 
   const submitInProgressRef = useRef(false); // ✅ 중복 제출 방지용 ref
+
+  // 쿼리 가져오기
+  useEffect(() => {
+    const dataParam = searchParams.get("data");
+    if (dataParam) {
+      try {
+        // URL 디코딩 후 JSON 객체로 파싱
+        const decodedData = decodeURIComponent(dataParam);
+        const parsedData = JSON.parse(decodedData);
+        setInterviewId(parsedData.interviewId);
+        setQuestionList((prev) => [...prev, parsedData.question]);
+        setCurrentSeq(parsedData.seq);
+
+      } catch (error) {
+        console.error("면접 데이터 파싱 오류:", error);
+      }
+    }
+  }, [searchParams]);
 
   // 사용자 카메라 스트림 가져오기
   useEffect(() => {

@@ -122,9 +122,12 @@ const ReadyPage = () => {
         bodyData,
       );
       if (res.status == 200) {
-        const data = res.data;
+        const responseData = res.data.data;
 
-        router.replace(`/interview?data=${data.data}`);
+        // 객체를 JSON 문자열로 변환하고, URL에 안전하게 인코딩합니다.
+        const serializedData = encodeURIComponent(JSON.stringify(responseData));
+
+        router.replace(`/interview?data=${serializedData}`);
       } else {
         console.error("첫 질문 받기 통신 에러");
       }
