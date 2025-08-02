@@ -9,7 +9,6 @@ import UserVideo from "@/components/interview/UserVideo";
 import InterviewerView from "@/components/interview/InterviewerView";
 import { useSearchParams } from "next/navigation";
 
-
 export default function InterviewPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [questionStarted, setQuestionStarted] = useState(false);
@@ -39,7 +38,6 @@ export default function InterviewPage() {
         setInterviewId(parsedData.interviewId);
         setQuestionList((prev) => [...prev, parsedData.question]);
         setCurrentSeq(parsedData.seq);
-
       } catch (error) {
         console.error("면접 데이터 파싱 오류:", error);
       }
@@ -77,6 +75,8 @@ export default function InterviewPage() {
 
   // 영상 제출 핸들러
   const handleSubmit = async (blob: Blob) => {
+    console.log("자동 제출 직전 Blob 사이즈:", blob.size);
+
     if (submitInProgressRef.current) return; // ✅ 중복 제출 즉시 차단
     submitInProgressRef.current = true;
     setIsSubmitting(true);
@@ -92,6 +92,11 @@ export default function InterviewPage() {
     formData.append("file", file); // 백엔드 명세에 맞춰 'file'로!
     formData.append("seq", currentSeq.toString()); // 질문 순서
     formData.append("interviewId", interviewId.toString()); // 인터뷰 고유 ID
+    console.log("🧠 currentIndex:", currentIndex);
+    console.log("🧠 questionList:", questionList);
+    console.log("🧠 현재 질문:", questionList[currentIndex]);
+
+    formData.append("question", questionList[currentIndex]); //인터뷰 질문
 
     const fileInForm = formData.get("file");
     if (fileInForm instanceof File) {
@@ -118,11 +123,29 @@ export default function InterviewPage() {
       );
 
       console.log("✅ 제출 성공:", response.data);
-      // goToNextQuestion(); // 다음 질문으로 진행 (나중엔 살려야 함)
-    } catch (err) {
+
+      const newQuestion = response.data?.data?.newQuestion;
+
+      if (typeof newQuestion === "string") {
+        setQuestionList((prev) => [...prev, newQuestion]); // ✅ 질문 추가
+        setCurrentIndex((prev) => prev + 1); // ✅ 다음 질문 이동
+        setCurrentSeq((prev) => prev + 1); // ✅ seq 증가
+        setQuestionStarted(false);
+        setTimeout(() => setQuestionStarted(true), 500); // ✅ 타이머 재시작
+      } else {
+        alert("다음 질문을 받아오지 못했습니다.");
+      }
+      goToNextQuestion(); // 다음 질문으로 진행
+    } catch (err: any) {
       console.error("❌ 제출 실패:", err);
+
+      if (err.response) {
+        console.error("🔁 응답 전체:", err.response);
+        console.error("📨 응답 데이터:", err.response.data);
+        console.error("🔢 응답 상태:", err.response.status);
+      }
     } finally {
-      goToNextQuestion(); // ✅ 다음 질문으로는 무조건 진행 (테스트 상황) 나중엔 지울 예정
+      // goToNextQuestion(); // ✅ 다음 질문으로는 무조건 진행 (테스트 상황) 나중엔 지울 예정
       setIsSubmitting(false);
       submitInProgressRef.current = false; // ✅ 다시 제출 가능 상태로
     }

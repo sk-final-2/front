@@ -36,7 +36,7 @@ export default function RecordingControls({
       }
     };
 
-    recorder.start(); // 또는 recorder.start(1000) for chunk every 1s
+    recorder.start(100); // 또는 recorder.start(1000) for chunk every 1s
   };
 
   // 🟢 녹화 종료 및 Blob 반환
@@ -50,10 +50,21 @@ export default function RecordingControls({
 
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: "video/webm" });
+        console.log("🎬 자동제출용 blob 생성 완료", blob);
         resolve(blob);
       };
 
-      recorder.stop();
+      // ✅ ondataavailable 수집 완료 보장 후 stop
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
+      };
+
+      // ✅ setTimeout을 활용해서 stop()을 살짝 지연시킴
+      setTimeout(() => {
+        recorder.stop();
+      }, 100); // 100ms 정도 지연
     });
   };
 
@@ -84,7 +95,7 @@ export default function RecordingControls({
       clearInterval(timerRef.current!);
     };
   }, [questionStarted, stream]);
-  
+
   // 자동 제출
   const handleAutoSubmit = async () => {
     if (hasSubmitted.current) return;
@@ -108,11 +119,12 @@ export default function RecordingControls({
       <div className="text-xl font-semibold">⏱️ {timeLeft}초</div>
       <button
         className={`px-6 py-2 rounded-lg transition-all
-          ${canSubmit
-            ? `cursor-pointer bg-blue-500 text-white border-blue-600 border-b-[4px]
+          ${
+            canSubmit
+              ? `cursor-pointer bg-blue-500 text-white border-blue-600 border-b-[4px]
             hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px]
             active:border-b-[2px] active:brightness-90 active:translate-y-[2px]`
-            : `bg-gray-300 text-gray-600 cursor-not-allowed`
+              : `bg-gray-300 text-gray-600 cursor-not-allowed`
           }`}
         onClick={handleManualSubmit}
         disabled={!canSubmit}
