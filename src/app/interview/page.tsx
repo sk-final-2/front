@@ -21,6 +21,8 @@ export default function InterviewPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   // 질문 리스트 상태
   const [questionList, setQuestionList] = useState<string[]>([]);
+  // ✅ 미디어 오류 상태 추가
+  const [mediaError, setMediaError] = useState<string | null>(null);
 
   // 쿼리
   const searchParams = useSearchParams();
@@ -44,23 +46,53 @@ export default function InterviewPage() {
     }
   }, [searchParams]);
 
-  // 사용자 카메라 스트림 가져오기
+  // 사용자 카메라 스트림 가져오기 (오류 처리 강화)
   useEffect(() => {
     const getStream = async () => {
       try {
         const media = await navigator.mediaDevices.getUserMedia({
           video: true,
-          audio: true,
+          audio: true, // 인터뷰이므로 오디오도 요청
         });
         setStream(media);
         setQuestionStarted(true);
+        setMediaError(null); // 성공 시 에러 상태 초기화
       } catch (err) {
-        alert("카메라/마이크 권한이 필요합니다.");
+        console.error("미디어 장치 접근 오류:", err);
+        if (err instanceof DOMException) {
+          switch (err.name) {
+            case "NotFoundError":
+              setMediaError(
+                "연결된 카메라 또는 마이크를 찾을 수 없습니다. 장치가 올바르게 연결되었는지 확인해주세요.",
+              );
+              break;
+            case "NotAllowedError":
+            case "PermissionDeniedError":
+              setMediaError(
+                "카메라와 마이크 접근 권한이 필요합니다. 브라우저 설정에서 권한을 허용해주세요.",
+              );
+              break;
+            case "NotReadableError":
+              setMediaError(
+                "카메라 또는 마이크를 사용할 수 없습니다. 다른 프로그램에서 사용 중이 아닌지 확인하고 다시 시도해주세요.",
+              );
+              break;
+            default:
+              setMediaError(`미디어 장치 오류가 발생했습니다: ${err.message}`);
+          }
+        } else {
+          setMediaError("알 수 없는 미디어 장치 오류가 발생했습니다.");
+        }
       }
     };
 
     getStream();
-  }, []);
+
+    // 컴포넌트 언마운트 시 스트림 정리
+    return () => {
+      stream?.getTracks().forEach((track) => track.stop());
+    };
+  }, []); // 최초 한 번만 실행
 
   // 다음 질문 진행
   const goToNextQuestion = () => {
@@ -166,6 +198,24 @@ export default function InterviewPage() {
       }
     }
   };
+
+  // 미디어 장치 오류가 있을 경우, 해당 UI 렌더링
+  if (mediaError) {
+    return (
+      <div className="p-8 flex flex-col items-center justify-center h-screen">
+        <div className="text-red-500 text-lg text-center p-4 border border-red-300 rounded-md bg-red-50">
+          <p>오류가 발생했습니다.</p>
+          <p>{mediaError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            새로고침
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 space-y-4">
