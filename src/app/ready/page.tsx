@@ -6,15 +6,18 @@ import getFirstQuestion, {
 } from "@/api/getFirstQuestion";
 import CameraMicCheck from "@/components/ready/CameraMicCheck";
 import DocumentUploadForm from "@/components/ready/DocumentUploadForm";
+import InterviewTypeSelector from "@/components/ready/InterviewTypeSelector";
 import JobSelectorForm from "@/components/ready/JobSelectorForm";
 import QuestionCountDropdown from "@/components/ready/QuestionCountDropdown";
 import ReadyStepBar from "@/components/ready/readyStepBar";
-import apiClient from "@/lib/axios";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-// 권한 상태를 나타내는 타입 정의
+// 미디어 권한 상태를 나타내는 타입 정의
 type PermissionState = "prompt" | "granted" | "denied";
+
+// 면접 형식 타입
+export type InterviewType = "PERSONALITY" | "TECHNICAL" | "MIXED";
 
 const ReadyPage = () => {
   // 리다이렉션 라우터
@@ -22,6 +25,12 @@ const ReadyPage = () => {
 
   // 단계 상태
   const [step, setStep] = useState(1);
+
+  // 면접 형식 상태
+  const [selectedType, setSelectedType] =
+    useState<InterviewType>("PERSONALITY");
+
+
 
   // 직군 상태
   const [selectedCategory, setSelectedCategory] = useState<string>("");
@@ -46,6 +55,11 @@ const ReadyPage = () => {
   // 단계 변경 핸들러
   const handleChangeStep = (step: number) => {
     setStep(step);
+  };
+
+  // 면접 형식 변경 핸들러
+  const handleTypeChange = (type: InterviewType) => {
+    setSelectedType(type);
   };
 
   // 직군 변경 핸들러
@@ -87,7 +101,7 @@ const ReadyPage = () => {
   // 다음 단계 버튼 핸들러
   const nextStepHandler = () => {
     // 현재 단계에서 유효성 검사를 추가할 수 있습니다
-    if (step < 3) {
+    if (step < 5) {
       setStep((prev) => prev + 1);
     }
   };
@@ -106,7 +120,7 @@ const ReadyPage = () => {
       alert("직군을 입력해주세요.");
       return;
     }
-    // TODO: 첫 질문 생성 요청
+    // 첫 질문 생성 요청
     console.log(fileText);
     try {
       // body 데이터
@@ -145,6 +159,15 @@ const ReadyPage = () => {
     switch (step) {
       case 1:
         return (
+          <InterviewTypeSelector
+            handleTypeChange={handleTypeChange}
+            selectedType={selectedType}
+          />
+        );
+
+      // 면접 형식 컨테이너
+      case 2:
+        return (
           <JobSelectorForm
             selectedCategory={selectedCategory}
             selectedJob={selectedJob}
@@ -152,7 +175,7 @@ const ReadyPage = () => {
             onJobChange={handleJobChange}
           />
         );
-      case 2:
+      case 3:
         return (
           <div className="flex flex-col gap-4 items-center">
             <DocumentUploadForm
@@ -166,7 +189,7 @@ const ReadyPage = () => {
             />
           </div>
         );
-      case 3:
+      case 4:
         return (
           <CameraMicCheck
             cameraPermission={cameraPermission}
@@ -175,6 +198,8 @@ const ReadyPage = () => {
             handleMicCheck={handleMicCheck}
           />
         );
+      case 5:
+        return <> 5단계</>;
       default:
         return null;
     }
@@ -203,7 +228,7 @@ const ReadyPage = () => {
           <div />
         )}
 
-        {step !== 3 ? (
+        {step !== 5 ? (
           <button
             className="flex items-center bg-blue-500 text-white gap-1 px-4 py-2 cursor-pointer font-semibold tracking-widest rounded-md hover:bg-blue-400 duration-300 hover:gap-2 hover:translate-x-2"
             onClick={nextStepHandler}
