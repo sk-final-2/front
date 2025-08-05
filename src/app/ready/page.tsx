@@ -1,12 +1,15 @@
 "use client";
 
+import getFirstQuestion, {
+  bodyData,
+  FirstQuestionResponse,
+} from "@/api/getFirstQuestion";
 import CameraMicCheck from "@/components/ready/CameraMicCheck";
 import DocumentUploadForm from "@/components/ready/DocumentUploadForm";
 import JobSelectorForm from "@/components/ready/JobSelectorForm";
 import QuestionCountDropdown from "@/components/ready/QuestionCountDropdown";
 import ReadyStepBar from "@/components/ready/readyStepBar";
 import apiClient from "@/lib/axios";
-import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -107,25 +110,26 @@ const ReadyPage = () => {
     console.log(fileText);
     try {
       // body 데이터
-      const bodyData = {
+      const bodyData: bodyData = {
         job: selectedJob,
         count: Number(questionCount),
         ocrText: fileText ? fileText : "",
         seq: 1,
       };
 
-      // console.log("보낸 데이터:");
-      // console.log(bodyData);
-
-      const res = await apiClient.post(
-        "/api/interview/first-question",
+      const responseData: FirstQuestionResponse = await getFirstQuestion(
         bodyData,
       );
-      if (res.status == 200) {
-        const responseData = res.data.data;
+
+      // 성공
+      if (responseData.code === "SUCCESS") {
+        console.log("받은 데이터:", responseData);
+        console.log("인터뷰 ID:", responseData.data.interviewId);
 
         // 객체를 JSON 문자열로 변환하고, URL에 안전하게 인코딩합니다.
-        const serializedData = encodeURIComponent(JSON.stringify(responseData));
+        const serializedData = encodeURIComponent(
+          JSON.stringify(responseData.data),
+        );
 
         router.replace(`/interview?data=${serializedData}`);
       } else {

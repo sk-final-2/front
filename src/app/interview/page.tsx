@@ -52,7 +52,7 @@ export default function InterviewPage() {
       try {
         const media = await navigator.mediaDevices.getUserMedia({
           video: true,
-          audio: true, // 인터뷰이므로 오디오도 요청
+          audio: false, // 인터뷰이므로 오디오도 요청
         });
         setStream(media);
         setQuestionStarted(true);
