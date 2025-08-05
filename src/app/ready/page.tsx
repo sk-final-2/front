@@ -12,12 +12,22 @@ import QuestionCountDropdown from "@/components/ready/QuestionCountDropdown";
 import ReadyStepBar from "@/components/ready/readyStepBar";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import value from "../../../.next/build/chunks/[turbopack]_runtime";
 
 // 미디어 권한 상태를 나타내는 타입 정의
 type PermissionState = "prompt" | "granted" | "denied";
 
 // 면접 형식 타입
 export type InterviewType = "PERSONALITY" | "TECHNICAL" | "MIXED";
+
+// 레벨 타입
+export type LevelType = "상" | "중" | "하";
+
+// 언어 타입
+export type LanguageType = "KOREAN" | "ENGLISH";
+
+// 동적 정적 모드 타입
+export type ModeType = "STATIC" | "DYNAMIC";
 
 const ReadyPage = () => {
   // 리다이렉션 라우터
@@ -44,6 +54,8 @@ const ReadyPage = () => {
 
   // 질문 갯수 상태
   const [questionCount, setQuestionCount] = useState<number>(3);
+  // 동적 정적 모드 상태
+  const [interviewMode, setInterviewMode] = useState<ModeType>("STATIC");
 
   // 카메라 권한 상태
   const [cameraPermission, setCameraPermission] =
@@ -76,7 +88,7 @@ const ReadyPage = () => {
   // 경력 변경 핸들러
   const handleCareerChange = (career: string) => {
     setCareer(career);
-  }
+  };
 
   // 파일 업로드 핸들러
   const handleUploadComplete = (file: File) => {
@@ -185,14 +197,50 @@ const ReadyPage = () => {
       case 3:
         return (
           <div className="flex flex-col gap-4 items-center">
+            {/** 동적 or 정적(질문 수 설정) 선택 */}
+            <div className="flex flex-row gap-5 flex-1 min-w-lg min-h-25 mb-4">
+              <div
+                className={`flex items-center justify-center flex-1 rounded-xl border-2 border-solid cursor-pointer transition duration-200 ${
+                  interviewMode === "STATIC"
+                    ? "bg-blue-500 text-white"
+                    : "bg-white"
+                }`}
+                key={"STATIC"}
+                onClick={() => {
+                  setInterviewMode("STATIC");
+                  setQuestionCount(3);
+                }}
+              >
+                정적 모드
+              </div>
+              <div
+                className={`flex items-center justify-center flex-1 rounded-xl border-2 border-solid cursor-pointer transition duration-200 ${
+                  interviewMode === "DYNAMIC"
+                    ? "bg-blue-500 text-white"
+                    : "bg-white"
+                }`}
+                key={"DYNAMIC"}
+                onClick={() => {
+                  setInterviewMode("DYNAMIC");
+                  setQuestionCount(0);
+                }}
+              >
+                동적 모드
+              </div>
+            </div>
+            {interviewMode === "STATIC" ? (
+              <QuestionCountDropdown
+                selectedCount={questionCount}
+                onCountChange={handleQuestionCount}
+              />
+            ) : (
+              <></>
+            )}
+
             <DocumentUploadForm
               uploadedFile={uploadedFile}
               onUploadComplete={handleUploadComplete}
               handleFileText={handleFileText}
-            />
-            <QuestionCountDropdown
-              selectedCount={questionCount}
-              onCountChange={handleQuestionCount}
             />
           </div>
         );

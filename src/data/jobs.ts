@@ -37,6 +37,7 @@ export const jobData: JobData = {
   ],
 };
 
+// 경력 데이터
 export const careerData = [
   "신입",
   "1년",

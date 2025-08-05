@@ -1,3 +1,4 @@
+import { InterviewType, LevelType } from "@/app/ready/page";
 import axios from "axios";
 
 // 요청 body 형식
@@ -5,6 +6,9 @@ export type bodyData = {
   job: string;
   count: number;
   ocrText: string;
+  career: string;
+  interview_type: InterviewType,
+  level: LevelType,
   seq: number;
 };
 

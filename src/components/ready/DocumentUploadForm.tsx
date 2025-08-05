@@ -93,7 +93,7 @@ const DocumentUploadForm = ({
     <>
       {/** 파일 업로드  */}
       {fileName.length == 0 ? (
-        <div className="min-w-md flex-1">
+        <div className="min-w-md">
           <label
             htmlFor="file-upload"
             className="group flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 bg-white px-6 py-10 transition-colors hover:border-blue-500 hover:bg-blue-50"
