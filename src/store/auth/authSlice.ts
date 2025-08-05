@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { User } from "@/api/authAPI";
+import { loginAPI, User } from "@/api/authAPI";
+import type { AxiosError } from "axios";
 
 interface AuthType {
   isLoggedIn: boolean;
@@ -17,10 +18,19 @@ const initialState: AuthType = {
 };
 
 // 로그인 액션
-const loginUser = createAsyncThunk<User, { rejectValue: string }>(
-  "auth/login",
-  async (credentials, { rejectWithValue }) => {},
-);
+export const loginUser = createAsyncThunk<
+  User,
+  { email: string; password: string },
+  { rejectValue: string }
+>("auth/login", async ({ email, password }, { rejectWithValue }) => {
+  try {
+    const user = await loginAPI(email, password);
+    return user;
+  } catch (error: unknown) {
+    const axiosError = error as AxiosError<{ message?: string }>;
+    return rejectWithValue(axiosError.response?.data?.message || "로그인 실패");
+  }
+});
 
 // 인증 슬라이스
 const authSlice = createSlice({
@@ -34,6 +44,24 @@ const authSlice = createSlice({
       state.error = null;
     },
   },
+  extraReducers: (builder) => {
+    builder
+      .addCase(loginUser.pending, (state) => {
+        state.state = "loading";
+        state.error = null;
+      })
+      .addCase(loginUser.fulfilled, (state, action) => {
+        state.state = "successed";
+        state.isLoggedIn = true;
+        state.user = action.payload;
+        state.error = null;
+      })
+      .addCase(loginUser.rejected, (state, action) => {
+        state.state = "failed";
+        state.error = action.payload || "로그인 실패";
+      });
+  },
 });
 
 export const { logout } = authSlice.actions;
+export default authSlice.reducer;
