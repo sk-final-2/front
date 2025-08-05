@@ -1,6 +1,12 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { loginAPI, User } from "@/api/authAPI";
-import type { AxiosError } from "axios";
+import {
+  loginAPI,
+  User,
+  SignupPayload,
+  kakaoSignupAPI,
+  googleSignupAPI,
+} from "@/api/authAPI";
+import axios from "axios";
 
 interface AuthType {
   isLoggedIn: boolean;
@@ -17,7 +23,7 @@ const initialState: AuthType = {
   error: null,
 };
 
-// 로그인 액션
+// 기본 로그인 액션
 export const loginUser = createAsyncThunk<
   User,
   { email: string; password: string },
@@ -26,9 +32,47 @@ export const loginUser = createAsyncThunk<
   try {
     const user = await loginAPI(email, password);
     return user;
-  } catch (error: unknown) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    return rejectWithValue(axiosError.response?.data?.message || "로그인 실패");
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return rejectWithValue(error.response?.data?.message || "로그인 실패");
+    }
+    return rejectWithValue("알 수 없는 에러가 발생했습니다.");
+  }
+});
+
+// 카카오 로그인 액션
+export const kakaoSignup = createAsyncThunk<
+  User,
+  SignupPayload,
+  { rejectValue: string }
+>("auth/kakaoSignup", async (payload, { rejectWithValue }) => {
+  try {
+    return await kakaoSignupAPI(payload);
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return rejectWithValue(
+        error.response?.data?.message || "카카오 회원가입 실패",
+      );
+    }
+    return rejectWithValue("알 수 없는 에러가 발생했습니다.");
+  }
+});
+
+// 구글 로그인 액션
+export const googleSignup = createAsyncThunk<
+  User,
+  SignupPayload,
+  { rejectValue: string }
+>("auth/googleSignup", async (payload, { rejectWithValue }) => {
+  try {
+    return await googleSignupAPI(payload);
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return rejectWithValue(
+        error.response?.data?.message || "구글 회원가입 실패",
+      );
+    }
+    return rejectWithValue("알 수 없는 에러가 발생했습니다.");
   }
 });
 
@@ -46,6 +90,7 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // 기본 로그인
       .addCase(loginUser.pending, (state) => {
         state.state = "loading";
         state.error = null;
@@ -59,6 +104,38 @@ const authSlice = createSlice({
       .addCase(loginUser.rejected, (state, action) => {
         state.state = "failed";
         state.error = action.payload || "로그인 실패";
+      })
+      
+      // 카카오 회원가입 처리
+      .addCase(kakaoSignup.pending, (state) => {
+        state.state = "loading";
+        state.error = null;
+      })
+      .addCase(kakaoSignup.fulfilled, (state, action) => {
+        state.state = "successed";
+        state.isLoggedIn = true;
+        state.user = action.payload;
+        state.error = null;
+      })
+      .addCase(kakaoSignup.rejected, (state, action) => {
+        state.state = "failed";
+        state.error = action.payload || "카카오 회원가입 실패";
+      })
+
+      // 구글 회원가입 처리
+      .addCase(googleSignup.pending, (state) => {
+        state.state = "loading";
+        state.error = null;
+      })
+      .addCase(googleSignup.fulfilled, (state, action) => {
+        state.state = "successed";
+        state.isLoggedIn = true;
+        state.user = action.payload;
+        state.error = null;
+      })
+      .addCase(googleSignup.rejected, (state, action) => {
+        state.state = "failed";
+        state.error = action.payload || "구글 회원가입 실패";
       });
   },
 });

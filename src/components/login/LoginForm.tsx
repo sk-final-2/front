@@ -23,8 +23,6 @@ export default function LoginForm() {
   const [passwordError, setPasswordError] = useState("");
   const [loginError, setLoginError] = useState("");
 
-  const [loading, setLoading] = useState(false);
-
   const loginState = useAppSelector((state) => state.auth.state);
   const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
   const error = useAppSelector((state) => state.auth.error);
@@ -120,12 +118,12 @@ export default function LoginForm() {
           </div>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loginState === "loading"}
             className={`w-full h-12 ${
-              loading ? "bg-gray-400" : "bg-blue-500 hover:bg-blue-700"
+              loginState === "loading" ? "bg-gray-400" : "bg-blue-500 hover:bg-blue-700"
             } text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline`}
           >
-            {loading ? "로그인 중..." : "로그인"}
+            {loginState === "loading" ? "로그인 중..." : "로그인"}
           </button>
           <button
             type="button"
