@@ -29,7 +29,7 @@ const InterviewTypeSelector = ({
         <div
           key={key}
           onClick={() => handleTypeChange(key)}
-          className={`flex items-center justify-center flex-1 border-[1px] border-solid rounded-lg
+          className={`flex items-center justify-center flex-1 border-[1px] border-solid rounded-[25%] shadow-lg
             cursor-pointer transition-color duration-500 hover:scale-105 h-full
             ${selectedType === key ? `${colorMap[key]}` : "bg-white"}`}
         >

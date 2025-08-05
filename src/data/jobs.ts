@@ -36,3 +36,14 @@ export const jobData: JobData = {
     "전략 기획",
   ],
 };
+
+export const careerData = [
+  "신입",
+  "1년",
+  "2년",
+  "3년",
+  "4년",
+  "5년",
+  "6년",
+  "7년 이상",
+];

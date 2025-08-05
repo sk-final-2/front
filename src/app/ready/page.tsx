@@ -30,8 +30,8 @@ const ReadyPage = () => {
   const [selectedType, setSelectedType] =
     useState<InterviewType>("PERSONALITY");
 
-
-
+  // 경력 상태
+  const [career, setCareer] = useState<string>("");
   // 직군 상태
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   // 세부직군 상태
@@ -72,6 +72,11 @@ const ReadyPage = () => {
   const handleJobChange = (job: string) => {
     setSelectedJob(job);
   };
+
+  // 경력 변경 핸들러
+  const handleCareerChange = (career: string) => {
+    setCareer(career);
+  }
 
   // 파일 업로드 핸들러
   const handleUploadComplete = (file: File) => {
@@ -171,8 +176,10 @@ const ReadyPage = () => {
           <JobSelectorForm
             selectedCategory={selectedCategory}
             selectedJob={selectedJob}
+            career={career}
             onCategoryChange={handleCategoryChange}
             onJobChange={handleJobChange}
+            onCareerChange={handleCareerChange}
           />
         );
       case 3:
