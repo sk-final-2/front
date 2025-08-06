@@ -4,7 +4,6 @@ import getFirstQuestion, {
   bodyData,
   FirstQuestionResponse,
 } from "@/api/getFirstQuestion";
-import CameraMicCheck from "@/components/ready/CameraMicCheck";
 import DifficultyLevelComponent from "@/components/ready/DifficultyLevelComponent";
 import DocumentUploadForm from "@/components/ready/DocumentUploadForm";
 import InterviewTypeSelector from "@/components/ready/InterviewTypeSelector";
@@ -14,9 +13,6 @@ import QuestionCountDropdown from "@/components/ready/QuestionCountDropdown";
 import ReadyStepBar from "@/components/ready/readyStepBar";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-
-// 미디어 권한 상태를 나타내는 타입 정의
-type PermissionState = "prompt" | "granted" | "denied";
 
 // 면접 형식 타입
 export type InterviewType = "PERSONALITY" | "TECHNICAL" | "MIXED";
@@ -66,13 +62,6 @@ const ReadyPage = () => {
 
   // 언어 상태
   const [language, setLanguage] = useState<LanguageType>("KOREAN");
-
-  // 카메라 권한 상태
-  const [cameraPermission, setCameraPermission] =
-    useState<PermissionState>("prompt");
-
-  // 마이크 권한 상태
-  const [micPermission, setMicPermission] = useState<PermissionState>("prompt");
 
   // 단계 변경 핸들러
   const handleChangeStep = (step: number) => {
@@ -130,16 +119,6 @@ const ReadyPage = () => {
     setLanguage(language);
   };
 
-  // 카메라 권한 핸들러
-  const handleCameraCheck = (cameraPermission: PermissionState) => {
-    setCameraPermission(cameraPermission);
-  };
-
-  // 마이크 권한 핸들러
-  const handleMicCheck = (micPermission: PermissionState) => {
-    setMicPermission(micPermission);
-  };
-
   // 다음 단계 버튼 핸들러
   const nextStepHandler = () => {
     // 현재 단계에서 유효성 검사를 추가할 수 있습니다
@@ -170,9 +149,9 @@ const ReadyPage = () => {
         count: Number(questionCount),
         ocrText: fileText ? fileText : "",
         career: career,
-        interview_type: selectedType,
+        interviewType: selectedType,
         level: difficulty,
-        Language: language,
+        language: language,
         seq: 1,
       };
 
@@ -283,13 +262,6 @@ const ReadyPage = () => {
               language={language}
               handleLanguageChange={handleLanguageChange}
             />
-
-            {/* <CameraMicCheck
-              cameraPermission={cameraPermission}
-              micPermission={micPermission}
-              handleCameraCheck={handleCameraCheck}
-              handleMicCheck={handleMicCheck}
-            /> */}
           </div>
         );
       case 5:

@@ -19,51 +19,10 @@ const CameraMicCheck = ({
   handleMicCheck,
 }: CameraMicCheckProps) => {
   // 권한 상태를 확인하고 state를 업데이트하는 함수
-  const checkPermissions = useCallback(async () => {
-    try {
-      const cameraStatus = await navigator.permissions.query({
-        name: "camera" as PermissionName,
-      });
-      const micStatus = await navigator.permissions.query({
-        name: "microphone" as PermissionName,
-      });
+  
 
-      handleCameraCheck(cameraStatus.state);
-      handleMicCheck(micStatus.state);
 
-      // 권한 상태 변경 감지
-      cameraStatus.onchange = () => handleCameraCheck(cameraStatus.state);
-      micStatus.onchange = () => handleMicCheck(micStatus.state);
-    } catch (error) {
-      console.error("Permissions API를 지원하지 않는 브라우저입니다.", error);
-    }
-  }, [handleCameraCheck, handleMicCheck]);
-
-  // 웹 카메라, 마이크 권한 확인
-  // 컴포넌트 마운트 시 권한 확인
-  useEffect(() => {
-    checkPermissions();
-  }, [checkPermissions]);
-
-  // 카메라 & 마이크 권한 요청 함수
-  const requestPermissions = async () => {
-    try {
-      // 이 함수를 호출하면 브라우저가 사용자에게 권한 요청 프롬프트를 띄웁니다.
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
-      // 스트림을 얻었다는 것은 권한이 허용되었다는 의미입니다.
-      // 즉시 스트림을 닫아 리소스를 해제합니다. (실제 사용은 다른 곳에서)
-      stream.getTracks().forEach((track) => track.stop());
-      checkPermissions(); // 권한 상태를 다시 확인하여 UI를 업데이트합니다.
-    } catch (err) {
-      console.error("권한 요청이 거부되었거나 에러가 발생했습니다.", err);
-      // 사용자가 거부하면 NotAllowedError가 발생합니다.
-      // 이 경우에도 checkPermissions를 호출하여 'denied' 상태로 UI가 업데이트되도록 합니다.
-      checkPermissions();
-    }
-  };
+  
 
   // 권한이 거부되었을 때 안내 메시지를 렌더링하는 컴포넌트
   const DeniedInstructions = () => (
@@ -103,12 +62,7 @@ const CameraMicCheck = ({
           <p className="text-gray-600">
             카메라와 마이크 접근 권한을 허용해주세요.
           </p>
-          <button
-            onClick={requestPermissions}
-            className="mt-4 px-4 py-2 font-semibold text-white bg-green-500 rounded-md hover:bg-green-600"
-          >
-            권한 확인하기
-          </button>
+          
         </div>
       </div>
     );

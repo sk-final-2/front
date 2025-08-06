@@ -7,9 +7,9 @@ export type bodyData = {
   count: number;
   ocrText: string;
   career: string;
-  interview_type: InterviewType;
+  interviewType: InterviewType;
   level: LevelType;
-  Language: LanguageType;
+  language: LanguageType;
   seq: number;
 };
 
