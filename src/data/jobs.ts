@@ -36,3 +36,6 @@ export const jobData: JobData = {
     "전략 기획",
   ],
 };
+
+// 경력 데이터
+export const careerData = ["신입", "주니어", "미드", "시니어"];

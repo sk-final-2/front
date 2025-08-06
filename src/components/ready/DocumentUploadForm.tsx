@@ -8,18 +8,19 @@ interface DocumentUploadFormProps {
   uploadedFile: File | null;
   onUploadComplete: (file: File) => void;
   handleFileText: (fileText: string) => void;
+  loading: boolean;
+  handleLoading: (loading: boolean) => void;
 }
 
 const DocumentUploadForm = ({
   uploadedFile,
   onUploadComplete,
   handleFileText,
+  loading,
+  handleLoading,
 }: DocumentUploadFormProps) => {
   // 파일 이름 상태
   const [fileName, setFileName] = useState<string>("");
-
-  // 로딩 상태
-  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (uploadedFile) {
@@ -30,7 +31,7 @@ const DocumentUploadForm = ({
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setLoading(true);
+      handleLoading(true);
       const allowedExtensions = ["pdf", "docx", "txt"];
       const fileExtension = file.name.split(".").pop()?.toLowerCase();
       // 파일 형식이 pdf, docx, txt 인 경우에만 업로드
@@ -60,13 +61,13 @@ const DocumentUploadForm = ({
           alert(`오류: ${error}`);
           console.error(error);
         } finally {
-          setLoading(false);
+          handleLoading(false);
         }
       } else {
         alert(
           "허용되지 않은 파일 형식입니다. PDF, DOCX, TXT 파일만 업로드할 수 있습니다.",
         );
-        setLoading(false);
+        handleLoading(false);
         return;
       }
     }
@@ -74,7 +75,7 @@ const DocumentUploadForm = ({
 
   if (loading) {
     return (
-      <div className="flex min-w-md flex-1 items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 bg-white px-6 py-10">
+      <div className="flex min-w-md flex-1 items-center justify-center rounded-lg border-zinc-300 bg-white px-6 py-10">
         <div className="flex flex-col items-center justify-center gap-5">
           <div className="flex flex-row gap-3">
             <div className="h-4 w-4 animate-bounce rounded-full bg-blue-700 [animation-delay:.3s]"></div>
@@ -93,7 +94,7 @@ const DocumentUploadForm = ({
     <>
       {/** 파일 업로드  */}
       {fileName.length == 0 ? (
-        <div className="min-w-md flex-1">
+        <div className="min-w-md">
           <label
             htmlFor="file-upload"
             className="group flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 bg-white px-6 py-10 transition-colors hover:border-blue-500 hover:bg-blue-50"
@@ -138,7 +139,7 @@ const DocumentUploadForm = ({
               </div>
               <label
                 htmlFor="file-upload"
-                className="group flex cursor-pointer w-auto items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 bg-white px-6 py-10 transition-colors hover:border-blue-500 hover:bg-blue-50"
+                className="group w-5/6 flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 bg-white px-6 py-10 transition-colors hover:border-blue-500 hover:bg-blue-50"
               >
                 <div className="space-y-4 text-center">
                   <div className="space-y-1">
