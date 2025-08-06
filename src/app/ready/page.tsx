@@ -37,6 +37,9 @@ const ReadyPage = () => {
   // 단계 상태
   const [step, setStep] = useState(1);
 
+  // 로딩 상태
+  const [loading, setLoading] = useState<boolean>(false);
+
   // 면접 형식 상태
   const [selectedType, setSelectedType] =
     useState<InterviewType>("PERSONALITY");
@@ -56,7 +59,7 @@ const ReadyPage = () => {
   // 질문 갯수 상태
   const [questionCount, setQuestionCount] = useState<number>(3);
   // 동적 정적 모드 상태
-  const [interviewMode, setInterviewMode] = useState<ModeType>("STATIC");
+  const [interviewMode, setInterviewMode] = useState<ModeType>("DYNAMIC");
 
   // 난이도 상태
   const [difficulty, setDifficulty] = useState<LevelType>("중");
@@ -74,6 +77,11 @@ const ReadyPage = () => {
   // 단계 변경 핸들러
   const handleChangeStep = (step: number) => {
     setStep(step);
+  };
+
+  // 로딩 변경 핸들러
+  const handleLoading = (loading: boolean) => {
+    setLoading(loading);
   };
 
   // 면접 형식 변경 핸들러
@@ -149,19 +157,22 @@ const ReadyPage = () => {
 
   // 면접 페이지로 이동하는 핸들러
   const goToInterviewPage = async () => {
-    if (selectedCategory === "" || selectedJob === "") {
-      handleChangeStep(1);
-      alert("직군을 입력해주세요.");
+    if (selectedCategory === "" || selectedJob === "" || career === "") {
+      handleChangeStep(2);
+      alert("직군과 경력을 입력해주세요.");
       return;
     }
     // 첫 질문 생성 요청
-    console.log(fileText);
     try {
       // body 데이터
       const bodyData: bodyData = {
         job: selectedJob,
         count: Number(questionCount),
         ocrText: fileText ? fileText : "",
+        career: career,
+        interview_type: selectedType,
+        level: difficulty,
+        Language: language,
         seq: 1,
       };
 
@@ -173,6 +184,8 @@ const ReadyPage = () => {
       if (responseData.code === "SUCCESS") {
         console.log("받은 데이터:", responseData);
         console.log("인터뷰 ID:", responseData.data.interviewId);
+
+        // TODO: 전역 상태에 Data 저장하고 라우팅
 
         // 객체를 JSON 문자열로 변환하고, URL에 안전하게 인코딩합니다.
         const serializedData = encodeURIComponent(
@@ -264,16 +277,19 @@ const ReadyPage = () => {
         );
       case 4:
         return (
-          <div>
+          <div className="w-4/6">
             {/** 언어 선택 (한국어, 영어) */}
-            <LanguageSelectComponent language={language} handleLanguageChange={handleLanguageChange} />
+            <LanguageSelectComponent
+              language={language}
+              handleLanguageChange={handleLanguageChange}
+            />
 
-            <CameraMicCheck
+            {/* <CameraMicCheck
               cameraPermission={cameraPermission}
               micPermission={micPermission}
               handleCameraCheck={handleCameraCheck}
               handleMicCheck={handleMicCheck}
-            />
+            /> */}
           </div>
         );
       case 5:
@@ -282,6 +298,8 @@ const ReadyPage = () => {
             uploadedFile={uploadedFile}
             onUploadComplete={handleUploadComplete}
             handleFileText={handleFileText}
+            loading={loading}
+            handleLoading={handleLoading}
           />
         );
       default:
@@ -321,10 +339,12 @@ const ReadyPage = () => {
           </button>
         ) : (
           <button
-            className="flex items-center bg-green-500 text-white gap-1 px-4 py-2 cursor-pointer font-semibold tracking-widest rounded-md hover:bg-green-600 duration-300"
+            className="flex items-center bg-green-500 text-white gap-1 px-4 py-2 cursor-pointer font-semibold tracking-widest rounded-md hover:bg-green-600 duration-300
+            disabled:bg-gray-400"
             onClick={goToInterviewPage}
+            disabled={loading}
           >
-            면접 시작하기
+            {loading ? "파일 업로드 중..." : "면접 시작하기"}
           </button>
         )}
       </div>

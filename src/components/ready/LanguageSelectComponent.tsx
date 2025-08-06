@@ -18,7 +18,7 @@ const LanguageSelectComponent = ({
   handleLanguageChange,
 }: LanguageSelectComponentProps) => {
   return (
-    <div className="w-full flex flex-row gap-5">
+    <div className="w-full h-auto flex flex-row gap-10">
       {languageList.map((lang) => {
         const Flag = languageIconMap[lang];
 
@@ -26,8 +26,10 @@ const LanguageSelectComponent = ({
           <div
             key={lang}
             onClick={() => handleLanguageChange(lang)}
-            className={`flex-1 flex text-md font-bold flex-col justify-center items-center cursor-pointer rounded-lg border-[1px] border-gray-400 transition hover:scale-105 duration-300 ${
-                language === lang ? "bg-gray-200 border-gray-700 border-[2px]" : ""
+            className={`flex-1 flex text-md font-bold flex-col justify-center items-center cursor-pointer rounded-lg transition hover:-translate-y-4 duration-300 ${
+              language === lang
+                ? "border-[3px] border-amber-500"
+                : "border-[1px] border-gray-400"
             }`}
           >
             <Flag title={lang} width={100} height={100} />
