@@ -1,9 +1,10 @@
 "use client";
 
+import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import React from "react";
-import { kakaoSignup } from "@/services/auth";
+import { kakaoSignup } from "@/store/auth/authSlice";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -29,6 +30,8 @@ declare global {
 }
 
 export default function KakaoForm() {
+  const dispatch = useAppDispatch();
+
   const searchParams = useSearchParams();
   const [userInfo, setUserInfo] = useState({
     name: "",
@@ -44,6 +47,9 @@ export default function KakaoForm() {
   const addressRef = useRef<HTMLInputElement>(null);
 
   const router = useRouter();
+
+  const authState = useAppSelector((state) => state.auth.state);
+  const error = useAppSelector((state) => state.auth.error);
 
   useEffect(() => {
     const name = searchParams.get("name") ?? "";
@@ -73,23 +79,18 @@ export default function KakaoForm() {
       address2,
     };
 
-    try {
-      const res = await kakaoSignup(payload);
-      console.log("응답 확인:", res);
-
-      // 실제 응답 구조 기준으로 처리
-      if (res.message === "소셜 로그인 성공") {
-        console.log("로그인 성공 → 메인 페이지로 이동");
-        router.push("/");
-      } else {
-        alert("회원가입이 완료되었습니다.");
-        router.push("/");
-      }
-    } catch (error) {
-      console.error("회원가입 오류:", error);
-      alert("회원가입 중 오류가 발생했습니다.");
-    }
+    dispatch(kakaoSignup(payload));
   };
+
+  useEffect(() => {
+    if (authState === "successed") {
+      router.push("/");
+    }
+
+    if (authState === "failed") {
+      alert(error || "회원가입 중 오류가 발생했습니다.");
+    }
+  }, [authState, error, router]);
 
   return (
     <div className="flex flex-col md:flex-row min-h-[90vh] max-w-6xl mx-auto rounded-2xl shadow-lg bg-white">

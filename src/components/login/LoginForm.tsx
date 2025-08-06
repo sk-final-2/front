@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { login } from "@/services/auth";
+import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
+import { useEffect, useState, useRef } from "react";
+import { loginUser } from "@/store/auth/authSlice";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -9,6 +10,7 @@ const isValidEmail = (email: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 export default function LoginForm() {
+  const dispatch = useAppDispatch();
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -21,7 +23,9 @@ export default function LoginForm() {
   const [passwordError, setPasswordError] = useState("");
   const [loginError, setLoginError] = useState("");
 
-  const [loading, setLoading] = useState(false);
+  const loginState = useAppSelector((state) => state.auth.state);
+  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
+  const error = useAppSelector((state) => state.auth.error);
 
   const handleKakaoLogin = () => {
     window.location.href = "http://localhost:8080/oauth2/authorization/kakao";
@@ -56,19 +60,19 @@ export default function LoginForm() {
       return;
     }
 
-    try {
-      setLoading(true);
-      const res = await login(email, password);
-      console.log("로그인 성공:", res.data);
-      //localStorage.setItem('token', res.data.token);
-      router.push("/");
-    } catch (error: unknown) {
-      setLoginError("이메일 또는 비밀번호가 올바르지 않습니다.");
-      console.error("로그인 실패:", error);
-    } finally {
-      setLoading(false);
-    }
+    // Redux dispatch로 API 호출
+    dispatch(loginUser({ email, password }));
   };
+
+  useEffect(() => {
+    if (loginState === "successed" && isLoggedIn) {
+      router.push("/");
+    }
+
+    if (loginState === "failed") {
+      setLoginError(error || "로그인에 실패했습니다.");
+    }
+  }, [loginState, isLoggedIn, error, router]);
 
   return (
     <div className="relative">
@@ -114,10 +118,12 @@ export default function LoginForm() {
           </div>
           <button
             type="submit"
-            disabled={loading}
-            className={`w-full h-12 ${loading ? "bg-gray-400" : "bg-blue-500 hover:bg-blue-700"} text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline`}
+            disabled={loginState === "loading"}
+            className={`w-full h-12 ${
+              loginState === "loading" ? "bg-gray-400" : "bg-blue-500 hover:bg-blue-700"
+            } text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline`}
           >
-            {loading ? "로그인 중..." : "로그인"}
+            {loginState === "loading" ? "로그인 중..." : "로그인"}
           </button>
           <button
             type="button"

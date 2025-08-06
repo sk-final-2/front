@@ -98,6 +98,7 @@ const ReadyPage = () => {
 
   // 면접 페이지로 이동하는 핸들러
   const goToInterviewPage = async () => {
+  const goToInterviewPage = async () => {
     if (selectedCategory === "" || selectedJob === "") {
       handleChangeStep(1);
       alert("직군을 입력해주세요.");

@@ -1,8 +1,9 @@
 "use client";
 
+import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
-import { googleSignup } from "@/services/auth";
+import { googleSignup } from "@/store/auth/authSlice";
 import { useRouter } from "next/navigation";
 
 interface DaumPostcodeData {
@@ -27,6 +28,8 @@ declare global {
 }
 
 export default function GoogleForm() {
+  const dispatch = useAppDispatch();
+
   const searchParams = useSearchParams();
   const [userInfo, setUserInfo] = useState({
     name: "",
@@ -42,6 +45,10 @@ export default function GoogleForm() {
   const addressRef = useRef<HTMLInputElement>(null);
 
   const router = useRouter();
+
+  // Redux 상태
+  const authState = useAppSelector((state) => state.auth.state);
+  const error = useAppSelector((state) => state.auth.error);
 
   useEffect(() => {
     const name = searchParams.get("name") ?? "";
@@ -71,26 +78,29 @@ export default function GoogleForm() {
       address2,
     };
 
-    try {
-      const res = await googleSignup(payload);
-      console.log("응답 확인:", res);
-
-      // 실제 응답 구조 기준으로 처리
-      if (res.message === "소셜 로그인 성공") {
-        console.log("로그인 성공 → 메인 페이지로 이동");
-        router.push("/");
-      } else {
-        alert("회원가입이 완료되었습니다.");
-        router.push("/");
-      }
-    } catch (error) {
-      console.error("회원가입 오류:", error);
-      alert("회원가입 중 오류가 발생했습니다.");
-    }
+    dispatch(googleSignup(payload));
   };
+
+  useEffect(() => {
+    if (authState === "successed") {
+      router.push("/");
+    }
+    if (authState === "failed") {
+      alert(error || "회원가입 중 오류가 발생했습니다.");
+    }
+  }, [authState, error, router]);
 
   return (
     <div className="bg-white p-8 rounded-lg shadow-md max-w-md mx-auto space-y-4">
+      {authState === "loading" && (
+        <p className="text-blue-500 text-sm text-center">
+          가입 처리 중입니다...
+        </p>
+      )}
+      {authState === "failed" && error && (
+        <p className="text-red-500 text-sm text-center">{error}</p>
+      )}
+
       {/* 수정 불가능한 기본 정보 */}
       <div>
         <label className="block text-sm font-semibold mb-1">이름</label>
@@ -184,9 +194,14 @@ export default function GoogleForm() {
 
       <button
         onClick={handleSubmit}
-        className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+        disabled={authState === "loading"}
+        className={`w-full ${
+          authState === "loading"
+            ? "bg-gray-400"
+            : "bg-blue-500 hover:bg-blue-600"
+        } text-white py-2 rounded`}
       >
-        회원가입 완료
+        {authState === "loading" ? "가입 중..." : "회원가입"}
       </button>
     </div>
   );
