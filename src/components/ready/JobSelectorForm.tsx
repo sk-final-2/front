@@ -114,11 +114,7 @@ const JobSelectorForm = ({
             <p className="font-semibold text-black">
               선택하신 직무는{" "}
               <span className="text-blue-700 font-bold">{selectedJob}</span>{" "}
-              <span className="text-green-700 font-bold">
-                {career}
-                {career !== "신입" ? (career !== "7년 이상" ? "차" : "") : ""}
-              </span>{" "}
-              입니다.
+              <span className="text-green-700 font-bold">{career}</span> 입니다.
             </p>
           </div>
         )}

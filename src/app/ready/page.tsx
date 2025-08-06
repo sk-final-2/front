@@ -5,6 +5,7 @@ import getFirstQuestion, {
   FirstQuestionResponse,
 } from "@/api/getFirstQuestion";
 import CameraMicCheck from "@/components/ready/CameraMicCheck";
+import DifficultyLevelComponent from "@/components/ready/DifficultyLevelComponent";
 import DocumentUploadForm from "@/components/ready/DocumentUploadForm";
 import InterviewTypeSelector from "@/components/ready/InterviewTypeSelector";
 import JobSelectorForm from "@/components/ready/JobSelectorForm";
@@ -12,7 +13,6 @@ import QuestionCountDropdown from "@/components/ready/QuestionCountDropdown";
 import ReadyStepBar from "@/components/ready/readyStepBar";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import value from "../../../.next/build/chunks/[turbopack]_runtime";
 
 // 미디어 권한 상태를 나타내는 타입 정의
 type PermissionState = "prompt" | "granted" | "denied";
@@ -56,6 +56,9 @@ const ReadyPage = () => {
   const [questionCount, setQuestionCount] = useState<number>(3);
   // 동적 정적 모드 상태
   const [interviewMode, setInterviewMode] = useState<ModeType>("STATIC");
+
+  // 난이도 상태
+  const [difficulty, setDifficulty] = useState<LevelType>("중");
 
   // 카메라 권한 상태
   const [cameraPermission, setCameraPermission] =
@@ -103,6 +106,11 @@ const ReadyPage = () => {
   // 질문 갯수 핸들러
   const handleQuestionCount = (questionCount: number) => {
     setQuestionCount(questionCount);
+  };
+
+  // 난이도 변경 핸들러
+  const handleDifficultyLevel = (difficulty: LevelType) => {
+    setDifficulty(difficulty);
   };
 
   // 카메라 권한 핸들러
@@ -228,6 +236,7 @@ const ReadyPage = () => {
                 동적 모드
               </div>
             </div>
+            {/** 정적 모드인 경우에만 질문 수 드롭 다운 생성 */}
             {interviewMode === "STATIC" ? (
               <QuestionCountDropdown
                 selectedCount={questionCount}
@@ -237,24 +246,34 @@ const ReadyPage = () => {
               <></>
             )}
 
-            <DocumentUploadForm
-              uploadedFile={uploadedFile}
-              onUploadComplete={handleUploadComplete}
-              handleFileText={handleFileText}
+            {/** 난이도 설정 컴포넌트 */}
+            <DifficultyLevelComponent
+              difficulty={difficulty}
+              handleDifficultyLevel={handleDifficultyLevel}
             />
           </div>
         );
       case 4:
         return (
-          <CameraMicCheck
-            cameraPermission={cameraPermission}
-            micPermission={micPermission}
-            handleCameraCheck={handleCameraCheck}
-            handleMicCheck={handleMicCheck}
-          />
+          <div>
+            {/** 언어 선택 (한국어, 영어) */}
+            
+            <CameraMicCheck
+              cameraPermission={cameraPermission}
+              micPermission={micPermission}
+              handleCameraCheck={handleCameraCheck}
+              handleMicCheck={handleMicCheck}
+            />
+          </div>
         );
       case 5:
-        return <> 5단계</>;
+        return (
+          <DocumentUploadForm
+            uploadedFile={uploadedFile}
+            onUploadComplete={handleUploadComplete}
+            handleFileText={handleFileText}
+          />
+        );
       default:
         return null;
     }

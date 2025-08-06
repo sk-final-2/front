@@ -27,7 +27,7 @@ const QuestionCountDropdown = ({
   };
 
   return (
-    <div ref={dropdownRef} className="relative w-48 font-sans">
+    <div ref={dropdownRef} className="relative w-48 font-sans transition duration-200 ">
       <label
         id="question-count-label"
         className="block mb-2 text-sm font-medium text-gray-700"

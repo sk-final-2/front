@@ -5,12 +5,14 @@ interface InterviewTypeSelectorProps {
   handleTypeChange: (type: InterviewType) => void;
 }
 
+// 면접 타입 맵
 const typeMap: Record<InterviewType, string> = {
   PERSONALITY: "인성 면접",
   TECHNICAL: "기술 면접",
   MIXED: "혼합 면접",
 };
 
+// 각 면접 타입 색상 맵
 const colorMap: Record<InterviewType, string> = {
   PERSONALITY: "bg-[#D1E7DD] border-[#A8D8B9] border-[3px]",
   TECHNICAL: "bg-[#B3CDE0] border-[#AEC6CF] border-[3px]",

@@ -38,13 +38,4 @@ export const jobData: JobData = {
 };
 
 // 경력 데이터
-export const careerData = [
-  "신입",
-  "1년",
-  "2년",
-  "3년",
-  "4년",
-  "5년",
-  "6년",
-  "7년 이상",
-];
+export const careerData = ["신입", "주니어", "미드", "시니어"];
