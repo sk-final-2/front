@@ -11,9 +11,9 @@ interface ReadyStepBarProps {
 const content: Record<number, string> = {
   1: "면접 형식",
   2: "직무 & 경력",
-  3: "질문 수 설정",
-  4: "난이도 & 언어",
-  5: "카메라 & 마이크",
+  3: "질문 & 난이도",
+  4: "언어 & 카메라, 마이크",
+  5: "추가 정보",
 };
 
 const ReadyStepBar = ({ step, handleChangeStep }: ReadyStepBarProps) => {

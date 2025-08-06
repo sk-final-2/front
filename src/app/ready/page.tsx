@@ -9,6 +9,7 @@ import DifficultyLevelComponent from "@/components/ready/DifficultyLevelComponen
 import DocumentUploadForm from "@/components/ready/DocumentUploadForm";
 import InterviewTypeSelector from "@/components/ready/InterviewTypeSelector";
 import JobSelectorForm from "@/components/ready/JobSelectorForm";
+import LanguageSelectComponent from "@/components/ready/LanguageSelectComponent";
 import QuestionCountDropdown from "@/components/ready/QuestionCountDropdown";
 import ReadyStepBar from "@/components/ready/readyStepBar";
 import { useRouter } from "next/navigation";
@@ -59,6 +60,9 @@ const ReadyPage = () => {
 
   // 난이도 상태
   const [difficulty, setDifficulty] = useState<LevelType>("중");
+
+  // 언어 상태
+  const [language, setLanguage] = useState<LanguageType>("KOREAN");
 
   // 카메라 권한 상태
   const [cameraPermission, setCameraPermission] =
@@ -111,6 +115,11 @@ const ReadyPage = () => {
   // 난이도 변경 핸들러
   const handleDifficultyLevel = (difficulty: LevelType) => {
     setDifficulty(difficulty);
+  };
+
+  // 언어 변경 핸들러
+  const handleLanguageChange = (language: LanguageType) => {
+    setLanguage(language);
   };
 
   // 카메라 권한 핸들러
@@ -257,7 +266,8 @@ const ReadyPage = () => {
         return (
           <div>
             {/** 언어 선택 (한국어, 영어) */}
-            
+            <LanguageSelectComponent language={language} handleLanguageChange={handleLanguageChange} />
+
             <CameraMicCheck
               cameraPermission={cameraPermission}
               micPermission={micPermission}
@@ -285,7 +295,7 @@ const ReadyPage = () => {
       <ReadyStepBar step={step} handleChangeStep={handleChangeStep} />
 
       {/** 폼 컨테이너 */}
-      <div className="container flex flex-grow flex-col justify-center items-center gap-5">
+      <div className="container min-w-xl flex flex-grow flex-col justify-center items-center gap-5">
         {renderStepComponent()}
       </div>
 

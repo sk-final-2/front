@@ -26,12 +26,12 @@ const InterviewTypeSelector = ({
   const keys = Object.keys(typeMap) as InterviewType[];
 
   return (
-    <div className="flex flex-row gap-10 w-4/6 h-full mt-4">
+    <div className="flex lg:flex-row flex-col gap-10 w-4/6 h-full mt-4">
       {keys.map((key) => (
         <div
           key={key}
           onClick={() => handleTypeChange(key)}
-          className={`flex items-center justify-center flex-1 border-[1px] border-solid rounded-[25%] shadow-lg
+          className={`flex items-center justify-center flex-1 border-[1px] border-solid rounded-xl shadow-lg
             cursor-pointer transition-color duration-500 hover:scale-105 h-full
             ${selectedType === key ? `${colorMap[key]}` : "bg-white"}`}
         >
