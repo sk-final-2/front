@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   loginAPI,
   User,
@@ -87,6 +87,14 @@ const authSlice = createSlice({
       state.state = "idle";
       state.error = null;
     },
+    setInitialAuth: (state, action: PayloadAction<string>) => {
+      state.isLoggedIn = true;
+      state.user = null; // accessToken만 있는 초기 상태
+      state.state = "successed";
+      state.error = null;
+      // 필요하다면 아래에 accessToken 저장하는 필드 따로 만들 수도 있음
+      // state.accessToken = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -105,7 +113,7 @@ const authSlice = createSlice({
         state.state = "failed";
         state.error = action.payload || "로그인 실패";
       })
-      
+
       // 카카오 회원가입 처리
       .addCase(kakaoSignup.pending, (state) => {
         state.state = "loading";
@@ -140,5 +148,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, setInitialAuth } = authSlice.actions;
 export default authSlice.reducer;

@@ -2,14 +2,15 @@ import questionSlice from "@/store/question/questionSlice";
 import authSlice from "@/store/auth/authSlice";
 import { configureStore } from "@reduxjs/toolkit";
 
-const store = configureStore({
-  reducer: {
-    auth: authSlice,
-    question: questionSlice,
-  },
-});
+export const makeStore = () =>
+  configureStore({
+    reducer: {
+      auth: authSlice,
+      question: questionSlice,
+    },
+  });
 
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
-
-export default store;
+// 타입 정의도 함께 export
+export type AppStore = ReturnType<typeof makeStore>;
+export type RootState = ReturnType<AppStore["getState"]>;
+export type AppDispatch = AppStore["dispatch"];
