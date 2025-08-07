@@ -1,16 +1,17 @@
 "use client";
 
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { logout } from "@/store/auth/authSlice";
+import { useAppDispatch } from "@/hooks/storeHook";
 
 export default function MainHeader() {
   const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
   const user = useSelector((state: RootState) => state.auth.user);
   const router = useRouter();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleNav = (path: string) => {
@@ -21,10 +22,18 @@ export default function MainHeader() {
     }
   };
 
-  const handleLogout = () => {
-    dispatch(logout()); // Redux 상태 초기화
-    setIsModalOpen(false);
-    router.push("/login");
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      dispatch(logout());
+      router.push("/login");
+    } catch (err) {
+      console.error("로그아웃 실패:", err);
+    }
   };
 
   return (
