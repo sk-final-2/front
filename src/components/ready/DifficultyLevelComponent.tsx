@@ -31,7 +31,7 @@ const DifficultyLevelComponent = ({
         {Levels.map((level) => (
           <div
             key={level}
-            className={`flex-1 flex justify-center items-center text-lg font-bold h-20 border-2 border-solid rounded-lg transition duration-300 hover:scale-105  ${
+            className={`flex-1 cursor-pointer flex justify-center items-center text-lg font-bold h-20 border-2 border-solid rounded-lg transition duration-300 hover:scale-105  ${
               level === difficulty
                 ? LevelColorMap[level]
                 : "bg-[#FFFFFF] text-[#6c757d]"
@@ -43,7 +43,9 @@ const DifficultyLevelComponent = ({
         ))}
       </div>
       {/** 안내 문구 */}
-      <div className="mt-5 text-center text-md font-bold">{NoticeTextMap[difficulty]}</div>
+      <div className="mt-5 text-center text-md font-bold">
+        {NoticeTextMap[difficulty]}
+      </div>
     </div>
   );
 };

@@ -2,13 +2,22 @@
 
 import UserVideo from "@/components/interview/UserVideo";
 import AudioRecoder from "@/components/media-check/AudioRecoder";
-import CameraMicCheck from "@/components/ready/CameraMicCheck";
+import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 // 미디어 권한 상태를 나타내는 타입 정의
 type PermissionState = "prompt" | "granted" | "denied";
 
 const MediaCheckPage = () => {
+  // 전역 상태 불러오기
+  const dispatch = useAppDispatch();
+  const { currentQuestion, status, error, interviewId, currentSeq } =
+    useAppSelector((state) => state.interview);
+
+  // 라우터
+  const router = useRouter();
+
   const [stream, setStream] = useState<MediaStream | null>(null);
   // ✅ 미디어 오류 상태 추가
   const [mediaError, setMediaError] = useState<string | null>(null);
@@ -112,6 +121,11 @@ const MediaCheckPage = () => {
     }
   };
 
+  // 면접 페이지 이동 핸들러
+  const goInterviewPage = () => {
+    router.replace("/interview");
+  };
+
   return (
     // 페이지 컨테이너
     <div className="bg-gray-100 h-screen flex flex-col items-center">
@@ -141,9 +155,10 @@ const MediaCheckPage = () => {
           {/** 마이크 테스트 + 마이크 볼륨 바 */}
           <AudioRecoder />
 
-          {/** 장비 선택 드롭 다운 */}
-
           {/** 면접 진행하기 버튼 */}
+          <button onClick={goInterviewPage} className="rounded-xl inline-block">
+            면접 진행하기
+          </button>
         </div>
       )}
     </div>

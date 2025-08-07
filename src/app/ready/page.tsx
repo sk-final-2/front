@@ -1,9 +1,5 @@
 "use client";
 
-import getFirstQuestion, {
-  bodyData,
-  FirstQuestionResponse,
-} from "@/api/getFirstQuestion";
 import DifficultyLevelComponent from "@/components/ready/DifficultyLevelComponent";
 import DocumentUploadForm from "@/components/ready/DocumentUploadForm";
 import InterviewTypeSelector from "@/components/ready/InterviewTypeSelector";
@@ -11,8 +7,10 @@ import JobSelectorForm from "@/components/ready/JobSelectorForm";
 import LanguageSelectComponent from "@/components/ready/LanguageSelectComponent";
 import QuestionCountDropdown from "@/components/ready/QuestionCountDropdown";
 import ReadyStepBar from "@/components/ready/readyStepBar";
+import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
+import { bodyData, getFQuestion } from "@/store/interview/interveiwSlice";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // 면접 형식 타입
 export type InterviewType = "PERSONALITY" | "TECHNICAL" | "MIXED";
@@ -27,6 +25,10 @@ export type LanguageType = "KOREAN" | "ENGLISH";
 export type ModeType = "STATIC" | "DYNAMIC";
 
 const ReadyPage = () => {
+  const dispatch = useAppDispatch();
+  const { currentQuestion, status, error, interviewId, currentSeq } =
+    useAppSelector((state) => state.interview);
+
   // 리다이렉션 라우터
   const router = useRouter();
 
@@ -134,6 +136,21 @@ const ReadyPage = () => {
     }
   };
 
+  // 페이지 이동을 처리하는 useEffect
+  useEffect(() => {
+    // API 호출이 성공적으로 완료되었고, interviewId가 존재할 때 실행됩니다.
+    if (status === "succeeded" && interviewId) {
+      const responseData = {
+        interviewId,
+        question: currentQuestion,
+        seq: currentSeq,
+      };
+      console.log(responseData);
+
+      router.replace(`/media-check`);
+    }
+  }, [status, interviewId, currentQuestion, currentSeq, error, router]);
+
   // 면접 페이지로 이동하는 핸들러
   const goToInterviewPage = async () => {
     if (selectedCategory === "" || selectedJob === "" || career === "") {
@@ -155,26 +172,7 @@ const ReadyPage = () => {
         seq: 1,
       };
 
-      const responseData: FirstQuestionResponse = await getFirstQuestion(
-        bodyData,
-      );
-
-      // 성공
-      if (responseData.code === "SUCCESS") {
-        console.log("받은 데이터:", responseData);
-        console.log("인터뷰 ID:", responseData.data.interviewId);
-
-        // TODO: 전역 상태에 Data 저장하고 라우팅
-
-        // 객체를 JSON 문자열로 변환하고, URL에 안전하게 인코딩합니다.
-        const serializedData = encodeURIComponent(
-          JSON.stringify(responseData.data),
-        );
-
-        router.replace(`/interview?data=${serializedData}`);
-      } else {
-        console.error("첫 질문 받기 통신 에러");
-      }
+      dispatch(getFQuestion(bodyData));
     } catch (error) {
       console.error(error);
     }
@@ -316,7 +314,7 @@ const ReadyPage = () => {
             onClick={goToInterviewPage}
             disabled={loading}
           >
-            {loading ? "파일 업로드 중..." : "면접 시작하기"}
+            {loading ? "파일 업로드 중..." : "카메라&마이크 테스트"}
           </button>
         )}
       </div>
