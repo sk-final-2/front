@@ -7,6 +7,18 @@ export type User = {
     name: string | null,
 }
 
+export type LoginResponse = {
+  code: string;
+  data: {
+    email: string;
+    name: string;
+    provider: "LOCAL" | "GOOGLE" | "KAKAO";
+  };
+  message: string;
+  status: number;
+};
+
+
 // 첫 소셜 로그인시 회원가입
 export type SignupPayload = {
   name: string;
@@ -19,7 +31,7 @@ export type SignupPayload = {
 };
 
 // 로그인 Task
-export const loginAPI = async (email: string, password: string): Promise<User> => {
+export const loginAPI = async (email: string, password: string): Promise<LoginResponse> => {
     const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
         { email, password },
@@ -27,25 +39,25 @@ export const loginAPI = async (email: string, password: string): Promise<User> =
             withCredentials: true,
         }
     );
-    return res.data as User;
+    return res.data;
 };
 
 // Google
-export const googleSignupAPI = async (payload: SignupPayload): Promise<User> => {
+export const googleSignupAPI = async (payload: SignupPayload): Promise<LoginResponse> => {
   const res = await axios.post(
     `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google-signup`,
     payload,
     { withCredentials: true }
   );
-  return res.data as User;
+  return res.data;
 };
 
 // Kakao
-export const kakaoSignupAPI = async (payload: SignupPayload): Promise<User> => {
+export const kakaoSignupAPI = async (payload: SignupPayload): Promise<LoginResponse> => {
   const res = await axios.post(
     `${process.env.NEXT_PUBLIC_API_URL}/api/auth/kakao-signup`,
     payload,
     { withCredentials: true }
   );
-  return res.data as User;
+  return res.data;
 };
