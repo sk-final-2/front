@@ -6,6 +6,7 @@ import {
   SignupPayload,
   kakaoSignupAPI,
   googleSignupAPI,
+  fetchUserInfo,
 } from "@/api/authAPI";
 import axios from "axios";
 
@@ -34,9 +35,7 @@ export const loginUser = createAsyncThunk<
     return await loginAPI(email, password);
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      return rejectWithValue(
-        error.response?.data?.message || "로그인 실패"
-      );
+      return rejectWithValue(error.response?.data?.message || "로그인 실패");
     }
     return rejectWithValue("알 수 없는 에러가 발생했습니다.");
   }
@@ -78,6 +77,20 @@ export const googleSignup = createAsyncThunk<
   }
 });
 
+// 사용자 정보 불러오기
+export const fetchAndSetUser = createAsyncThunk<
+  User, // fulfilled payload
+  void,
+  { rejectValue: string }
+>("auth/fetchUser", async (_, { rejectWithValue }) => {
+  try {
+    const res = await fetchUserInfo();
+    return res.data; // 여기엔 email, name만 있음
+  } catch (err) {
+    return rejectWithValue("사용자 정보 가져오기 실패");
+  }
+});
+
 // 인증 슬라이스
 const authSlice = createSlice({
   name: "auth",
@@ -96,6 +109,19 @@ const authSlice = createSlice({
       state.error = null;
       // 필요하다면 아래에 accessToken 저장하는 필드 따로 만들 수도 있음
       // state.accessToken = action.payload;
+    },
+    setUserFromSocial: (
+      state,
+      action: PayloadAction<{
+        email: string;
+        name: string;
+        loginType: "default" | "google" | "kakao";
+      }>,
+    ) => {
+      state.user = action.payload;
+      state.isLoggedIn = true;
+      state.state = "successed";
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
@@ -175,9 +201,26 @@ const authSlice = createSlice({
       .addCase(googleSignup.rejected, (state, action) => {
         state.state = "failed";
         state.error = action.payload || "구글 회원가입 실패";
+      })
+
+      //새로고침할 때 유저 정보 불러오기
+      .addCase(fetchAndSetUser.fulfilled, (state, action) => {
+        state.user = {
+          email: action.payload.email,
+          name: action.payload.name,
+          loginType: "default", //다시 요청해서 불러올 때는 provider 정보가 없기 때문에 기본값 처리
+        };
+        state.isLoggedIn = true;
+        state.state = "successed";
+        state.error = null;
+      })
+      .addCase(fetchAndSetUser.rejected, (state, action) => {
+        state.user = null;
+        state.state = "failed";
+        state.error = action.payload || "유저 정보 불러오기 실패";
       });
   },
 });
 
-export const { logout, setInitialAuth } = authSlice.actions;
+export const { logout, setInitialAuth, setUserFromSocial } = authSlice.actions;
 export default authSlice.reducer;

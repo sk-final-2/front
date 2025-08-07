@@ -53,9 +53,6 @@ export default function MainHeader() {
                 <p className="font-semibold mb-2">사용자 정보</p>
                 <p className="text-sm text-gray-600">이름: {user?.name}</p>
                 <p className="text-sm text-gray-600">이메일: {user?.email}</p>
-                <p className="text-sm text-gray-600">
-                  로그인 방식: {user?.loginType ?? "알 수 없음"}
-                </p>
 
                 <button
                   className="mt-4 w-full bg-red-500 text-white py-1 rounded hover:bg-red-600"

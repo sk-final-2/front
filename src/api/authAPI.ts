@@ -2,7 +2,7 @@ import axios from "axios";
 
 export type User = {
     email: string,
-    loginType: 'default' | 'google' | 'kakao',
+    loginType?: 'default' | 'google' | 'kakao',
     // lastLoginTime: string,
     name: string | null,
 }
@@ -28,6 +28,13 @@ export type SignupPayload = {
   zipcode: string;
   address1: string;
   address2: string;
+};
+
+export type UserInfoResponse = {
+  status: number;
+  code: string;
+  message: string;
+  data: User;
 };
 
 // 로그인 Task
@@ -59,5 +66,13 @@ export const kakaoSignupAPI = async (payload: SignupPayload): Promise<LoginRespo
     payload,
     { withCredentials: true }
   );
+  return res.data;
+};
+
+//사용자 정보 불러오기
+export const fetchUserInfo = async (): Promise<UserInfoResponse> => {
+  const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/mypage/info`, {
+    withCredentials: true,
+  });
   return res.data;
 };
