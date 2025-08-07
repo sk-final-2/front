@@ -1,6 +1,7 @@
 "use client";
 
 import UserVideo from "@/components/interview/UserVideo";
+import AudioRecoder from "@/components/media-check/AudioRecoder";
 import CameraMicCheck from "@/components/ready/CameraMicCheck";
 import { useCallback, useEffect, useState } from "react";
 
@@ -97,7 +98,7 @@ const MediaCheckPage = () => {
       // 이 함수를 호출하면 브라우저가 사용자에게 권한 요청 프롬프트를 띄웁니다.
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
-        audio: true,
+        audio: false,
       });
       // 스트림을 얻었다는 것은 권한이 허용되었다는 의미입니다.
       // 즉시 스트림을 닫아 리소스를 해제합니다. (실제 사용은 다른 곳에서)
@@ -113,7 +114,7 @@ const MediaCheckPage = () => {
 
   return (
     // 페이지 컨테이너
-    <div className="container bg-gray-100 h-screen flex flex-col items-center">
+    <div className="bg-gray-100 h-screen flex flex-col items-center">
       <span className="mt-10 text-4xl font-bold">장비 확인 및 테스트</span>
       <span className="mt-10 text-xl">
         면접 시작 전, 카메라와 마이크가 잘 작동하는지 확인해주세요.
@@ -138,9 +139,7 @@ const MediaCheckPage = () => {
             <UserVideo stream={stream} />
           </div>
           {/** 마이크 테스트 + 마이크 볼륨 바 */}
-          <div>
-            <button></button>
-          </div>
+          <AudioRecoder />
 
           {/** 장비 선택 드롭 다운 */}
 
