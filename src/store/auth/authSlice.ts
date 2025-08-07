@@ -6,6 +6,7 @@ import {
   SignupPayload,
   kakaoSignupAPI,
   googleSignupAPI,
+  logoutServerAPI,
   fetchUserInfo,
 } from "@/api/authAPI";
 import axios from "axios";
@@ -90,6 +91,17 @@ export const fetchAndSetUser = createAsyncThunk<
     return rejectWithValue("사용자 정보 가져오기 실패");
   }
 });
+
+export const logoutUser = createAsyncThunk<void, void, { rejectValue: string }>(
+  "auth/logout",
+  async (_, { rejectWithValue }) => {
+    try {
+      await logoutServerAPI(); // ✅ 백엔드에도 로그아웃 요청
+    } catch (err) {
+      return rejectWithValue("백엔드 로그아웃 실패");
+    }
+  },
+);
 
 // 인증 슬라이스
 const authSlice = createSlice({
@@ -218,6 +230,14 @@ const authSlice = createSlice({
         state.user = null;
         state.state = "failed";
         state.error = action.payload || "유저 정보 불러오기 실패";
+      })
+
+      //로그아웃
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+        state.isLoggedIn = false;
+        state.state = "idle";
+        state.error = null;
       });
   },
 });

@@ -76,3 +76,12 @@ export const fetchUserInfo = async (): Promise<UserInfoResponse> => {
   });
   return res.data;
 };
+
+// 로그아웃
+export const logoutServerAPI = async () => {
+  await axios.post(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`,
+    {},
+    { withCredentials: true }
+  );
+};

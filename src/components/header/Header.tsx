@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { logout } from "@/store/auth/authSlice";
+import { logout, logoutUser } from "@/store/auth/authSlice";
 import { useAppDispatch } from "@/hooks/storeHook";
 
 export default function MainHeader() {
@@ -24,12 +24,13 @@ export default function MainHeader() {
 
   const handleLogout = async () => {
     try {
+      await dispatch(logoutUser()).unwrap();
+
       await fetch("/api/logout", {
         method: "POST",
         credentials: "include",
       });
 
-      dispatch(logout());
       router.push("/login");
     } catch (err) {
       console.error("로그아웃 실패:", err);
