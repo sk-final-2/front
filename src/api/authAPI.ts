@@ -1,4 +1,4 @@
-import axios from "axios";
+import axiosInstance from "@/lib/axiosInstance";
 
 export type User = {
     email: string,
@@ -39,7 +39,7 @@ export type UserInfoResponse = {
 
 // 로그인 Task
 export const loginAPI = async (email: string, password: string): Promise<LoginResponse> => {
-    const res = await axios.post(
+    const res = await axiosInstance.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
         { email, password },
         {
@@ -51,7 +51,7 @@ export const loginAPI = async (email: string, password: string): Promise<LoginRe
 
 // Google
 export const googleSignupAPI = async (payload: SignupPayload): Promise<LoginResponse> => {
-  const res = await axios.post(
+  const res = await axiosInstance.post(
     `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google-signup`,
     payload,
     { withCredentials: true }
@@ -61,7 +61,7 @@ export const googleSignupAPI = async (payload: SignupPayload): Promise<LoginResp
 
 // Kakao
 export const kakaoSignupAPI = async (payload: SignupPayload): Promise<LoginResponse> => {
-  const res = await axios.post(
+  const res = await axiosInstance.post(
     `${process.env.NEXT_PUBLIC_API_URL}/api/auth/kakao-signup`,
     payload,
     { withCredentials: true }
@@ -71,7 +71,7 @@ export const kakaoSignupAPI = async (payload: SignupPayload): Promise<LoginRespo
 
 //사용자 정보 불러오기
 export const fetchUserInfo = async (): Promise<UserInfoResponse> => {
-  const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/mypage/info`, {
+  const res = await axiosInstance.get(`${process.env.NEXT_PUBLIC_API_URL}/api/mypage/info`, {
     withCredentials: true,
   });
   return res.data;
@@ -79,7 +79,7 @@ export const fetchUserInfo = async (): Promise<UserInfoResponse> => {
 
 // 로그아웃
 export const logoutServerAPI = async () => {
-  await axios.post(
+  await axiosInstance.post(
     `${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`,
     {},
     { withCredentials: true }

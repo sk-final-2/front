@@ -10,6 +10,7 @@ import {
   fetchUserInfo,
 } from "@/api/authAPI";
 import axios from "axios";
+import axiosInstance from "@/lib/axiosInstance";
 
 interface AuthType {
   isLoggedIn: boolean;
@@ -88,6 +89,15 @@ export const fetchAndSetUser = createAsyncThunk<
     const res = await fetchUserInfo();
     return res.data; // 여기엔 email, name만 있음
   } catch (err) {
+    if (axios.isAxiosError(err) && err.response?.status === 401) {
+      try {
+        await axiosInstance.post("/api/auth/reissue"); // 👈 직접 요청
+        const retry = await fetchUserInfo(); // 👈 재시도
+        return retry.data;
+      } catch (reissueErr) {
+        return rejectWithValue("accessToken 만료 + reissue 실패");
+      }
+    }
     return rejectWithValue("사용자 정보 가져오기 실패");
   }
 });

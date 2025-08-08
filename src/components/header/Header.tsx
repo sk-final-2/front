@@ -31,7 +31,7 @@ export default function MainHeader() {
         credentials: "include",
       });
 
-      router.push("/login");
+      router.push("/");
     } catch (err) {
       console.error("로그아웃 실패:", err);
     }
