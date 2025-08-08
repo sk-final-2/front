@@ -58,13 +58,20 @@ export default function GoogleForm() {
   }, [searchParams]);
 
   const handleAddressSearch = () => {
-    new window.daum.Postcode({
-      oncomplete: function (data: DaumPostcodeData) {
-        setZipcode(data.zonecode);
-        setAddress1(data.roadAddress || data.jibunAddress);
-        addressRef.current?.focus();
-      },
-    }).open();
+    // 현재 환경이 브라우저인지, 그리고 daum 객체가 로드되었는지 확인합니다.
+    if (typeof window !== "undefined" && window.daum) {
+      new window.daum.Postcode({
+        oncomplete: function (data: DaumPostcodeData) {
+          setZipcode(data.zonecode);
+          setAddress1(data.roadAddress || data.jibunAddress);
+          addressRef.current?.focus(); // 상세 주소 필드로 포커스 이동
+        },
+      }).open();
+    } else {
+      // 스크립트가 로드되지 않았거나 서버 환경일 경우의 예외 처리
+      console.error("Daum Postcode script is not loaded.");
+      alert("주소 찾기 서비스를 일시적으로 사용할 수 없습니다.");
+    }
   };
 
   const handleSubmit = async () => {

@@ -8,7 +8,7 @@ import LanguageSelectComponent from "@/components/ready/LanguageSelectComponent"
 import QuestionCountDropdown from "@/components/ready/QuestionCountDropdown";
 import ReadyStepBar from "@/components/ready/readyStepBar";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
-import { bodyData, getFQuestion } from "@/store/interview/interveiwSlice";
+import { bodyData, getFirstQuestion } from "@/store/interview/interveiwSlice";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -172,7 +172,7 @@ const ReadyPage = () => {
         seq: 1,
       };
 
-      dispatch(getFQuestion(bodyData));
+      dispatch(getFirstQuestion(bodyData));
     } catch (error) {
       console.error(error);
     }

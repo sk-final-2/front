@@ -1,58 +1,58 @@
 "use client";
 
 import axios from "axios";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
+import { AnswerType } from "../../store/interview/interveiwSlice";
 import RecordingControls from "@/components/interview/RecordingControls";
 import DeviceSettings from "@/components/interview/DeviceSettings";
 import QuestionDisplay from "@/components/interview/QuestionDisplay";
 import UserVideo from "@/components/interview/UserVideo";
 import InterviewerView from "@/components/interview/InterviewerView";
-import { useSearchParams } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
+import { getNextQuestion } from "@/store/interview/interveiwSlice";
 
 export default function InterviewPage() {
+  // 클라이언트 환경인지 확인하는 상태 추가
+  const [isClient, setIsClient] = useState(false);
+
+  // 전역 상태 불러오기
+  const dispatch = useAppDispatch();
+  const { currentQuestion, status, error, interviewId, currentSeq } =
+    useAppSelector((state) => state.interview);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [questionStarted, setQuestionStarted] = useState(false);
   const [interviewPaused, setInterviewPaused] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [currentSeq, setCurrentSeq] = useState(1);
+  // const [currentSeq, setCurrentSeq] = useState(1);
   // 면접 id 상
-  const [interviewId, setInterviewId] = useState(1);
+  // const [interviewId, setInterviewId] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   // 질문 리스트 상태
   const [questionList, setQuestionList] = useState<string[]>([]);
   // ✅ 미디어 오류 상태 추가
   const [mediaError, setMediaError] = useState<string | null>(null);
 
-  // 쿼리
-  const searchParams = useSearchParams();
-
   const submitInProgressRef = useRef(false); // ✅ 중복 제출 방지용 ref
 
-  // 쿼리 가져오기
+  // 컴포넌트가 마운트되면 isClient 상태를 true로 변경
   useEffect(() => {
-    const dataParam = searchParams.get("data");
-    if (dataParam) {
-      try {
-        // URL 디코딩 후 JSON 객체로 파싱
-        const decodedData = decodeURIComponent(dataParam);
-        const parsedData = JSON.parse(decodedData);
-        setInterviewId(parsedData.interviewId);
-        setQuestionList((prev) => [...prev, parsedData.question]);
-        setCurrentSeq(parsedData.seq);
-      } catch (error) {
-        console.error("면접 데이터 파싱 오류:", error);
-      }
-    }
-  }, [searchParams]);
+    setIsClient(true);
+  }, []);
 
   // 사용자 카메라 스트림 가져오기 (오류 처리 강화)
   useEffect(() => {
+    // isClient가 true일 때만 미디어 장치에 접근
+    if (!isClient) {
+      return;
+    }
+
     const getStream = async () => {
       try {
         const media = await navigator.mediaDevices.getUserMedia({
           video: true,
-          audio: false, // 인터뷰이므로 오디오도 요청
+          audio: true, // 인터뷰이므로 오디오도 요청
         });
         setStream(media);
         setQuestionStarted(true);
@@ -92,7 +92,7 @@ export default function InterviewPage() {
     return () => {
       stream?.getTracks().forEach((track) => track.stop());
     };
-  }, []); // 최초 한 번만 실행
+  }, [isClient]); // 최초 한 번만 실행
 
   // 다음 질문 진행
   const goToNextQuestion = () => {
@@ -123,7 +123,7 @@ export default function InterviewPage() {
     const formData = new FormData();
     formData.append("file", file); // 백엔드 명세에 맞춰 'file'로!
     formData.append("seq", currentSeq.toString()); // 질문 순서
-    formData.append("interviewId", interviewId.toString()); // 인터뷰 고유 ID
+    formData.append("interviewId", interviewId); // 인터뷰 고유 ID
     console.log("🧠 currentIndex:", currentIndex);
     console.log("🧠 questionList:", questionList);
     console.log("🧠 현재 질문:", questionList[currentIndex]);
@@ -141,35 +141,21 @@ export default function InterviewPage() {
     for (const [key, value] of formData.entries()) {
       console.log("🧾 FormData:", key, value);
     }
-
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/interview/answer`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          withCredentials: true,
-        },
-      );
+      dispatch(getNextQuestion(formData));
 
-      console.log("✅ 제출 성공:", response.data);
+      const newQuestion = currentQuestion;
 
-      const newQuestion = response.data?.data?.newQuestion;
+      setQuestionList((prev) => [...prev, newQuestion]); // ✅ 질문 추가
+      setCurrentIndex((prev) => prev + 1); // ✅ 다음 질문 이동
+      // 다음 질문 받아오기
+      setQuestionStarted(false);
+      setTimeout(() => setQuestionStarted(true), 500); // ✅ 타이머 재시작
 
-      if (typeof newQuestion === "string") {
-        setQuestionList((prev) => [...prev, newQuestion]); // ✅ 질문 추가
-        setCurrentIndex((prev) => prev + 1); // ✅ 다음 질문 이동
-        setCurrentSeq((prev) => prev + 1); // ✅ seq 증가
-        setQuestionStarted(false);
-        setTimeout(() => setQuestionStarted(true), 500); // ✅ 타이머 재시작
-      } else {
-        alert("다음 질문을 받아오지 못했습니다.");
-      }
       goToNextQuestion(); // 다음 질문으로 진행
     } catch (err) {
       console.error("❌ 제출 실패:", err);
+      console.error(error);
     } finally {
       // goToNextQuestion(); // ✅ 다음 질문으로는 무조건 진행 (테스트 상황) 나중엔 지울 예정
       setIsSubmitting(false);
@@ -199,6 +185,13 @@ export default function InterviewPage() {
     }
   };
 
+  if (!isClient) {
+    // 또는 스켈레톤 UI를 보여줄 수 있습니다.
+    return (
+      <div className="p-8 text-center">면접 환경을 불러오는 중입니다...</div>
+    );
+  }
+
   // 미디어 장치 오류가 있을 경우, 해당 UI 렌더링
   if (mediaError) {
     return (
@@ -218,46 +211,51 @@ export default function InterviewPage() {
   }
 
   return (
-    <div className="p-8 space-y-4">
-      {/* 질문 표시 */}
-      <QuestionDisplay question={questionList[currentIndex]} />
+    <Suspense>
+      <div className="p-8 space-y-4">
+        {/* 질문 표시 */}
+        <QuestionDisplay question={questionList[currentIndex]} />
 
-      <div className="flex gap-4">
-        {/* 면접관 더미 */}
-        <div className="flex-[3]">
-          <InterviewerView />
-        </div>
+        <div className="flex gap-4">
+          {/* 면접관 더미 */}
+          <div className="flex-[3]">
+            <InterviewerView />
+          </div>
 
-        {/* 우측 */}
-        <div className="flex-[2] flex flex-col gap-2 items-center">
-          <UserVideo stream={stream} />
-          <DeviceSettings stream={stream} onDeviceToggle={handleDeviceToggle} />
-          {!interviewPaused ? (
-            <RecordingControls
+          {/* 우측 */}
+          <div className="flex-[2] flex flex-col gap-2 items-center">
+            <UserVideo stream={stream} />
+            <DeviceSettings
               stream={stream}
-              questionStarted={questionStarted}
-              onAutoSubmit={handleSubmit}
-              onManualSubmit={handleSubmit}
+              onDeviceToggle={handleDeviceToggle}
             />
-          ) : (
-            <div className="text-red-500 text-sm mt-2">
-              녹화가 일시 중지되었습니다. 카메라/마이크를 다시 켜주세요.
-            </div>
-          )}
-          {previewUrl && (
-            <div className="mt-4 w-full max-w-md">
-              <p className="text-sm text-gray-500 mb-1">
-                🎞️ 녹화된 영상 미리보기
-              </p>
-              <video
-                src={previewUrl}
-                controls
-                className="w-full aspect-video rounded border shadow"
+            {!interviewPaused ? (
+              <RecordingControls
+                stream={stream}
+                questionStarted={questionStarted}
+                onAutoSubmit={handleSubmit}
+                onManualSubmit={handleSubmit}
               />
-            </div>
-          )}
+            ) : (
+              <div className="text-red-500 text-sm mt-2">
+                녹화가 일시 중지되었습니다. 카메라/마이크를 다시 켜주세요.
+              </div>
+            )}
+            {previewUrl && (
+              <div className="mt-4 w-full max-w-md">
+                <p className="text-sm text-gray-500 mb-1">
+                  🎞️ 녹화된 영상 미리보기
+                </p>
+                <video
+                  src={previewUrl}
+                  controls
+                  className="w-full aspect-video rounded border shadow"
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </Suspense>
   );
 }
