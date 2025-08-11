@@ -25,11 +25,13 @@ export default function MainHeader() {
   const handleLogout = async () => {
     try {
       await dispatch(logoutUser()).unwrap();
+      console.log("백 로그아웃");
 
       await fetch("/api/logout", {
         method: "POST",
         credentials: "include",
       });
+      console.log("프론트 로그아웃");
 
       router.push("/");
     } catch (err) {

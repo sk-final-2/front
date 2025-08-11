@@ -81,23 +81,14 @@ export const googleSignup = createAsyncThunk<
 
 // 사용자 정보 불러오기
 export const fetchAndSetUser = createAsyncThunk<
-  User, // fulfilled payload
+  User,
   void,
   { rejectValue: string }
 >("auth/fetchUser", async (_, { rejectWithValue }) => {
   try {
     const res = await fetchUserInfo();
-    return res.data; // 여기엔 email, name만 있음
+    return res.data;
   } catch (err) {
-    if (axios.isAxiosError(err) && err.response?.status === 401) {
-      try {
-        await axiosInstance.post("/api/auth/reissue"); // 👈 직접 요청
-        const retry = await fetchUserInfo(); // 👈 재시도
-        return retry.data;
-      } catch (reissueErr) {
-        return rejectWithValue("accessToken 만료 + reissue 실패");
-      }
-    }
     return rejectWithValue("사용자 정보 가져오기 실패");
   }
 });
@@ -236,10 +227,12 @@ const authSlice = createSlice({
         state.state = "successed";
         state.error = null;
       })
-      .addCase(fetchAndSetUser.rejected, (state, action) => {
+      .addCase(fetchAndSetUser.rejected, (state) => {
+        // 굳이 failed로 만들 필요 없음. 로그인 안 된 기본상태로 돌려두기
         state.user = null;
-        state.state = "failed";
-        state.error = action.payload || "유저 정보 불러오기 실패";
+        state.isLoggedIn = false;
+        state.state = "idle";
+        state.error = null;
       })
 
       //로그아웃
