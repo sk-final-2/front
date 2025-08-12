@@ -6,16 +6,13 @@ export const makeStore = () =>
   configureStore({
     reducer: {
       auth: authSlice,
-      question: questionSlice,
-    interview: interviewSlice,
-
+      interview: interviewSlice,
     },
   });
-
 
 // 타입 정의도 함께 export
 export type AppStore = ReturnType<typeof makeStore>;
 export type RootState = ReturnType<AppStore["getState"]>;
 export type AppDispatch = AppStore["dispatch"];
 
-export default store;
+export default makeStore;
