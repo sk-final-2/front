@@ -1,12 +1,16 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   loginAPI,
   User,
+  LoginResponse,
   SignupPayload,
   kakaoSignupAPI,
   googleSignupAPI,
+  logoutServerAPI,
+  fetchUserInfo,
 } from "@/api/authAPI";
 import axios from "axios";
+import axiosInstance from "@/lib/axiosInstance";
 
 interface AuthType {
   isLoggedIn: boolean;
@@ -25,13 +29,12 @@ const initialState: AuthType = {
 
 // 기본 로그인 액션
 export const loginUser = createAsyncThunk<
-  User,
+  LoginResponse, // ✅ fulfilled action.payload
   { email: string; password: string },
   { rejectValue: string }
 >("auth/login", async ({ email, password }, { rejectWithValue }) => {
   try {
-    const user = await loginAPI(email, password);
-    return user;
+    return await loginAPI(email, password);
   } catch (error) {
     if (axios.isAxiosError(error)) {
       return rejectWithValue(error.response?.data?.message || "로그인 실패");
@@ -42,7 +45,7 @@ export const loginUser = createAsyncThunk<
 
 // 카카오 로그인 액션
 export const kakaoSignup = createAsyncThunk<
-  User,
+  LoginResponse,
   SignupPayload,
   { rejectValue: string }
 >("auth/kakaoSignup", async (payload, { rejectWithValue }) => {
@@ -51,7 +54,7 @@ export const kakaoSignup = createAsyncThunk<
   } catch (error) {
     if (axios.isAxiosError(error)) {
       return rejectWithValue(
-        error.response?.data?.message || "카카오 회원가입 실패",
+        error.response?.data?.message || "카카오 로그인 실패",
       );
     }
     return rejectWithValue("알 수 없는 에러가 발생했습니다.");
@@ -60,7 +63,7 @@ export const kakaoSignup = createAsyncThunk<
 
 // 구글 로그인 액션
 export const googleSignup = createAsyncThunk<
-  User,
+  LoginResponse,
   SignupPayload,
   { rejectValue: string }
 >("auth/googleSignup", async (payload, { rejectWithValue }) => {
@@ -69,12 +72,37 @@ export const googleSignup = createAsyncThunk<
   } catch (error) {
     if (axios.isAxiosError(error)) {
       return rejectWithValue(
-        error.response?.data?.message || "구글 회원가입 실패",
+        error.response?.data?.message || "구글 로그인 실패",
       );
     }
     return rejectWithValue("알 수 없는 에러가 발생했습니다.");
   }
 });
+
+// 사용자 정보 불러오기
+export const fetchAndSetUser = createAsyncThunk<
+  User,
+  void,
+  { rejectValue: string }
+>("auth/fetchUser", async (_, { rejectWithValue }) => {
+  try {
+    const res = await fetchUserInfo();
+    return res.data;
+  } catch (err) {
+    return rejectWithValue("사용자 정보 가져오기 실패");
+  }
+});
+
+export const logoutUser = createAsyncThunk<void, void, { rejectValue: string }>(
+  "auth/logout",
+  async (_, { rejectWithValue }) => {
+    try {
+      await logoutServerAPI(); // ✅ 백엔드에도 로그아웃 요청
+    } catch (err) {
+      return rejectWithValue("백엔드 로그아웃 실패");
+    }
+  },
+);
 
 // 인증 슬라이스
 const authSlice = createSlice({
@@ -85,6 +113,27 @@ const authSlice = createSlice({
       state.user = null;
       state.isLoggedIn = false;
       state.state = "idle";
+      state.error = null;
+    },
+    setInitialAuth: (state, action: PayloadAction<string>) => {
+      state.isLoggedIn = true;
+      state.user = null; // accessToken만 있는 초기 상태
+      state.state = "successed";
+      state.error = null;
+      // 필요하다면 아래에 accessToken 저장하는 필드 따로 만들 수도 있음
+      // state.accessToken = action.payload;
+    },
+    setUserFromSocial: (
+      state,
+      action: PayloadAction<{
+        email: string;
+        name: string;
+        loginType: "default" | "google" | "kakao";
+      }>,
+    ) => {
+      state.user = action.payload;
+      state.isLoggedIn = true;
+      state.state = "successed";
       state.error = null;
     },
   },
@@ -98,23 +147,43 @@ const authSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.state = "successed";
         state.isLoggedIn = true;
-        state.user = action.payload;
+
+        const rawUser = action.payload.data;
+
+        state.user = {
+          email: rawUser.email,
+          name: rawUser.name,
+          loginType:
+            rawUser.provider === "LOCAL"
+              ? "default"
+              : (rawUser.provider.toLowerCase() as "google" | "kakao"),
+        };
+
         state.error = null;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.state = "failed";
         state.error = action.payload || "로그인 실패";
       })
-      
+
       // 카카오 회원가입 처리
       .addCase(kakaoSignup.pending, (state) => {
         state.state = "loading";
         state.error = null;
       })
       .addCase(kakaoSignup.fulfilled, (state, action) => {
+        const rawUser = action.payload.data;
+
         state.state = "successed";
         state.isLoggedIn = true;
-        state.user = action.payload;
+        state.user = {
+          email: rawUser.email,
+          name: rawUser.name,
+          loginType:
+            rawUser.provider === "LOCAL"
+              ? "default"
+              : (rawUser.provider.toLowerCase() as "google" | "kakao"),
+        };
         state.error = null;
       })
       .addCase(kakaoSignup.rejected, (state, action) => {
@@ -128,17 +197,53 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(googleSignup.fulfilled, (state, action) => {
+        const rawUser = action.payload.data;
+
         state.state = "successed";
         state.isLoggedIn = true;
-        state.user = action.payload;
+        state.user = {
+          email: rawUser.email,
+          name: rawUser.name,
+          loginType:
+            rawUser.provider === "LOCAL"
+              ? "default"
+              : (rawUser.provider.toLowerCase() as "google" | "kakao"),
+        };
         state.error = null;
       })
       .addCase(googleSignup.rejected, (state, action) => {
         state.state = "failed";
         state.error = action.payload || "구글 회원가입 실패";
+      })
+
+      //새로고침할 때 유저 정보 불러오기
+      .addCase(fetchAndSetUser.fulfilled, (state, action) => {
+        state.user = {
+          email: action.payload.email,
+          name: action.payload.name,
+          loginType: "default", //다시 요청해서 불러올 때는 provider 정보가 없기 때문에 기본값 처리
+        };
+        state.isLoggedIn = true;
+        state.state = "successed";
+        state.error = null;
+      })
+      .addCase(fetchAndSetUser.rejected, (state) => {
+        // 굳이 failed로 만들 필요 없음. 로그인 안 된 기본상태로 돌려두기
+        state.user = null;
+        state.isLoggedIn = false;
+        state.state = "idle";
+        state.error = null;
+      })
+
+      //로그아웃
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+        state.isLoggedIn = false;
+        state.state = "idle";
+        state.error = null;
       });
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, setInitialAuth, setUserFromSocial } = authSlice.actions;
 export default authSlice.reducer;

@@ -51,6 +51,8 @@ export default function KakaoForm() {
   const authState = useAppSelector((state) => state.auth.state);
   const error = useAppSelector((state) => state.auth.error);
 
+  const prevStateRef = useRef(authState);
+
   useEffect(() => {
     const name = searchParams.get("name") ?? "";
     const email = searchParams.get("email") ?? "";
@@ -83,14 +85,22 @@ export default function KakaoForm() {
   };
 
   useEffect(() => {
-    if (authState === "successed") {
-      router.push("/");
-    }
+  if (
+    prevStateRef.current === "loading" &&
+    authState === "successed"
+  ) {
+    router.push("/");
+  }
 
-    if (authState === "failed") {
-      alert(error || "회원가입 중 오류가 발생했습니다.");
-    }
-  }, [authState, error, router]);
+  if (
+    prevStateRef.current === "loading" &&
+    authState === "failed"
+  ) {
+    alert(error || "회원가입 중 오류가 발생했습니다.");
+  }
+
+  prevStateRef.current = authState;
+}, [authState, error, router]);
 
   return (
     <div className="flex flex-col md:flex-row min-h-[90vh] max-w-6xl mx-auto rounded-2xl shadow-lg bg-white">

@@ -50,6 +50,8 @@ export default function GoogleForm() {
   const authState = useAppSelector((state) => state.auth.state);
   const error = useAppSelector((state) => state.auth.error);
 
+  const prevStateRef = useRef(authState);
+
   useEffect(() => {
     const name = searchParams.get("name") ?? "";
     const email = searchParams.get("email") ?? "";
@@ -89,12 +91,21 @@ export default function GoogleForm() {
   };
 
   useEffect(() => {
-    if (authState === "successed") {
+    if (
+      prevStateRef.current === "loading" &&
+      authState === "successed"
+    ) {
       router.push("/");
     }
-    if (authState === "failed") {
+  
+    if (
+      prevStateRef.current === "loading" &&
+      authState === "failed"
+    ) {
       alert(error || "회원가입 중 오류가 발생했습니다.");
     }
+  
+    prevStateRef.current = authState;
   }, [authState, error, router]);
 
   return (
