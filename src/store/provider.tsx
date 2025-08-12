@@ -4,23 +4,28 @@
 import { Provider } from "react-redux";
 import { makeStore } from "@/store/store";
 import type { AppStore } from "@/store/store";
-import { setInitialAuth, fetchAndSetUser } from "@/store/auth/authSlice";
-import { useRef, useEffect } from "react";
+import { fetchAndSetUser, setInitialAuth } from "@/store/auth/authSlice";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+import api from "@/lib/axiosInstance";
+
+const REISSUE_PATH = "/api/auth/reissue"; // ⚠ baseURL이 "/api"면 "/auth/reissue"로 바꾸세요.
 
 export function ReduxProvider({
   children,
-  accessToken,
+  accessToken, // SSR 등에서 초기 로그인 상태를 넘겨주는 용도면 남겨둠
 }: {
   children: React.ReactNode;
   accessToken?: string;
 }) {
   const storeRef = useRef<AppStore | null>(null);
   const pathname = usePathname();
+  const triedRef = useRef(false); // 이 라우트 진입에서 reissue를 한 번만 시도
 
   if (!storeRef.current) {
     storeRef.current = makeStore();
     if (accessToken) {
+      // 기존 로직 유지(선택). accessToken을 더 이상 안 쓴다면 이 부분 제거해도 됨.
       storeRef.current.dispatch(setInitialAuth(accessToken));
     }
   }
@@ -28,32 +33,31 @@ export function ReduxProvider({
   useEffect(() => {
     if (!storeRef.current) return;
 
-    const publicPrefixes = [
-      "/login",
-      "/oauth/success",
-      "/kakao-signup",
-      "/google-signup",
-    ]; //여기서는 유저 정보 조회 안하도록
-    const isPublic = publicPrefixes.some((p) => pathname.startsWith(p));
-    if (isPublic) return;
+    // 공개 라우트에서는 아무 것도 안 함
+    const publicPrefixes = ["/login", "/oauth/success", "/kakao-signup", "/google-signup"];
+    if (publicPrefixes.some((p) => pathname.startsWith(p))) return;
 
-    const state = storeRef.current.getState();
-    const isLoggedIn = state.auth.isLoggedIn; // 로그인 안한 상황에서는 메인에서도 유저 정보 조회 안하도록
-    if (!isLoggedIn) return;
-
-    storeRef.current.dispatch(fetchAndSetUser());
+    // 라우트 진입 시 1회: 조용히 reissue 시도
+    //  - accessToken 쿠키가 사라진 상태여도, rtid 쿠키만 살아있다면 서버가 새 토큰을 Set-Cookie로 내려줌
+    //  - 실패해도 그냥 넘기고, 다음 fetchAndSetUser에서 401 나면 인터셉터가 한 번 더 시도함
+    if (!triedRef.current) {
+      triedRef.current = true;
+      (async () => {
+        try {
+          await api.post(REISSUE_PATH);
+        } catch {
+          // 실패는 조용히 무시(하드 만료면 아래 fetch에서 401 → 인터셉터/로그아웃 처리)
+        } finally {
+          // 💡 이전처럼 isLoggedIn 가드 두지 말고 무조건 호출:
+          //    - 새로고침 후 isLoggedIn=false라도 호출되어 401을 유도 → 인터셉터가 /reissue를 실행
+          storeRef.current!.dispatch(fetchAndSetUser());
+        }
+      })();
+    } else {
+      // 같은 라우트에서 다시 렌더되면 바로 사용자 정보만 가져오도록
+      storeRef.current.dispatch(fetchAndSetUser());
+    }
   }, [pathname]);
-
-  // 로그 확인 - store에 있는 정보 확인 용도(이후 삭제 예정)
-  // useEffect(() => {
-  //   if (!storeRef.current) return;
-
-  //   const unsubscribe = storeRef.current.subscribe(() => {
-  //     console.log("현재 Redux 상태:", storeRef.current!.getState());
-  //   });
-
-  //   return unsubscribe;
-  // }, []);
 
   return <Provider store={storeRef.current}>{children}</Provider>;
 }
