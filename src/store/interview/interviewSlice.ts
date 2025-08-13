@@ -1,6 +1,16 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import axiosInstance from "@/lib/axiosInstance"; // ✅ 통일: 인터셉터/쿠키 사용
 import type { InterviewType, LanguageType, LevelType } from "@/app/ready/page";
+import type { AxiosRequestHeaders } from "axios";
+import { isAxiosError } from "axios";
+
+// 서버 에러 바디 타입(프로젝트 응답 규격에 맞게 필요시 확장)
+interface ApiErrorBody {
+  status?: number;
+  code?: string;
+  message?: string;
+  data?: unknown;
+}
 
 // 요청 body 형식
 export type bodyData = {
@@ -73,8 +83,13 @@ export const getFirstQuestion = createAsyncThunk<
     );
     if (res.data.code === "SUCCESS") return res.data;
     return rejectWithValue(res.data.message || "API 통신 오류");
-  } catch (err: any) {
-    const msg = err?.response?.data?.message || err?.message || "첫 질문 실패";
+  } catch (err: unknown) {
+    let msg = "첫 질문 실패";
+    if (isAxiosError<ApiErrorBody>(err)) {
+      msg = err.response?.data?.message ?? err.message ?? msg;
+    } else if (err instanceof Error) {
+      msg = err.message;
+    }
     return rejectWithValue(msg);
   }
 });
@@ -93,24 +108,36 @@ export const getNextQuestion = createAsyncThunk<
         withCredentials: true,
         signal,
         headers: {
-          // ✅ 명시 (인터셉터에서 제거해놨으니 axios가 boundary 자동 세팅)
+          // 인터셉터가 FormData면 자동으로 삭제 → boundary 포함 헤더 설정
           "Content-Type": "multipart/form-data",
         },
       }
     );
     if (res.data.code === "SUCCESS") return res.data;
     return rejectWithValue(res.data.message || "API 통신 오류");
-  } catch (err: any) {
-    const status = err?.response?.status;
-    const data = err?.response?.data;
-    const headers = err?.response?.headers;
-    const reqHeaders = err?.config?.headers; // ✅ 요청 헤더도 확인
-    console.error("❌ [answer:error] status:", status); // [DELETE-ME LOG]
-    console.error("❌ [answer:error] data:", data);     // [DELETE-ME LOG]
-    console.error("❌ [answer:error] headers:", headers);// [DELETE-ME LOG]
-    console.error("❌ [answer:error] reqHeaders:", reqHeaders); // [DELETE-ME LOG]
-    const msg = data?.message || err?.message || "다음 질문 실패";
-    return rejectWithValue(msg);
+  } catch (err: unknown) {
+    // 타입 안전한 로깅 & 메시지 추출
+    if (isAxiosError<ApiErrorBody>(err)) {
+      const status = err.response?.status;
+      const data = err.response?.data;
+      const headers = err.response?.headers as Record<string, unknown> | undefined;
+      const reqHeaders = err.config?.headers as AxiosRequestHeaders | undefined;
+
+      console.error("❌ [answer:error] status:", status); // [DELETE-ME LOG]
+      console.error("❌ [answer:error] data:", data);     // [DELETE-ME LOG]
+      console.error("❌ [answer:error] headers:", headers);// [DELETE-ME LOG]
+      console.error("❌ [answer:error] reqHeaders:", reqHeaders); // [DELETE-ME LOG]
+
+      const msg = data?.message ?? err.message ?? "다음 질문 실패";
+      return rejectWithValue(msg);
+    }
+
+    if (err instanceof Error) {
+      console.error("❌ [answer:error] non-axios:", err); // [DELETE-ME LOG]
+      return rejectWithValue(err.message);
+    }
+
+    return rejectWithValue("다음 질문 실패");
   }
 });
 
@@ -121,8 +148,8 @@ const interviewSlice = createSlice({
     resetInterview: () => initialState,
   },
   extraReducers: (builder) => {
-    // 첫 질문
     builder
+      // 첫 질문
       .addCase(getFirstQuestion.pending, (state) => {
         state.status = "pending";
         state.error = null;
@@ -141,10 +168,9 @@ const interviewSlice = createSlice({
       .addCase(getFirstQuestion.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload || "첫 질문 가져오기 실패";
-      });
-
-    // 답변 업로드(업로드 상태) + 다음 질문(질문 상태)
-    builder
+      })
+      
+      // 답변 업로드(업로드 상태) + 다음 질문(질문 상태)
       .addCase(getNextQuestion.pending, (state) => {
         state.uploadStatus = "loading"; // ✅ 업로드 상태만 로딩으로
         state.error = null;

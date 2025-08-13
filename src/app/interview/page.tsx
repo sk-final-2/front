@@ -16,6 +16,13 @@ import QuestionDisplay from "@/components/interview/QuestionDisplay";
 import UserVideo from "@/components/interview/UserVideo";
 import InterviewerView from "@/components/interview/InterviewerView";
 
+/** 에러 메시지 안전 변환 */
+function toErrorMessage(err: unknown): string {
+  if (typeof err === "string") return err;
+  if (err instanceof Error) return err.message;
+  return "알 수 없는 오류가 발생했습니다.";
+}
+
 export default function InterviewPage() {
   const dispatch = useAppDispatch();
   const { currentQuestion, interviewId, currentSeq } = useAppSelector(
@@ -88,13 +95,29 @@ export default function InterviewPage() {
         console.log("🧠 [Init] interviewId:", interviewId); // [DELETE-ME LOG]
         console.log("🧠 [Init] currentSeq:", currentSeq); // [DELETE-ME LOG]
         console.log("🧠 [Init] currentQuestion:", currentQuestion); // [DELETE-ME LOG]
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("❌ 미디어 장치 접근 오류:", err); // [DELETE-ME LOG]
-        alert(
-          err?.name === "NotAllowedError"
-            ? "카메라/마이크 권한을 허용해주세요."
-            : "카메라/마이크 접근 중 오류가 발생했습니다."
-        );
+
+        // DOMException 세부 분기 (타입 안전)
+        if (err instanceof DOMException) {
+          const name = err.name;
+          if (name === "NotFoundError") {
+            alert("연결된 카메라/마이크를 찾을 수 없습니다.");
+            return;
+          }
+          if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+            alert("카메라/마이크 권한을 허용해주세요.");
+            return;
+          }
+          if (name === "NotReadableError") {
+            alert("장치를 사용할 수 없습니다. 다른 프로그램에서 사용 중인지 확인해주세요.");
+            return;
+          }
+          alert(`미디어 장치 오류가 발생했습니다: ${err.message}`);
+          return;
+        }
+
+        alert(toErrorMessage(err));
       }
     })();
 
@@ -167,13 +190,14 @@ export default function InterviewPage() {
       setTimeout(() => setQuestionStarted(true), 400);
 
       console.log("🧭 [Post] expected next seq:", currentSeq + 1); // [DELETE-ME LOG]
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("❌ [Dispatch Failed] 제출/다음 질문 오류:", e); // [DELETE-ME LOG]
-      alert(typeof e === "string" ? e : "제출 중 오류가 발생했습니다.");
+      alert(toErrorMessage(e));
     } finally {
       submitInProgressRef.current = false;
     }
   };
+
 
   if (!isClient) {
     return <div className="p-8 text-center">면접 환경을 불러오는 중입니다...</div>;
