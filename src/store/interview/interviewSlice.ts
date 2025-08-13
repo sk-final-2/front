@@ -3,7 +3,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
 
 // 요청 body 형식
-export type bodyData = {
+export type firstQuestionBody = {
   job: string | null;
   count: number;
   ocrText: string | null;
@@ -47,9 +47,9 @@ const initialState: InterviewState = {
 // 첫 질문 받아오기 액션
 export const getFirstQuestion = createAsyncThunk<
   FirstQuestionResponse,
-  bodyData,
+  firstQuestionBody,
   { rejectValue: string }
->("get/firstQuestion", async (body: bodyData, { rejectWithValue }) => {
+>("get/firstQuestion", async (body: firstQuestionBody, { rejectWithValue }) => {
   try {
     const response = await axios.post<FirstQuestionResponse>(
       `${process.env.NEXT_PUBLIC_API_URL}/api/interview/first-question`,
@@ -134,7 +134,7 @@ const interviewSlice = createSlice({
   initialState,
   reducers: {
     // 면접 상태를 초기화하는 액션
-    resetInterview: (state) => {
+    clearInterview: (state) => {
       state.interviewId = "";
       state.currentQuestion = "";
       state.currentSeq = 0;
@@ -191,7 +191,7 @@ const interviewSlice = createSlice({
 });
 
 // 생성된 액션을 export 합니다.
-export const { resetInterview } = interviewSlice.actions;
+export const { clearInterview: resetInterview } = interviewSlice.actions;
 
 // 슬라이스의 리듀서를 export 합니다.
 export default interviewSlice.reducer;
