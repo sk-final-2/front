@@ -49,7 +49,8 @@ const DocumentUploadForm = ({
           });
           const res = await client.post("/api/interview/ocr", formData);
           if (res.status === 200) {
-            handleFileText(res.data.ocrOutPut);
+            console.log(res)
+            handleFileText(res.data.data.ocrOutput);
             setFileName(file.name);
             onUploadComplete(file);
           } else {
