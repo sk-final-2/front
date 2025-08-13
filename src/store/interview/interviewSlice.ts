@@ -71,7 +71,7 @@ export const getFirstQuestion = createAsyncThunk<
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       // 서버에서 보낸 에러 메시지를 reject 값으로 사용
-      return rejectWithValue(error.response.data.message || "알 수 없는 오");
+      return rejectWithValue(error.response.data.message || "알 수 없는 오류");
     }
     // 그 외의 경우 일반 에러 메시지 사용
     return rejectWithValue((error as Error).message);
@@ -121,7 +121,7 @@ export const getNextQuestion = createAsyncThunk<
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       // 서버에서 보낸 에러 메시지를 reject 값으로 사용
-      return rejectWithValue(error.response.data.message || "알 수 없는 오");
+      return rejectWithValue(error.response.data.message || "알 수 없는 오류");
     }
     // 그 외의 경우 일반 에러 메시지 사용
     return rejectWithValue((error as Error).message);

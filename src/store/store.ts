@@ -1,4 +1,4 @@
-import interviewSlice from "./interview/interveiwSlice";
+import interviewSlice from "./interview/interviewSlice";
 import authSlice from "@/store/auth/authSlice";
 import { configureStore } from "@reduxjs/toolkit";
 

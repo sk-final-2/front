@@ -2,14 +2,14 @@
 
 import axios from "axios";
 import { useEffect, useState, useRef, Suspense } from "react";
-import { AnswerType } from "../../store/interview/interveiwSlice";
+import { AnswerType } from "../../store/interview/interviewSlice";
 import RecordingControls from "@/components/interview/RecordingControls";
 import DeviceSettings from "@/components/interview/DeviceSettings";
 import QuestionDisplay from "@/components/interview/QuestionDisplay";
 import UserVideo from "@/components/interview/UserVideo";
 import InterviewerView from "@/components/interview/InterviewerView";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
-import { getNextQuestion } from "@/store/interview/interveiwSlice";
+import { getNextQuestion } from "@/store/interview/interviewSlice";
 
 export default function InterviewPage() {
   // 클라이언트 환경인지 확인하는 상태 추가

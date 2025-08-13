@@ -8,7 +8,7 @@ import LanguageSelectComponent from "@/components/ready/LanguageSelectComponent"
 import QuestionCountDropdown from "@/components/ready/QuestionCountDropdown";
 import ReadyStepBar from "@/components/ready/readyStepBar";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
-import { bodyData, getFirstQuestion } from "@/store/interview/interveiwSlice";
+import { bodyData, getFirstQuestion } from "@/store/interview/interviewSlice";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
