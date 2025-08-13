@@ -89,12 +89,27 @@ export const getNextQuestion = createAsyncThunk<
     const res = await axiosInstance.post<ResponseData>(
       "/api/interview/answer",
       formData,
-      { withCredentials: true, signal }
+      {
+        withCredentials: true,
+        signal,
+        headers: {
+          // ✅ 명시 (인터셉터에서 제거해놨으니 axios가 boundary 자동 세팅)
+          "Content-Type": "multipart/form-data",
+        },
+      }
     );
     if (res.data.code === "SUCCESS") return res.data;
     return rejectWithValue(res.data.message || "API 통신 오류");
   } catch (err: any) {
-    const msg = err?.response?.data?.message || err?.message || "다음 질문 실패";
+    const status = err?.response?.status;
+    const data = err?.response?.data;
+    const headers = err?.response?.headers;
+    const reqHeaders = err?.config?.headers; // ✅ 요청 헤더도 확인
+    console.error("❌ [answer:error] status:", status); // [DELETE-ME LOG]
+    console.error("❌ [answer:error] data:", data);     // [DELETE-ME LOG]
+    console.error("❌ [answer:error] headers:", headers);// [DELETE-ME LOG]
+    console.error("❌ [answer:error] reqHeaders:", reqHeaders); // [DELETE-ME LOG]
+    const msg = data?.message || err?.message || "다음 질문 실패";
     return rejectWithValue(msg);
   }
 });
