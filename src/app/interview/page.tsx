@@ -10,11 +10,13 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
-import { getNextQuestion } from "@/store/interview/interviewSlice";
+// ⬇️ 변경: getNextQuestion 대신 래퍼 thunk 사용
+import { submitAnswerAndMaybeEnd } from "@/store/interview/interviewSlice";
 import RecordingControls from "@/components/interview/RecordingControls";
 import QuestionDisplay from "@/components/interview/QuestionDisplay";
 import UserVideo from "@/components/interview/UserVideo";
 import InterviewerView from "@/components/interview/InterviewerView";
+import { useRouter } from "next/navigation";
 
 /** 에러 메시지 안전 변환 */
 function toErrorMessage(err: unknown): string {
@@ -25,7 +27,9 @@ function toErrorMessage(err: unknown): string {
 
 export default function InterviewPage() {
   const dispatch = useAppDispatch();
-  const { currentQuestion, interviewId, currentSeq } = useAppSelector(
+  const router = useRouter();
+
+  const { currentQuestion, interviewId, currentSeq, isFinished } = useAppSelector(
     (state) => state.interview
   );
 
@@ -41,6 +45,13 @@ export default function InterviewPage() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // 종료되면 결과 페이지로 이동 (경로는 필요에 맞게 수정)
+  useEffect(() => {
+    if (isFinished) {
+      router.push("/");
+    }
+  }, [isFinished, router]);
 
   // Redux 상태 변화 로깅 (질문/순번/ID)
   useEffect(() => {
@@ -80,14 +91,14 @@ export default function InterviewPage() {
           const vs = vTrack.getSettings?.() || {};
           const vc = vTrack.getConstraints?.() || {};
           console.log("🎥 [VideoTrack] label:", vTrack.label); // [DELETE-ME LOG]
-          console.log("🎥 [VideoTrack] settings:", vs); // width, height, frameRate 등 // [DELETE-ME LOG]
+          console.log("🎥 [VideoTrack] settings:", vs); // [DELETE-ME LOG]
           console.log("🎥 [VideoTrack] constraints:", vc); // [DELETE-ME LOG]
         }
         if (aTrack) {
           const as = aTrack.getSettings?.() || {};
           const ac = aTrack.getConstraints?.() || {};
           console.log("🎙️ [AudioTrack] label:", aTrack.label); // [DELETE-ME LOG]
-          console.log("🎙️ [AudioTrack] settings:", as); // sampleRate, channelCount 등 // [DELETE-ME LOG]
+          console.log("🎙️ [AudioTrack] settings:", as); // [DELETE-ME LOG]
           console.log("🎙️ [AudioTrack] constraints:", ac); // [DELETE-ME LOG]
         }
 
@@ -127,7 +138,7 @@ export default function InterviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient]);
 
-  // 제출 핸들러 — 콘솔 로그만
+  // 제출 핸들러 — 래퍼 thunk로 교체
   const handleSubmit = async (blob: Blob) => {
     console.log("🚀 [Submit] interviewId:", interviewId); // [DELETE-ME LOG]
     console.log("🚀 [Submit] currentSeq:", currentSeq); // [DELETE-ME LOG]
@@ -155,7 +166,7 @@ export default function InterviewPage() {
     console.log("📦 [File] type:", file.type); // [DELETE-ME LOG]
     console.log("📦 [File] size(bytes):", file.size); // [DELETE-ME LOG]
 
-    // FormData 구성
+    // FormData 구성 (스펙 준수)
     const formData = new FormData();
     formData.append("file", file);
     formData.append("seq", String(currentSeq));
@@ -174,30 +185,27 @@ export default function InterviewPage() {
       }
     }
 
-    // 업로드 + 다음 질문
     const t0 = performance.now();
     try {
-      const resp = await dispatch(getNextQuestion(formData)).unwrap();
+      // ⬇️ 변경: getNextQuestion → submitAnswerAndMaybeEnd
+      await dispatch(submitAnswerAndMaybeEnd(formData)).unwrap();
       const t1 = performance.now();
 
-      console.log("✅ [Response] code:", resp.code); // [DELETE-ME LOG]
-      console.log("✅ [Response] message:", resp.message); // [DELETE-ME LOG]
-      console.log("✅ [Response] data:", resp.data); // [DELETE-ME LOG]
-      console.log("⏱️ [Timing] upload+next(ms):", Math.round(t1 - t0)); // [DELETE-ME LOG]
+      console.log("✅ [Response] wrapper success"); // [DELETE-ME LOG]
+      console.log("⏱️ [Timing] upload+next(+maybe end)(ms):", Math.round(t1 - t0)); // [DELETE-ME LOG]
 
-      // 다음 질문 표시를 위한 트리거
+      // 다음 질문 표시 애니메이션 트리거 (종료여도 곧 라우팅될 것)
       setQuestionStarted(false);
       setTimeout(() => setQuestionStarted(true), 400);
 
       console.log("🧭 [Post] expected next seq:", currentSeq + 1); // [DELETE-ME LOG]
     } catch (e: unknown) {
-      console.error("❌ [Dispatch Failed] 제출/다음 질문 오류:", e); // [DELETE-ME LOG]
+      console.error("❌ [Dispatch Failed] 제출/다음 질문/종료 오류:", e); // [DELETE-ME LOG]
       alert(toErrorMessage(e));
     } finally {
       submitInProgressRef.current = false;
     }
   };
-
 
   if (!isClient) {
     return <div className="p-8 text-center">면접 환경을 불러오는 중입니다...</div>;
