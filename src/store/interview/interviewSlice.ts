@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import axiosInstance from "@/lib/axiosInstance"; // ✅ 통일: 인터셉터/쿠키 사용
+import axiosInstance from "@/lib/axiosInstance";
 import type { InterviewType, LanguageType, LevelType } from "@/app/ready/page";
 import type { AxiosRequestHeaders } from "axios";
 import { isAxiosError } from "axios";
@@ -130,10 +130,9 @@ export const getNextQuestion = createAsyncThunk<
         {
           withCredentials: true,
           signal,
-          headers: {
-            // 인터셉터가 FormData면 자동으로 삭제 → boundary 포함 헤더 설정
-            "Content-Type": "multipart/form-data",
-          },
+          // ✅ FormData의 Content-Type은 axios가 boundary 포함해서 자동 설정
+          // headers를 수동 지정하면 boundary 누락/충돌 위험이 있어 제거함
+          // headers: { "Content-Type": "multipart/form-data" },
         },
       );
       if (res.data.code === "SUCCESS") return res.data;
@@ -182,11 +181,15 @@ export const endInterview = createAsyncThunk<
     );
     if (res.data.code === "SUCCESS") return res.data;
     return rejectWithValue(res.data.message || "면접 종료 API 오류");
-  } catch (err) {
-    const msg =
-      (isAxiosError(err) && (err.response?.data as any)?.message) ||
-      (err as Error).message ||
-      "면접 종료 실패";
+  } catch (err: unknown) {
+    let msg = "면접 종료 실패";
+
+    if (isAxiosError<ApiErrorBody>(err)) {
+      msg = err.response?.data?.message ?? msg;
+    } else if (err instanceof Error) {
+      msg = err.message;
+    }
+
     return rejectWithValue(msg);
   }
 });
@@ -213,13 +216,17 @@ export const submitAnswerAndMaybeEnd = createAsyncThunk<
 
       if (shouldEnd) {
         await dispatch(
-          endInterview({ interviewId, lastSeq: seqBefore }) // ✅ 마지막으로 "답한" 번호
+          endInterview({ interviewId, lastSeq: seqBefore }), // ✅ 마지막으로 "답한" 번호
         ).unwrap();
       }
-    } catch (e: any) {
-      return rejectWithValue(e?.message || "업로드/종료 처리 실패");
+    } catch (e: unknown) {
+      // 에러는 unknown이므로 타입 가드 필요
+      if (e instanceof Error) {
+        return rejectWithValue(e.message || "업로드/종료 처리 실패");
+      }
+      return rejectWithValue("업로드/종료 처리 실패");
     }
-  }
+  },
 );
 
 const interviewSlice = createSlice({
@@ -257,19 +264,29 @@ const interviewSlice = createSlice({
         state.uploadStatus = "loading"; // ✅ 업로드 상태만 로딩으로
         state.error = null;
       })
-      .addCase(getNextQuestion.fulfilled, (state, action: PayloadAction<ResponseData>) => {
-  state.uploadStatus = "succeeded";
-  state.status = "succeeded";
+      .addCase(
+        getNextQuestion.fulfilled,
+        (state, action: PayloadAction<ResponseData>) => {
+          state.uploadStatus = "succeeded";
+          state.status = "succeeded";
 
-  const { interviewId, newQuestion /*, keepGoing*/ } = action.payload.data;
-  state.interviewId = interviewId;
+          const { interviewId, newQuestion, keepGoing } = action.payload.data;
+          state.interviewId = interviewId;
 
-  // ✅ 서버의 keepGoing 여부와 상관없이, 일단 다음 라운드로 전진
-  state.currentSeq += 1;
-  state.currentQuestion = newQuestion;
-  state.questionHistory.push(newQuestion);
-})
+          // ✅ 서버의 keepGoing/클라의 totalCount를 기준으로 "조건부 전진"
+          //  - 마지막 라운드에서 다음 질문이 잠깐 보이는 UX 이슈 방지
+          const willKeep =
+            state.totalCount != null
+              ? state.currentSeq < state.totalCount
+              : keepGoing;
 
+          if (willKeep) {
+            state.currentSeq += 1;
+            state.currentQuestion = newQuestion;
+            state.questionHistory.push(newQuestion);
+          }
+        },
+      )
       .addCase(getNextQuestion.rejected, (state, action) => {
         state.uploadStatus = "failed";
         state.status = "failed";
@@ -277,9 +294,10 @@ const interviewSlice = createSlice({
       })
 
       // 면접 종료
-      .addCase(endInterview.fulfilled, (state) => {
+      .addCase(endInterview.fulfilled, (state, action) => {
         state.isFinished = true; // 페이지에서 '/'로 이동
-        state.lastSeqSentToEnd = state.currentSeq;
+        // ✅ 실제 서버로 보낸 마지막 seq를 기록(디버깅 정확성 향상)
+        state.lastSeqSentToEnd = action.meta.arg.lastSeq;
       })
       .addCase(endInterview.rejected, (state, action) => {
         state.error = action.payload || "면접 종료 실패";
