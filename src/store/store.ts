@@ -1,4 +1,5 @@
 import interviewSlice from "./interview/interviewSlice";
+import interviewResultSlice from "./interview/resultSlice";
 import authSlice from "@/store/auth/authSlice";
 import { configureStore } from "@reduxjs/toolkit";
 
@@ -7,6 +8,7 @@ export const makeStore = () =>
     reducer: {
       auth: authSlice,
       interview: interviewSlice,
+      result: interviewResultSlice,
     },
   });
 

@@ -1,8 +1,6 @@
 "use client";
 
-import axios from "axios";
 import { useEffect, useState, useRef, Suspense } from "react";
-import { AnswerType } from "../../store/interview/interviewSlice";
 import RecordingControls from "@/components/interview/RecordingControls";
 import DeviceSettings from "@/components/interview/DeviceSettings";
 import QuestionDisplay from "@/components/interview/QuestionDisplay";

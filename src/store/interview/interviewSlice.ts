@@ -155,7 +155,7 @@ const interviewSlice = createSlice({
         getFirstQuestion.fulfilled,
         (state, action: PayloadAction<FirstQuestionResponse>) => {
           const data = action.payload.data;
-
+          
           state.status = "succeeded";
           state.currentQuestion = data.question;
           state.interviewId = data.interviewId;
