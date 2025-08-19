@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import VolumeMeter from "./VolumeMeter";
+import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
+import { setSelectedAudioDeviceId } from "@/store/media/mediaSlice";
 
 const AudioRecoder = () => {
-  /** 녹화 상태 */
+  /** 녹음 상태 */
   const [isRecording, setIsRecording] = useState(false);
   /** 오디오 URL */
   const [audioURL, setAudioURL] = useState("");
@@ -13,98 +15,123 @@ const AudioRecoder = () => {
   /** 볼륨 상태 */
   const [volume, setVolume] = useState(0);
 
-  // 장치 목록 및 선택을 위한 상태 변수들
-  const [mics, setMics] = useState<MediaDeviceInfo[]>([]);
-  const [cams, setCams] = useState<MediaDeviceInfo[]>([]);
-  const [selectedMicId, setSelectedMicId] = useState<string>("");
-  const [selectedCamId, setSelectedCamId] = useState<string>("");
+  /** Redux: 선택된 마이크 */
+  const dispatch = useAppDispatch();
+  const { selectedAudioDeviceId } = useAppSelector((s) => s.media);
 
-  /** MediaRecorder ref */
+  /** 마이크 목록 (라벨 표시/선택 변경용 — 필요 없으면 섹션 통째로 삭제해도 됨) */
+  const [mics, setMics] = useState<MediaDeviceInfo[]>([]);
+
+  /** MediaRecorder / 오디오 분석 */
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  /** audioChunks ref */
   const audioChunksRef = useRef<Blob[]>([]);
-  /** 컨텍스트 : ["suspended", ""] */
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
-  // 볼륨 분석을 위한 useEffect
+  /** 마이크 목록 로드 */
   useEffect(() => {
-    // 녹화 중이고 stream 이 존재하는 경우
+    let mounted = true;
+    (async () => {
+      try {
+        // 권한 허용되면 label이 보장되는 브라우저가 많음
+        try {
+          await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch {
+          // 거부되어도 enumerateDevices는 대개 호출 가능 (label은 빈값일 수 있음)
+        }
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputs = devices.filter((d) => d.kind === "audioinput");
+        if (!mounted) return;
+        setMics(audioInputs);
+
+        // 기본 선택 없으면 첫 번째 마이크로 지정
+        if (!selectedAudioDeviceId && audioInputs[0]) {
+          dispatch(setSelectedAudioDeviceId(audioInputs[0].deviceId));
+        }
+      } catch (e) {
+        console.error("[DEBUG MEDIA] enumerateDevices failed:", e);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [dispatch, selectedAudioDeviceId]);
+
+  /** 볼륨 분석 */
+  useEffect(() => {
     if (isRecording && mediaStream) {
       audioContextRef.current = new window.AudioContext();
       analyserRef.current = audioContextRef.current.createAnalyser();
-      sourceRef.current =
-        audioContextRef.current.createMediaStreamSource(mediaStream);
-      /** source 에 analyser 연결 */
+      sourceRef.current = audioContextRef.current.createMediaStreamSource(mediaStream);
       sourceRef.current.connect(analyserRef.current);
 
-      /** 볼륨 배열 Binary Count */
       const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
 
-      /** 볼륨 업데이트 로직 */
       const updateVolume = () => {
         if (analyserRef.current) {
           analyserRef.current.getByteFrequencyData(dataArray);
-          // 볼륨 평균 계산
           const average =
             dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-          // 볼륨 업데이트
           setVolume(average);
         }
-        // JS 애니메이션
         animationFrameRef.current = requestAnimationFrame(updateVolume);
       };
       updateVolume();
     }
 
-    // 클린업 함수
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (sourceRef.current) {
-        sourceRef.current.disconnect();
-      }
-      if (
-        audioContextRef.current &&
-        audioContextRef.current.state !== "closed"
-      ) {
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (sourceRef.current) sourceRef.current.disconnect();
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
         audioContextRef.current.close();
       }
-      setVolume(0); // 녹음 종료 시 볼륨 0으로 초기화
+      setVolume(0);
     };
-  }, [isRecording, mediaStream]); // useEffect
+  }, [isRecording, mediaStream]);
 
-  /** 녹음 시작/중지 핸들러 */
+  /** 녹음 시작/중지 */
   const handleToggleRecording = async () => {
-    // 녹음 중이면 녹음을 종료하고 녹음 재생
     if (isRecording) {
+      // 정지
       if (mediaRecorderRef.current) {
         mediaRecorderRef.current.stop();
         mediaRecorderRef.current.onstop = () => {
-          const audioBlob = new Blob(audioChunksRef.current, {
-            type: "audio/wav",
-          });
+          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
           const audioUrl = URL.createObjectURL(audioBlob);
           setAudioURL(audioUrl);
           audioChunksRef.current = [];
-        }; // onstop
+        };
       }
-      // mediaStream 정리
       if (mediaStream) {
-        mediaStream.getTracks().forEach((track) => track.stop());
+        mediaStream.getTracks().forEach((t) => t.stop());
         setMediaStream(null);
       }
       setIsRecording(false);
     } else {
-      // 녹음 시작
+      // 시작 — Redux 선택 마이크로 열기
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-        });
+        const constraints: MediaStreamConstraints = {
+          audio: selectedAudioDeviceId
+            ? {
+                deviceId: { exact: selectedAudioDeviceId },
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+              }
+            : {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+              },
+          video: false,
+        };
+        console.log("[DEBUG MEDIA] AUDIO TEST constraints:", constraints);
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         setMediaStream(stream);
+
         mediaRecorderRef.current = new MediaRecorder(stream);
         mediaRecorderRef.current.ondataavailable = (event) => {
           audioChunksRef.current.push(event.data);
@@ -112,85 +139,25 @@ const AudioRecoder = () => {
         mediaRecorderRef.current.start();
         setAudioURL("");
         setIsRecording(true);
+
+        const a = stream.getAudioTracks()[0];
+        console.log("[DEBUG MEDIA] AUDIO TEST track.label:", a?.label);
+        console.log("[DEBUG MEDIA] AUDIO TEST track.settings:", a?.getSettings?.());
       } catch (error) {
-        console.error("마이크 접근에 실패했습니다.", error);
+        console.error("마이크 접근 실패:", error);
+        alert("마이크 권한/연결을 확인해주세요.");
       }
     }
   };
-
-  /** 장치 목록 가져오기 */
-  const getDevices = async () => {
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const audioInputs = devices.filter(
-        (device) => device.kind === "audioinput",
-      );
-      const videoInputs = devices.filter(
-        (device) => device.kind === "videoinput",
-      );
-      setMics(audioInputs);
-      setCams(videoInputs);
-
-      // 기본 선택 장치 설정
-      if (audioInputs.length > 0 && !selectedMicId) {
-        setSelectedMicId(audioInputs[0].deviceId);
-      }
-      if (videoInputs.length > 0 && !selectedCamId) {
-        setSelectedCamId(videoInputs[0].deviceId);
-      }
-    } catch (error) {
-      console.error("장치 목록을 가져오는 데 실패했습니다:", error);
-    }
-  };
-
-  /** 컴포넌트 마운트 시 장치 목록 초기 로드 */
-  useEffect(() => {
-    getDevices();
-  }, []);
 
   return (
     <div>
-      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
-        {/* 마이크 선택 드롭다운 */}
-        <div>
-          <label htmlFor="mic-select">마이크 선택: </label>
-          <select
-            id="mic-select"
-            value={selectedMicId}
-            onChange={(e) => setSelectedMicId(e.target.value)}
-          >
-            {mics.map((mic) => (
-              <option key={mic.deviceId} value={mic.deviceId}>
-                {mic.label || `마이크 ${mics.indexOf(mic) + 1}`}
-              </option>
-            ))}
-          </select>
-        </div>
-        {/* 카메라 선택 드롭다운 */}
-        <div>
-          <label htmlFor="cam-select">카메라 선택: </label>
-          <select
-            id="cam-select"
-            value={selectedCamId}
-            onChange={(e) => setSelectedCamId(e.target.value)}
-          >
-            {cams.map((cam) => (
-              <option key={cam.deviceId} value={cam.deviceId}>
-                {cam.label || `카메라 ${cams.indexOf(cam) + 1}`}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
       <button onClick={handleToggleRecording}>
         {isRecording ? "정지" : "테스트"}
       </button>
 
-      {/* 녹음 중일 때 세분화된 볼륨 미터 표시 */}
       {isRecording && <VolumeMeter volume={volume} />}
 
-      {/* 녹음 완료 후 오디오 플레이어 표시 */}
       {audioURL && !isRecording && (
         <div style={{ marginTop: "1rem" }}>
           <h3>녹음된 음성:</h3>

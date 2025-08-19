@@ -1,5 +1,6 @@
 import interviewSlice from "./interview/interviewSlice";
 import authSlice from "@/store/auth/authSlice";
+import mediaSlice from "./media/mediaSlice";
 import { configureStore } from "@reduxjs/toolkit";
 
 export const makeStore = () =>
@@ -7,6 +8,7 @@ export const makeStore = () =>
     reducer: {
       auth: authSlice,
       interview: interviewSlice,
+      media: mediaSlice,
     },
   });
 

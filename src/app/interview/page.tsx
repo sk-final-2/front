@@ -29,14 +29,16 @@ export default function InterviewPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
 
-  const { currentQuestion, interviewId, currentSeq, isFinished } = useAppSelector(
-    (state) => state.interview
-  );
+  const { currentQuestion, interviewId, currentSeq, isFinished } =
+    useAppSelector((state) => state.interview);
 
   const [isClient, setIsClient] = useState(false);
   const [questionStarted, setQuestionStarted] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const { selectedVideoDeviceId, selectedAudioDeviceId, preferredVideo } =
+    useAppSelector((s) => s.media);
 
   // 중복 제출 방지
   const submitInProgressRef = useRef(false);
@@ -121,7 +123,9 @@ export default function InterviewPage() {
             return;
           }
           if (name === "NotReadableError") {
-            alert("장치를 사용할 수 없습니다. 다른 프로그램에서 사용 중인지 확인해주세요.");
+            alert(
+              "장치를 사용할 수 없습니다. 다른 프로그램에서 사용 중인지 확인해주세요.",
+            );
             return;
           }
           alert(`미디어 장치 오류가 발생했습니다: ${err.message}`);
@@ -137,6 +141,95 @@ export default function InterviewPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let local: MediaStream | null = null;
+
+    (async () => {
+      try {
+        const videoConstraints: MediaTrackConstraints = selectedVideoDeviceId
+          ? {
+              deviceId: { exact: selectedVideoDeviceId },
+              width: preferredVideo?.width ?? { ideal: 1280 },
+              height: preferredVideo?.height ?? { ideal: 720 },
+              frameRate: preferredVideo?.frameRate ?? { ideal: 30 },
+            }
+          : {
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              frameRate: { ideal: 30 },
+            };
+
+        const audioConstraints: MediaTrackConstraints = selectedAudioDeviceId
+          ? {
+              deviceId: { exact: selectedAudioDeviceId },
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            }
+          : {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            };
+
+        local = await navigator.mediaDevices.getUserMedia({
+          video: videoConstraints,
+          audio: audioConstraints,
+        });
+
+        if (cancelled) {
+          local.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        setStream(local);
+        setQuestionStarted(true);
+      } catch (err) {
+        console.warn("선택 장치 실패 → 기본 장치로 폴백 시도", err);
+        try {
+          local = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              frameRate: { ideal: 30 },
+            },
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            },
+          });
+          if (!cancelled) {
+            setStream(local);
+            setQuestionStarted(true);
+          } else {
+            local.getTracks().forEach((t) => t.stop());
+          }
+        } catch (e2) {
+          console.error("기본 장치도 실패:", e2);
+          alert(
+            "카메라/마이크를 사용할 수 없습니다. 권한/연결 상태를 확인해주세요.",
+          );
+        }
+      }
+    })();
+
+    console.log("[DEBUG MEDIA] INTERVIEW picked from Redux", {
+      selectedVideoDeviceId,
+      selectedAudioDeviceId,
+      preferredVideo,
+    });
+
+    return () => {
+      cancelled = true;
+      setStream((prev) => {
+        prev?.getTracks().forEach((t) => t.stop());
+        return null;
+      });
+      local?.getTracks().forEach((t) => t.stop());
+    };
+  }, [selectedVideoDeviceId, selectedAudioDeviceId, preferredVideo]);
 
   // 제출 핸들러 — 래퍼 thunk로 교체
   const handleSubmit = async (blob: Blob) => {
@@ -178,7 +271,7 @@ export default function InterviewPage() {
     for (const [key, value] of formData.entries()) {
       if (value instanceof File) {
         console.log(
-          `  - ${key}: File{name=${value.name}, type=${value.type}, size=${value.size}}`
+          `  - ${key}: File{name=${value.name}, type=${value.type}, size=${value.size}}`,
         ); // [DELETE-ME LOG]
       } else {
         console.log(`  - ${key}:`, value); // [DELETE-ME LOG]
@@ -192,7 +285,10 @@ export default function InterviewPage() {
       const t1 = performance.now();
 
       console.log("✅ [Response] wrapper success"); // [DELETE-ME LOG]
-      console.log("⏱️ [Timing] upload+next(+maybe end)(ms):", Math.round(t1 - t0)); // [DELETE-ME LOG]
+      console.log(
+        "⏱️ [Timing] upload+next(+maybe end)(ms):",
+        Math.round(t1 - t0),
+      ); // [DELETE-ME LOG]
 
       // 다음 질문 표시 애니메이션 트리거 (종료여도 곧 라우팅될 것)
       setQuestionStarted(false);
@@ -208,7 +304,9 @@ export default function InterviewPage() {
   };
 
   if (!isClient) {
-    return <div className="p-8 text-center">면접 환경을 불러오는 중입니다...</div>;
+    return (
+      <div className="p-8 text-center">면접 환경을 불러오는 중입니다...</div>
+    );
   }
 
   return (
@@ -238,7 +336,9 @@ export default function InterviewPage() {
             {/* 미리보기 (UI 로그 없음) */}
             {previewUrl && (
               <div className="mt-4 w-full max-w-md">
-                <p className="text-sm text-gray-500 mb-1">🎞️ 녹화된 영상 미리보기</p>
+                <p className="text-sm text-gray-500 mb-1">
+                  🎞️ 녹화된 영상 미리보기
+                </p>
                 <video
                   src={previewUrl}
                   controls
