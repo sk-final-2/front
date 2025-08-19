@@ -30,12 +30,20 @@ const MediaCheckPage = () => {
 
   // 사용자 카메라 스트림 가져오기 (오류 처리 강화)
   useEffect(() => {
-    const getStream = async () => {
+    let cancelled = false;
+
+    (async () => {
       try {
         const media = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: true, // 인터뷰이므로 오디오도 요청
         });
+
+        if (cancelled) {
+          // 이미 언마운트되었으면 즉시 해제
+          media.getTracks().forEach((t) => t.stop());
+          return;
+        }
         setStream(media);
         setMediaError(null); // 성공 시 에러 상태 초기화
       } catch (err) {
@@ -65,15 +73,18 @@ const MediaCheckPage = () => {
           setMediaError("알 수 없는 미디어 장치 오류가 발생했습니다.");
         }
       }
-    };
+    })();
 
-    getStream();
-
-    // 컴포넌트 언마운트 시 스트림 정리
     return () => {
-      stream?.getTracks().forEach((track) => track.stop());
+      cancelled = true;
+      // 최신 스트림을 안전하게 정리
+      setStream((prev) => {
+        prev?.getTracks().forEach((t) => t.stop());
+        return null;
+      });
     };
-  }, [stream]); // 최초 한 번만 실행
+    // ✅ 최초 1회만 실행
+  }, []);
 
   // 권한 확인 로직
   const checkPermissions = useCallback(async () => {
