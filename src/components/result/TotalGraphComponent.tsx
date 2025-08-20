@@ -17,15 +17,6 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-const chartData = [
-  { item: "score", 점수: 86 },
-  { item: "emotion", 점수: 85 },
-  { item: "blink", 점수: 77 },
-  { item: "eye", 점수: 53 },
-  { item: "head", 점수: 91 },
-  { item: "hand", 점수: 64 },
-];
-
 const chartConfig = {
   desktop: {
     label: "Desktop",
@@ -33,7 +24,30 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export default function TotalGraphComponent() {
+export default function TotalGraphComponent({
+  score,
+  emotionScore,
+  blinkScore,
+  eyeScore,
+  headScore,
+  handScore,
+}: {
+  score: number;
+  emotionScore: number;
+  blinkScore: number;
+  eyeScore: number;
+  headScore: number;
+  handScore: number;
+}) {
+  const chartData = [
+    { item: "score", 점수: score },
+    { item: "emotion", 점수: emotionScore },
+    { item: "blink", 점수: blinkScore },
+    { item: "eye", 점수: eyeScore },
+    { item: "head", 점수: headScore },
+    { item: "hand", 점수: handScore },
+  ];
+
   return (
     <div className="w-full my-10">
       <Card className="w-full">
@@ -54,7 +68,7 @@ export default function TotalGraphComponent() {
                 content={<ChartTooltipContent hideLabel />}
               />
               <PolarGrid className="fill-(--color-desktop) opacity-20" />
-              <PolarAngleAxis dataKey="item" className="text-sm font-bold"/>
+              <PolarAngleAxis dataKey="item" className="text-sm font-bold" />
               <Radar
                 dataKey="점수"
                 fill="var(--color-desktop)"

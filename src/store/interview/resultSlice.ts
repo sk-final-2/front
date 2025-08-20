@@ -10,17 +10,34 @@ export type InterviewResultRequest = {
 
 // 개별 답변 분석 결과
 export type AnswerAnalyseType = {
-  id: number; // id
   seq: number; // 순서
   question: string; // 질문
   answer: string; // 답변
   good: string; // 피드백 (긍정적)
   bad: string; // 개선점 (부정적)
   score: number; // 점수 (1.0 ~ 5.0)
-  emotionScore: number; // 표정 점수
   emotionText: string; // 표정 피드백
-  trackingScore: number; // 시선처리 점수
-  trackingText: string; // 시선처리 피드백
+  mediapipeText: string; // 눈 깜빡임
+  emotionScore: number; // 표정 점수
+  blinkScore: number; // 눈 깜빡임 점수
+  eyeScore: number; // 시선처리 점수
+  headScore: number; // 머리 움직임 점수
+  handScore: number; // 손 움직임 점수
+  timestamp: Array<TimeStampListType>;
+};
+
+export type TimeStampListType = {
+  time: string; // 감지 타임 스탬프
+  reason: string; // Description
+};
+
+export type AvgScoreType = {
+  score: number;
+  emotionScore: number;
+  blinkScore: number;
+  eyeScore: number;
+  headScore: number;
+  handScore: number;
 };
 
 // 면접 전체 결과 응답 형식
@@ -29,7 +46,6 @@ export interface InterviewResultResponse {
   code: string;
   message: string;
   data: {
-    id: number;
     uuid: string;
     memberId: number;
     createdAt: string;
@@ -40,6 +56,7 @@ export interface InterviewResultResponse {
     language: LanguageType;
     count: number;
     answerAnalyses: Array<AnswerAnalyseType>; // 답변 결과 리스트
+    avgScore: Array<AvgScoreType>;
   };
 }
 
@@ -51,7 +68,7 @@ export const getInterviewResult = createAsyncThunk<
 >("get/result", async (body: InterviewResultRequest, { rejectWithValue }) => {
   try {
     const response = await api.post<InterviewResultResponse>(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/interview-results`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/interview/result`,
       body,
       {
         headers: {
@@ -83,7 +100,6 @@ export const getInterviewResult = createAsyncThunk<
 export interface InterviewStateType {
   status: "idle" | "pending" | "succeeded" | "failed";
   error: string | null;
-  id: number | null;
   uuid: string | null;
   memberId: number | null;
   createdAt: string | null;
@@ -94,13 +110,13 @@ export interface InterviewStateType {
   language: LanguageType | null;
   count: number | null;
   answerAnalyses: Array<AnswerAnalyseType>;
+  avgScore: Array<AvgScoreType>;
 }
 
 // 초기 결과 상태
 const initialState: InterviewStateType = {
   status: "idle",
   error: null,
-  id: null,
   uuid: null,
   memberId: null,
   createdAt: null,
@@ -111,6 +127,7 @@ const initialState: InterviewStateType = {
   language: null,
   count: null,
   answerAnalyses: [],
+  avgScore: [],
 };
 
 // 면접 결과 슬라이스
@@ -120,7 +137,6 @@ const interviewResultSlice = createSlice({
   reducers: {
     // 면접 결과 초기화 액션
     clearResult: (state) => {
-      state.id = null;
       state.uuid = null;
       state.memberId = null;
       state.createdAt = null;
@@ -131,6 +147,7 @@ const interviewResultSlice = createSlice({
       state.language = null;
       state.count = null;
       state.answerAnalyses = [];
+      state.avgScore = [];
     },
   },
   extraReducers: (builder) => {
@@ -146,7 +163,6 @@ const interviewResultSlice = createSlice({
           const data = action.payload.data;
 
           state.status = "succeeded";
-          state.id = data.id;
           state.uuid = data.uuid;
           state.memberId = data.memberId;
           state.createdAt = data.createdAt;
@@ -157,6 +173,7 @@ const interviewResultSlice = createSlice({
           state.language = data.language;
           state.count = data.count;
           state.answerAnalyses = data.answerAnalyses;
+          state.avgScore = data.avgScore;
         },
       )
       .addCase(getInterviewResult.rejected, (state, action) => {
