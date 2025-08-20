@@ -22,7 +22,7 @@ import { useEffect, useState } from "react";
  * ㄴ>> 면접이 끝나고 확인하는 결과 페이지 (첫 접근) -> 영상은 저장되지 않으므로 두 번째 방문에는 표시되지 않음
  */
 
-const ResultPage = ({ interviewId }: { interviewId: string }) => {
+const ResultPage = () => {
   // 면접 결과 store
   const {
     status,
@@ -39,6 +39,7 @@ const ResultPage = ({ interviewId }: { interviewId: string }) => {
     answerAnalyses,
     avgScore,
   } = useAppSelector((state) => state.result);
+  const { interviewId } = useAppSelector((state) => state.interview);
   const dispatch = useAppDispatch();
 
   // 로딩 상태
