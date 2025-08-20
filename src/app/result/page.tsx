@@ -71,12 +71,12 @@ const ResultPage = () => {
     return <>로딩중...</>;
   }
 
-  // if (status === "failed") {
-  //   {
-  //     /** TODO: 나중에 오류 페이지 만들어서 띄워줄 것! */
-  //   }
-  //   return <>{error}</>;
-  // }
+  if (status === "failed") {
+    {
+      /** TODO: 나중에 오류 페이지 만들어서 띄워줄 것! */
+    }
+    return <>{error}</>;
+  }
 
   return (
     <div className="flex-col justify-center overflow-y-scroll overflow-x-hidden">
