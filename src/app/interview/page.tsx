@@ -53,7 +53,7 @@ export default function InterviewPage() {
   // 종료되면 결과 페이지로 이동 (경로는 필요에 맞게 수정)
   useEffect(() => {
     if (isFinished) {
-      router.push("/");
+      router.replace("/result");
     }
   }, [isFinished, router]);
 
