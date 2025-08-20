@@ -12,6 +12,25 @@ import {
 import axios from "axios";
 import axiosInstance from "@/lib/axiosInstance";
 
+// ✅ provider → loginType 매핑 함수
+type LoginType = "default" | "google" | "kakao";
+
+const mapProvider = (
+  provider?: "LOCAL" | "GOOGLE" | "KAKAO" | null,
+  fallback: LoginType = "default"
+): LoginType => {
+  switch (provider) {
+    case "LOCAL":
+      return "default";
+    case "GOOGLE":
+      return "google";
+    case "KAKAO":
+      return "kakao";
+    default:
+      return fallback;
+  }
+};
+
 interface AuthType {
   isLoggedIn: boolean;
   user: User | null;
@@ -153,10 +172,7 @@ const authSlice = createSlice({
         state.user = {
           email: rawUser.email,
           name: rawUser.name,
-          loginType:
-            rawUser.provider === "LOCAL"
-              ? "default"
-              : (rawUser.provider.toLowerCase() as "google" | "kakao"),
+          loginType: mapProvider(rawUser.provider, "default"),
         };
 
         state.error = null;
@@ -179,10 +195,7 @@ const authSlice = createSlice({
         state.user = {
           email: rawUser.email,
           name: rawUser.name,
-          loginType:
-            rawUser.provider === "LOCAL"
-              ? "default"
-              : (rawUser.provider.toLowerCase() as "google" | "kakao"),
+          loginType: mapProvider(rawUser.provider, "kakao"),
         };
         state.error = null;
       })
@@ -204,10 +217,7 @@ const authSlice = createSlice({
         state.user = {
           email: rawUser.email,
           name: rawUser.name,
-          loginType:
-            rawUser.provider === "LOCAL"
-              ? "default"
-              : (rawUser.provider.toLowerCase() as "google" | "kakao"),
+          loginType: mapProvider(rawUser.provider, "google"),
         };
         state.error = null;
       })
