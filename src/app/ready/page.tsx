@@ -8,7 +8,10 @@ import LanguageSelectComponent from "@/components/ready/LanguageSelectComponent"
 import QuestionCountDropdown from "@/components/ready/QuestionCountDropdown";
 import ReadyStepBar from "@/components/ready/readyStepBar";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
-import { bodyData, getFirstQuestion } from "@/store/interview/interviewSlice";
+import {
+  firstQuestionBody,
+  getFirstQuestion,
+} from "@/store/interview/interviewSlice";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -161,7 +164,7 @@ const ReadyPage = () => {
     // 첫 질문 생성 요청
     try {
       // body 데이터
-      const bodyData: bodyData = {
+      const bodyData: firstQuestionBody = {
         job: selectedJob,
         count: Number(questionCount),
         ocrText: fileText ? fileText : "",

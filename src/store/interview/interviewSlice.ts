@@ -13,7 +13,7 @@ interface ApiErrorBody {
 }
 
 // 요청 body 형식
-export type bodyData = {
+export type firstQuestionBody = {
   job: string | null;
   count: number; //이거를 InterviewState에 넣기
   ocrText: string | null;
@@ -93,7 +93,7 @@ const initialState: InterviewState = {
 // 첫 질문 받아오기
 export const getFirstQuestion = createAsyncThunk<
   FirstQuestionResponse,
-  bodyData,
+  firstQuestionBody,
   { rejectValue: string }
 >("interview/getFirstQuestion", async (body, { rejectWithValue, signal }) => {
   try {

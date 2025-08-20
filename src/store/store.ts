@@ -1,4 +1,5 @@
 import interviewSlice from "./interview/interviewSlice";
+import interviewResultSlice from "./interview/resultSlice";
 import authSlice from "@/store/auth/authSlice";
 import mediaSlice from "./media/mediaSlice";
 import { configureStore } from "@reduxjs/toolkit";
@@ -9,6 +10,7 @@ export const makeStore = () =>
       auth: authSlice,
       interview: interviewSlice,
       media: mediaSlice,
+      result: interviewResultSlice,
     },
   });
 
