@@ -43,6 +43,8 @@ export default function InterviewPage() {
   // 중복 제출 방지
   const submitInProgressRef = useRef(false);
 
+  const lastKeyRef = useRef<string>("");
+
   // 클라이언트 여부
   useEffect(() => {
     setIsClient(true);
@@ -75,161 +77,157 @@ export default function InterviewPage() {
   useEffect(() => {
     if (!isClient) return;
 
-    let localStream: MediaStream | null = null;
-
-    (async () => {
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-        setStream(localStream);
-        setQuestionStarted(true);
-
-        const vTrack = localStream.getVideoTracks()[0];
-        const aTrack = localStream.getAudioTracks()[0];
-
-        if (vTrack) {
-          const vs = vTrack.getSettings?.() || {};
-          const vc = vTrack.getConstraints?.() || {};
-          console.log("🎥 [VideoTrack] label:", vTrack.label); // [DELETE-ME LOG]
-          console.log("🎥 [VideoTrack] settings:", vs); // [DELETE-ME LOG]
-          console.log("🎥 [VideoTrack] constraints:", vc); // [DELETE-ME LOG]
-        }
-        if (aTrack) {
-          const as = aTrack.getSettings?.() || {};
-          const ac = aTrack.getConstraints?.() || {};
-          console.log("🎙️ [AudioTrack] label:", aTrack.label); // [DELETE-ME LOG]
-          console.log("🎙️ [AudioTrack] settings:", as); // [DELETE-ME LOG]
-          console.log("🎙️ [AudioTrack] constraints:", ac); // [DELETE-ME LOG]
-        }
-
-        // 초기 질문/순번/ID
-        console.log("🧠 [Init] interviewId:", interviewId); // [DELETE-ME LOG]
-        console.log("🧠 [Init] currentSeq:", currentSeq); // [DELETE-ME LOG]
-        console.log("🧠 [Init] currentQuestion:", currentQuestion); // [DELETE-ME LOG]
-      } catch (err: unknown) {
-        console.error("❌ 미디어 장치 접근 오류:", err); // [DELETE-ME LOG]
-
-        // DOMException 세부 분기 (타입 안전)
-        if (err instanceof DOMException) {
-          const name = err.name;
-          if (name === "NotFoundError") {
-            alert("연결된 카메라/마이크를 찾을 수 없습니다.");
-            return;
-          }
-          if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-            alert("카메라/마이크 권한을 허용해주세요.");
-            return;
-          }
-          if (name === "NotReadableError") {
-            alert(
-              "장치를 사용할 수 없습니다. 다른 프로그램에서 사용 중인지 확인해주세요.",
-            );
-            return;
-          }
-          alert(`미디어 장치 오류가 발생했습니다: ${err.message}`);
-          return;
-        }
-
-        alert(toErrorMessage(err));
-      }
-    })();
-
-    return () => {
-      localStream?.getTracks().forEach((t) => t.stop());
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isClient]);
-
-  useEffect(() => {
     let cancelled = false;
     let local: MediaStream | null = null;
 
-    (async () => {
+    // 동일 제약조건일 경우 요청을 건너뛰도록 설정
+    const buildVideoConstraints = (): MediaTrackConstraints => {
+      const base = {
+        width: preferredVideo?.width ?? { ideal: 1280 },
+        height: preferredVideo?.height ?? { ideal: 720 },
+        frameRate: preferredVideo?.frameRate ?? { ideal: 30 },
+      };
+      return selectedVideoDeviceId
+        ? { ...base, deviceId: { exact: selectedVideoDeviceId } }
+        : base;
+    };
+
+    const buildAudioConstraints = (): MediaTrackConstraints => {
+      const base = {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      };
+      return selectedAudioDeviceId
+        ? { ...base, deviceId: { exact: selectedAudioDeviceId } }
+        : base;
+    };
+
+    const stopTracks = (ms?: MediaStream | null) => {
+      ms?.getTracks().forEach((t) => t.stop());
+    };
+
+    // 장치나 조건이 변경되었을 때만 스트림을 요청하도록 설정
+    const reqKey = JSON.stringify({
+      v: {
+        id: selectedVideoDeviceId,
+        width: preferredVideo?.width ?? { ideal: 1280 },
+        height: preferredVideo?.height ?? { ideal: 720 },
+        frameRate: preferredVideo?.frameRate ?? { ideal: 30 },
+      },
+      a: { id: selectedAudioDeviceId },
+    });
+
+    if (lastKeyRef.current === reqKey) {
+      // [DELETE-ME LOG]
+      console.log("⏭️ [MEDIA] same constraints, skip getUserMedia"); // [DELETE-ME LOG]
+      return;
+    }
+    lastKeyRef.current = reqKey;
+
+    const conservativeFallback = {
+      video: {
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        frameRate: { ideal: 30 },
+      },
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    };
+
+    const start = async () => {
       try {
-        const videoConstraints: MediaTrackConstraints = selectedVideoDeviceId
-          ? {
-              deviceId: { exact: selectedVideoDeviceId },
-              width: preferredVideo?.width ?? { ideal: 1280 },
-              height: preferredVideo?.height ?? { ideal: 720 },
-              frameRate: preferredVideo?.frameRate ?? { ideal: 30 },
-            }
-          : {
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
-              frameRate: { ideal: 30 },
-            };
-
-        const audioConstraints: MediaTrackConstraints = selectedAudioDeviceId
-          ? {
-              deviceId: { exact: selectedAudioDeviceId },
-              echoCancellation: true,
-              noiseSuppression: true,
-              autoGainControl: true,
-            }
-          : {
-              echoCancellation: true,
-              noiseSuppression: true,
-              autoGainControl: true,
-            };
-
+        // 선택된 장치 기준으로 스트림 요청
         local = await navigator.mediaDevices.getUserMedia({
-          video: videoConstraints,
-          audio: audioConstraints,
+          video: buildVideoConstraints(),
+          audio: buildAudioConstraints(),
         });
 
         if (cancelled) {
-          local.getTracks().forEach((t) => t.stop());
+          stopTracks(local);
           return;
         }
-        setStream(local);
+
+        // 기존 스트림 정리 후 교체
+        setStream((prev) => {
+          stopTracks(prev);
+          return local!;
+        });
         setQuestionStarted(true);
-      } catch (err) {
-        console.warn("선택 장치 실패 → 기본 장치로 폴백 시도", err);
-        try {
-          local = await navigator.mediaDevices.getUserMedia({
-            video: {
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
-              frameRate: { ideal: 30 },
-            },
-            audio: {
-              echoCancellation: true,
-              noiseSuppression: true,
-              autoGainControl: true,
-            },
-          });
-          if (!cancelled) {
-            setStream(local);
-            setQuestionStarted(true);
+
+        // 디버그(선택): 트랙 로그
+        const vTrack = local.getVideoTracks()[0];
+        const aTrack = local.getAudioTracks()[0];
+        if (vTrack) {
+          console.log("🎥 [VideoTrack] label:", vTrack.label); // [DELETE-ME LOG]
+          console.log("🎥 [VideoTrack] settings:", vTrack.getSettings?.()); // [DELETE-ME LOG]
+        }
+        if (aTrack) {
+          console.log("🎙️ [AudioTrack] label:", aTrack.label); // [DELETE-ME LOG]
+          console.log("🎙️ [AudioTrack] settings:", aTrack.getSettings?.()); // [DELETE-ME LOG]
+        }
+      } catch (err: unknown) {
+        console.error("❌ 미디어 장치 접근 오류:", err); // [DELETE-ME LOG]
+
+        // 타입 안전을 위해 `err`가 `Error` 객체인지 확인
+        if (err instanceof Error) {
+          // OverconstrainedError → 보수적 기본값으로 즉시 폴백
+          if (err.name === "OverconstrainedError") {
+            console.warn("⚠️ OverconstrainedError → conservative fallback"); // [DELETE-ME LOG]
           } else {
-            local.getTracks().forEach((t) => t.stop());
+            console.warn("선택 장치 실패 → 기본 장치로 폴백 시도", err); // [DELETE-ME LOG]
           }
-        } catch (e2) {
-          console.error("기본 장치도 실패:", e2);
-          alert(
-            "카메라/마이크를 사용할 수 없습니다. 권한/연결 상태를 확인해주세요.",
+        } else {
+          // Error 객체가 아닐 경우
+          console.warn("알 수 없는 에러 발생:", err); // [DELETE-ME LOG]
+        }
+
+        try {
+          // 기본 장치로 폴백
+          local = await navigator.mediaDevices.getUserMedia(
+            conservativeFallback,
           );
+
+          if (cancelled) {
+            stopTracks(local);
+            return;
+          }
+
+          setStream((prev) => {
+            stopTracks(prev);
+            return local!;
+          });
+          setQuestionStarted(true);
+        } catch (e2: unknown) {
+          // `e2`가 `Error` 타입인지 확인 후 다루기
+          if (e2 instanceof Error) {
+            console.error("기본 장치도 실패:", e2); // [DELETE-ME LOG]
+            alert(`카메라/마이크를 사용할 수 없습니다. 오류: ${e2.message}`);
+          } else {
+            console.error("알 수 없는 오류:", e2); // [DELETE-ME LOG]
+            alert(
+              "카메라/마이크를 사용할 수 없습니다. 권한/연결 상태를 확인해주세요.",
+            );
+          }
         }
       }
-    })();
+    };
 
-    console.log("[DEBUG MEDIA] INTERVIEW picked from Redux", {
-      selectedVideoDeviceId,
-      selectedAudioDeviceId,
-      preferredVideo,
-    });
+    start();
 
+    // 🔥 cleanup: 이 이펙트가 재실행되거나 언마운트되면 현재 스트림 정리
     return () => {
       cancelled = true;
       setStream((prev) => {
-        prev?.getTracks().forEach((t) => t.stop());
+        stopTracks(prev);
         return null;
       });
-      local?.getTracks().forEach((t) => t.stop());
+      stopTracks(local);
     };
-  }, [selectedVideoDeviceId, selectedAudioDeviceId, preferredVideo]);
+  }, [isClient, selectedVideoDeviceId, selectedAudioDeviceId, preferredVideo]);
 
   // 제출 핸들러 — 래퍼 thunk로 교체
   const handleSubmit = async (blob: Blob) => {
