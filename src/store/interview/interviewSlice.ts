@@ -211,14 +211,31 @@ export const submitAnswerAndMaybeEnd = createAsyncThunk<
       const res = await dispatch(getNextQuestion(formData)).unwrap();
 
       // 2) 종료 여부 판단: 클라 개수 > 서버 keepGoing
-      const shouldEnd =
-        totalCount != null ? seqBefore >= totalCount : !res.data.keepGoing;
+      const isStatic = typeof totalCount === "number" && totalCount > 0; // 🔧 0은 동적
+      const shouldEnd = isStatic
+        ? seqBefore >= (totalCount as number) // 정적: 개수 다 채우면 종료
+        : res.data.keepGoing === false; // 동적: keepGoing false일 때만 종료
 
-      if (shouldEnd) {
+      if (shouldEnd && interviewId) {
+        // 🔒 interviewId가 있을 때만 호출(안전)
         await dispatch(
-          endInterview({ interviewId, lastSeq: seqBefore }), // ✅ 마지막으로 "답한" 번호
+          endInterview({ interviewId, lastSeq: seqBefore }),
         ).unwrap();
       }
+
+      console.log(
+        "[DEBUG] mode:",
+        isStatic ? "static" : "dynamic",
+        "seqBefore:",
+        seqBefore,
+        "totalCount:",
+        totalCount,
+        "keepGoing:",
+        res.data.keepGoing,
+        "shouldEnd:",
+        shouldEnd,
+      ); // [DELETE-ME LOG]
+
     } catch (e: unknown) {
       // 에러는 unknown이므로 타입 가드 필요
       if (e instanceof Error) {
@@ -241,8 +258,11 @@ const interviewSlice = createSlice({
       .addCase(getFirstQuestion.pending, (state, action) => {
         state.status = "pending";
         state.error = null;
-        state.totalCount = action.meta.arg.count ?? null;
+        const c = action.meta.arg.count;
+        // 🔧 0 이하면 동적으로 간주 → null
+        state.totalCount = typeof c === "number" && c > 0 ? c : null;
       })
+
       .addCase(
         getFirstQuestion.fulfilled,
         (state, action: PayloadAction<FirstQuestionResponse>) => {
@@ -275,10 +295,11 @@ const interviewSlice = createSlice({
 
           // ✅ 서버의 keepGoing/클라의 totalCount를 기준으로 "조건부 전진"
           //  - 마지막 라운드에서 다음 질문이 잠깐 보이는 UX 이슈 방지
-          const willKeep =
-            state.totalCount != null
-              ? state.currentSeq < state.totalCount
-              : keepGoing;
+          const isStatic =
+            typeof state.totalCount === "number" && state.totalCount > 0;
+          const willKeep = isStatic
+            ? state.currentSeq < (state.totalCount as number) // 정적: 아직 남았을 때만
+            : keepGoing === true; // 동적: true일 때만
 
           if (willKeep) {
             state.currentSeq += 1;
