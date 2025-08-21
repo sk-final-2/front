@@ -39,7 +39,8 @@ const ResultPage = () => {
     answerAnalyses,
     avgScore,
   } = useAppSelector((state) => state.result);
-  const { interviewId } = useAppSelector((state) => state.interview);
+  // const { interviewId } = useAppSelector((state) => state.interview);
+  const interviewId = localStorage.getItem("InterviewId");
   const dispatch = useAppDispatch();
 
   // 로딩 상태
@@ -57,6 +58,8 @@ const ResultPage = () => {
       setLoading(true);
       // 결과 받기
       dispatch(getInterviewResult({ interviewId }));
+      console.log("interviewId: ", interviewId);
+      console.log(avgScore);
     } catch (err) {
       console.error(err);
     } finally {
@@ -122,14 +125,14 @@ const ResultPage = () => {
           <InterviewVideoComponent />
 
           {/** 그래프 컴포넌트 */}
-          <TotalGraphComponent
-            score={avgScore[0].score}
-            emotionScore={avgScore[0].emotionScore}
-            blinkScore={avgScore[0].blinkScore}
-            eyeScore={avgScore[0].eyeScore}
-            headScore={avgScore[0].headScore}
-            handScore={avgScore[0].handScore}
-          />
+          {/* <TotalGraphComponent
+            score={avgScore[0]?.score ? avgScore[0].score : 0.0}
+            emotionScore={avgScore[0]?.emotionScore ? avgScore[0].emotionScore : 0.0}
+            blinkScore={avgScore[0]?.blinkScore ? avgScore[0].blinkScore : 0.0}
+            eyeScore={avgScore[0]?.eyeScore ? avgScore[0].eyeScore : 0.0}
+            headScore={avgScore[0]?.headScore ? avgScore[0].headScore : 0.0}
+            handScore={avgScore[0]?.handScore ? avgScore[0].handScore : 0.0}
+          /> */}
 
           {/** 분석 리포트 컴포넌트 */}
           <TotalEvaluationComponent />
