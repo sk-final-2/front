@@ -62,3 +62,23 @@ export async function loginWithEmail(email: string, password: string) {
   const { data } = await api.post('/api/auth/login', { email, password });
   return data as { accessToken: string; refreshToken: string };
 }
+
+// 회원가입 API
+export async function signup(payload: {
+  email: string;
+  password: string;
+  name: string;
+  zipcode?: string;
+  address1?: string;
+  address2?: string;
+  gender: 'MALE' | 'FEMALE';
+  birth: string;
+}) {
+  const { data } = await api.post('/api/auth/signup', payload);
+  return data as {
+    status: number;
+    code: string;
+    message: string;
+    data?: any;
+  };
+}
