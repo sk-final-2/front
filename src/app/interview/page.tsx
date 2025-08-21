@@ -18,7 +18,9 @@ import UserVideo from "@/components/interview/UserVideo";
 import InterviewerView from "@/components/interview/InterviewerView";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axiosInstance";
-import { disconnect, startConnecting } from "@/store/socket/socketSlice";
+import SockJS from "sockjs-client";
+import { Client } from "@stomp/stompjs";
+import { getInterviewResult } from "@/store/interview/resultSlice";
 
 /** 에러 메시지 안전 변환 */
 function toErrorMessage(err: unknown): string {
@@ -39,6 +41,9 @@ export default function InterviewPage() {
   const { isConnecting, isConnected, analysisComplete } = useAppSelector(
     (state) => state.socket,
   );
+
+  // 면접 결과 store
+  const { answerAnalyses } = useAppSelector((state) => state.result);
 
   const [isClient, setIsClient] = useState(false);
   const [questionStarted, setQuestionStarted] = useState(false);
@@ -79,7 +84,36 @@ export default function InterviewPage() {
       sendEnd().catch((e) => {
         console.error("❌ 면접 종료 API 호출 실패:", e);
       });
-      dispatch(startConnecting({ interviewId }));
+      // dispatch(startConnecting({ interviewId }));
+
+      const socket = new SockJS("http://localhost:8080/ws/interview"); // Spring WebSocket 엔드포인트
+      const stompClient = new Client({
+        webSocketFactory: () => socket,
+        reconnectDelay: 5000,
+        onConnect: () => {
+          console.log("✅ WebSocket 연결됨");
+          stompClient.subscribe(
+            `/topic/interview/${interviewId}`,
+            async (message) => {
+              console.log("📩 분석 완료 메시지 수신:", message.body);
+
+              try {
+                dispatch(getInterviewResult({ interviewId }));
+
+                console.log("🎯 분석 결과:", answerAnalyses);
+              } catch (err) {
+                console.error("❌ 분석 결과 요청 실패", err);
+              }
+            },
+          );
+        },
+      });
+
+      stompClient.activate();
+
+      return () => {
+        stompClient.deactivate();
+      };
     }
   }, [isFinished, interviewId, dispatch, sendEnd]);
 

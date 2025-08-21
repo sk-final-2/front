@@ -52,25 +52,25 @@ const ResultPage = () => {
     setCurrentSeq(seq);
   };
 
-  useEffect(() => {
-    try {
-      setLoading(true);
-      // 결과 받기
-      dispatch(getInterviewResult({ interviewId }));
-      console.log("interviewId: ", interviewId);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // useEffect(() => {
+  //   try {
+  //     setLoading(true);
+  //     // 결과 받기
+  //     dispatch(getInterviewResult({ interviewId }));
+  //     console.log("interviewId: ", interviewId);
+  //   } catch (err) {
+  //     console.error(err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, []);
 
-  if (loading) {
-    {
-      /** TODO: 로딩 처리 */
-    }
-    return <>로딩중...</>;
-  }
+  // if (loading) {
+  //   {
+  //     /** TODO: 로딩 처리 */
+  //   }
+  //   return <>로딩중...</>;
+  // }
 
   if (status === "failed") {
     {
