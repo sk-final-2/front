@@ -1,24 +1,26 @@
+// mobile/app/(auth)/login.tsx
 import { useState } from 'react';
 import { View, Text, TextInput, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { loginWithEmail } from '../../src/lib/api';
-import { saveTokens } from '../../src/lib/auth';
+import { setProfile } from '../../src/lib/session';
 
 export default function LoginScreen() {
   const r = useRouter();
-  const [email, setEmail] = useState('test@example.com');
-  const [password, setPassword] = useState('test1234');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function onSubmit() {
     try {
       setLoading(true);
-      const { accessToken, refreshToken } = await loginWithEmail(email, password);
-      await saveTokens(accessToken, refreshToken);
+      const profile = await loginWithEmail(email, password); // 토큰 저장은 api.ts에서 완료
+      setProfile(profile);
       Alert.alert('로그인 성공');
-      r.replace('/(app)'); // 메인으로 이동
+      r.replace('/(app)');
     } catch (e: any) {
-      Alert.alert('로그인 실패', e?.response?.data?.message || e?.message || '에러');
+      const msg = e?.response?.data?.message || e?.message || '에러';
+      Alert.alert('로그인 실패', msg);
     } finally {
       setLoading(false);
     }

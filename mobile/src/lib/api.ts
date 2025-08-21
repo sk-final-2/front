@@ -1,64 +1,165 @@
+// mobile/src/lib/api.ts
 import axios from 'axios';
 import Constants from 'expo-constants';
-import { getAccessToken, getRefreshToken, saveTokens, clearTokens } from './auth';
+import { getAccessToken, getRtid, saveLoginTokens, clearTokens } from './auth';
 
 const { API_BASE } = (Constants.expoConfig?.extra ?? {}) as any;
+
+function unwrap<T = any>(res: any): T {
+  return (res?.data?.data ?? res?.data) as T;
+}
 
 export const api = axios.create({
   baseURL: API_BASE,
   timeout: 10000,
 });
 
-// 요청마다 Authorization 붙이기
-api.interceptors.request.use(async (config) => {
+// 요청마다 Authorization
+api.interceptors.request.use((cfg) => {
   const at = getAccessToken();
-  if (at) config.headers.Authorization = `Bearer ${at}`;
-  return config;
+  if (at) cfg.headers.Authorization = `Bearer ${at}`;
+  return cfg;
 });
 
-// 401이면 refresh 시도 후 재요청
+// 401 자동 재발급
 let isRefreshing = false;
-let queue: { resolve: (v?: unknown)=>void; reject: (e:any)=>void }[] = [];
+let waiters: Array<() => void> = [];
+
+async function callReissue() {
+  const rtid = await getRtid();
+  if (!rtid) throw new Error('no rtid');
+  const res = await axios.post(`${API_BASE}/api/auth/mobile/reissue`, { rtid }, {
+    headers: { 'X-RTID': rtid },
+    timeout: 10000,
+  });
+  const payload = unwrap<{ accessToken: string; rtid?: string }>(res);
+  await saveLoginTokens(payload.accessToken, payload.rtid ?? rtid);
+}
 
 api.interceptors.response.use(
-  (res) => res,
+  (r) => r,
   async (err) => {
-    const original = err.config;
-    if (err?.response?.status !== 401 || original?._retry) {
-      return Promise.reject(err);
-    }
+    const original = err?.config;
+    if (err?.response?.status !== 401 || original?._retry) throw err;
     original._retry = true;
 
     if (isRefreshing) {
-      await new Promise((resolve, reject) => queue.push({ resolve, reject }));
+      await new Promise<void>((resolve) => waiters.push(resolve));
       return api(original);
     }
+
     isRefreshing = true;
     try {
-      const rt = await getRefreshToken();
-      if (!rt) throw new Error('no refresh');
-
-      // <- 백엔드 엔드포인트에 맞게 경로 확인: 예) /api/auth/refresh
-      const { data } = await axios.post(`${API_BASE}/api/auth/refresh`, { refreshToken: rt });
-      await saveTokens(data.accessToken, rt);
-
-      queue.forEach((p) => p.resolve());
-      queue = [];
+      await callReissue();
+      waiters.forEach((w) => w());
+      waiters = [];
       return api(original);
     } catch (e) {
-      queue.forEach((p) => p.reject(e));
-      queue = [];
+      waiters = [];
       await clearTokens();
-      return Promise.reject(e);
+      throw e;
     } finally {
       isRefreshing = false;
     }
   }
 );
 
-// 샘플 API
+// ===== 실제 API =====
+
+// 모바일 로그인: { accessToken, rtid, profile }
 export async function loginWithEmail(email: string, password: string) {
-  // <- 백엔드 경로/필드명 맞춰 수정: 예) /api/auth/login
-  const { data } = await api.post('/api/auth/login', { email, password });
-  return data as { accessToken: string; refreshToken: string };
+  const res = await api.post(`${API_BASE}/api/auth/mobile/login`, { email, password });
+  const payload = unwrap<{ accessToken: string; rtid: string; profile: { email: string; name: string; role?: string } }>(res);
+  await saveLoginTokens(payload.accessToken, payload.rtid);
+  return payload.profile;
+}
+
+export async function fetchMe() {
+  const res = await api.get('/api/auth/me');
+  return unwrap<{ email: string; name: string; role?: string }>(res);
+}
+
+// 응답 타입 (네 서버의 DTO에 맞춤)
+export type AnswerAnalysis = {
+  id: number;
+  seq: number;
+  question: string;
+  answer: string;
+  good: string;
+  bad: string;
+  score: number;
+  emotionText: string;
+  mediapipeText: string;
+  emotionScore: number;
+  blinkScore: number;
+  eyeScore: number;
+  headScore: number;
+  handScore: number;
+};
+
+export type AvgScore = {
+  score: number;
+  emotionScore: number;
+  blinkScore: number;
+  eyeScore: number;
+  headScore: number;
+  handScore: number;
+};
+
+export type Interview = {
+  uuid: string;
+  memberId: number;
+  createdAt: string; // ISO
+  job: string;
+  career: string;
+  type: string;
+  level: string;
+  language: string;
+  count: number;
+  answerAnalyses: AnswerAnalysis[];
+  avgScore: AvgScore[]; // 보통 [0] 하나만 옴
+};
+
+// 목록 조회 (경로명만 실제 서버에 맞게 바꿔)
+export async function fetchInterviewHistory() {
+  const res = await api.get('/api/interview-results'); // <-- 네 컨트롤러 @GetMapping 경로
+  return unwrap<Interview[]>(res);
+}
+// ---- 인터뷰 시작 타입 ----
+export type InterviewStartRequest = {
+  job: string;
+  count: number; // 동적 모드면 0
+  ocrText: string;
+  career: string; // "신입" 또는 "경력 3년차" 같은 문자열
+  interviewType: 'PERSONALITY' | 'TECHNICAL' | 'MIXED';
+  level: '상' | '중' | '하';
+  language: 'KOREAN' | 'ENGLISH';
+  seq: number; // 보통 1
+};
+
+export type FirstQuestionResponse = {
+  interviewId: string;
+  question: string;
+  seq: number;
+};
+
+// ---- OCR 업로드 (form-data) ----
+export async function uploadInterviewDocAsync(file: { uri: string; name: string; mimeType: string }) {
+  const fd = new FormData();
+  fd.append('file', {
+    uri: file.uri,
+    name: file.name,
+    type: file.mimeType,
+  } as any);
+
+  const res = await api.post('/api/interview/ocr', fd, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return unwrap<{ ocrOutPut: string }>(res);
+}
+
+// ---- 첫 질문 생성 ----
+export async function requestFirstQuestion(body: InterviewStartRequest) {
+  const res = await api.post('/api/interview/first-question', body);
+  return unwrap<FirstQuestionResponse>(res);
 }
