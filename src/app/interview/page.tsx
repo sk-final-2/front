@@ -65,35 +65,23 @@ export default function InterviewPage() {
   }, [analysisComplete, router]);
 
   const sendEnd = useCallback(async () => {
-    const res = await api.post("/api/interview/end", {
+    await api.post("/api/interview/end", {
       interviewId: interviewId,
       lastSeq: currentSeq,
     });
-    if (res.status === 200) {
-      console.log("✅ 면접 종료 API 호출 완료. interviewId:", interviewId);
-    }
+    console.log("✅ 면접 종료 API 호출 완료. interviewId:", interviewId);
   }, [interviewId, currentSeq]);
 
   useEffect(() => {
-    // isFinished가 true로 바뀌면 면접 종료 API 호출
-    if (isFinished) {
+    // isFinished가 true로 바뀌면 면접 종료 및 소켓 연결 시작
+    if (isFinished && interviewId) {
+      console.log("isFinished 감지. 면접 종료 및 소켓 연결 프로세스 시작.");
       sendEnd().catch((e) => {
         console.error("❌ 면접 종료 API 호출 실패:", e);
       });
-      console.log("소켓 연결 요청 시작 ▶▶▶▶▶");
       dispatch(startConnecting({ interviewId }));
-      console.log("현재 연결 상태 : ", isConnected);
-      console.log("연결 중 : ", isConnecting);
     }
-  }, [
-    isFinished,
-    interviewId,
-    currentSeq,
-    dispatch,
-    isConnected,
-    isConnecting,
-    sendEnd,
-  ]);
+  }, [isFinished, interviewId, dispatch, sendEnd]);
 
   // Redux 상태 변화 로깅 (질문/순번/ID)
   useEffect(() => {
