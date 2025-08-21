@@ -78,7 +78,25 @@ export async function fetchMe() {
   const res = await api.get('/api/auth/me');
   return unwrap<{ email: string; name: string; role?: string }>(res);
 }
-
+// 회원가입 API
+export async function signup(payload: {
+  email: string;
+  password: string;
+  name: string;
+  zipcode?: string;
+  address1?: string;
+  address2?: string;
+  gender: 'MALE' | 'FEMALE';
+  birth: string;
+}) {
+  const { data } = await api.post('/api/auth/signup', payload);
+  return data as {
+    status: number;
+    code: string;
+    message: string;
+    data?: any;
+  };
+}
 // 응답 타입 (네 서버의 DTO에 맞춤)
 export type AnswerAnalysis = {
   id: number;
