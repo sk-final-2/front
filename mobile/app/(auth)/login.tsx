@@ -54,7 +54,7 @@ export default function LoginScreen() {
       </Pressable>
 
       <Pressable
-        onPress={() => r.replace('/(auth)/signup')}
+        onPress={() => r.push('/(auth)/signup')}
         style={{ padding: 12, backgroundColor: '#eee', borderRadius: 8 }}
       >
         <Text style={{ textAlign: 'center', color: '#007AFF', fontWeight: '600' }}>
