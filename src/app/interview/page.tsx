@@ -37,13 +37,14 @@ export default function InterviewPage() {
   const { currentQuestion, interviewId, currentSeq, isFinished } =
     useAppSelector((state) => state.interview);
 
-  // 소켓 store
-  const { isConnecting, isConnected, analysisComplete } = useAppSelector(
-    (state) => state.socket,
-  );
-
   // 면접 결과 store
   const { answerAnalyses } = useAppSelector((state) => state.result);
+
+  // 다음 페이지 라우트 가능
+  const [goResult, setGoResult] = useState<boolean>(false);
+
+  // 결과 기다리는 로딩
+  const [loading, setLoading] = useState<boolean>(false);
 
   const [isClient, setIsClient] = useState(false);
   const [questionStarted, setQuestionStarted] = useState(false);
@@ -64,10 +65,8 @@ export default function InterviewPage() {
   }, []);
 
   useEffect(() => {
-    if (analysisComplete) {
-      router.replace("/result");
-    }
-  }, [analysisComplete, router]);
+    if (goResult) router.replace("/result");
+  }, [goResult]);
 
   const sendEnd = useCallback(async () => {
     await api.post("/api/interview/end", {
@@ -79,13 +78,12 @@ export default function InterviewPage() {
 
   useEffect(() => {
     // isFinished가 true로 바뀌면 면접 종료 및 소켓 연결 시작
-    if (isFinished && interviewId) {
+    if (isFinished) {
       console.log("isFinished 감지. 면접 종료 및 소켓 연결 프로세스 시작.");
       sendEnd().catch((e) => {
         console.error("❌ 면접 종료 API 호출 실패:", e);
       });
-      // dispatch(startConnecting({ interviewId }));
-
+      setLoading(true);
       const socket = new SockJS("http://localhost:8080/ws/interview"); // Spring WebSocket 엔드포인트
       const stompClient = new Client({
         webSocketFactory: () => socket,
@@ -101,8 +99,11 @@ export default function InterviewPage() {
                 dispatch(getInterviewResult({ interviewId }));
 
                 console.log("🎯 분석 결과:", answerAnalyses);
+                setGoResult(true);
               } catch (err) {
                 console.error("❌ 분석 결과 요청 실패", err);
+              } finally {
+                setLoading(false);
               }
             },
           );
@@ -367,15 +368,8 @@ export default function InterviewPage() {
     );
   }
 
-  // 소켓이 연결되고 결과를 기다리는 중
-  if (isConnecting) {
-    return (
-      <div className="w-full h-full flex flex-col items-center justify-center">
-        <span className="text-2xl text-black font-bold">
-          면접 결과를 기다리는 중...
-        </span>
-      </div>
-    );
+  if (loading) {
+    return <div>면접 결과 기다리는 중...</div>;
   }
 
   return (

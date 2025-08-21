@@ -39,12 +39,6 @@ const ResultPage = () => {
     answerAnalyses,
     avgScore,
   } = useAppSelector((state) => state.result);
-  const { interviewId } = useAppSelector((state) => state.interview);
-  // const interviewId = localStorage.getItem("InterviewId");
-  const dispatch = useAppDispatch();
-
-  // 로딩 상태
-  const [loading, setLoading] = useState(true);
 
   // 현재 선택된 질문 id
   const [currentSeq, setCurrentSeq] = useState(1);
