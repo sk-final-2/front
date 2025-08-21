@@ -37,10 +37,16 @@ startAppListening({
     try {
       const { interviewId } = action.payload; // 페이로드가 타입 추론됩니다.
 
-      const socket = new SockJS("/ws/interview");
+      console.log("interviewId: ", interviewId);
+      const socket = new SockJS(
+        `http://localhost:8080/ws/interview`,
+      );
       stompClient = new Client({
         webSocketFactory: () => socket,
         reconnectDelay: 5000,
+        debug: (str) => {
+          console.log(new Date(), str);
+        },
         onConnect: () => {
           listenerApi.dispatch(connectionEstablished());
 
@@ -66,6 +72,8 @@ startAppListening({
           listenerApi.dispatch(connectionError("WebSocket connection error"));
         },
       });
+
+      console.log("stompClient", stompClient);
 
       stompClient.activate();
     } catch (error: any) {

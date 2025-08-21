@@ -8,7 +8,7 @@
  * - DeviceSettings 컴포넌트 및 관련 로직(토글/일시정지) 전부 제거
  */
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 // ⬇️ 변경: getNextQuestion 대신 래퍼 thunk 사용
 import { submitAnswerAndMaybeEnd } from "@/store/interview/interviewSlice";
@@ -18,8 +18,7 @@ import UserVideo from "@/components/interview/UserVideo";
 import InterviewerView from "@/components/interview/InterviewerView";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axiosInstance";
-import { Dialog, DialogContent } from "@radix-ui/react-dialog";
-import { Button } from "@/components/ui/button";
+import { disconnect, startConnecting } from "@/store/socket/socketSlice";
 
 /** 에러 메시지 안전 변환 */
 function toErrorMessage(err: unknown): string {
@@ -35,6 +34,11 @@ export default function InterviewPage() {
   // 인터뷰 store
   const { currentQuestion, interviewId, currentSeq, isFinished } =
     useAppSelector((state) => state.interview);
+
+  // 소켓 store
+  const { isConnecting, isConnected, analysisComplete } = useAppSelector(
+    (state) => state.socket,
+  );
 
   const [isClient, setIsClient] = useState(false);
   const [questionStarted, setQuestionStarted] = useState(false);
@@ -54,31 +58,42 @@ export default function InterviewPage() {
     setIsClient(true);
   }, []);
 
-  const sendEnd = async () => {
+  useEffect(() => {
+    if (analysisComplete) {
+      router.replace("/result");
+    }
+  }, [analysisComplete, router]);
+
+  const sendEnd = useCallback(async () => {
     const res = await api.post("/api/interview/end", {
       interviewId: interviewId,
       lastSeq: currentSeq,
     });
-    console.log(res);
-    console.log("interviewId: ", interviewId);
-    // localStorage.setItem("InterviewId", interviewId);
-    return res; // axios가 2xx 아니면 throw 하므로 별도 status 체크 불필요
-  };
+    if (res.status === 200) {
+      console.log("✅ 면접 종료 API 호출 완료. interviewId:", interviewId);
+    }
+  }, [interviewId, currentSeq]);
 
   useEffect(() => {
-    if (!isFinished) return;
-    let called = false;
-    (async () => {
-      if (called) return;
-      called = true;
-      try {
-        // 면접이 끝났음을 알림
-        await sendEnd();
-      } catch (e) {
-        console.error(e);
-      }
-    })();
-  }, [isFinished, interviewId, currentSeq]);
+    // isFinished가 true로 바뀌면 면접 종료 API 호출
+    if (isFinished) {
+      sendEnd().catch((e) => {
+        console.error("❌ 면접 종료 API 호출 실패:", e);
+      });
+      console.log("소켓 연결 요청 시작 ▶▶▶▶▶");
+      dispatch(startConnecting({ interviewId }));
+      console.log("현재 연결 상태 : ", isConnected);
+      console.log("연결 중 : ", isConnecting);
+    }
+  }, [
+    isFinished,
+    interviewId,
+    currentSeq,
+    dispatch,
+    isConnected,
+    isConnecting,
+    sendEnd,
+  ]);
 
   // Redux 상태 변화 로깅 (질문/순번/ID)
   useEffect(() => {
@@ -330,25 +345,14 @@ export default function InterviewPage() {
     );
   }
 
-  // 면접이 끝난 경우
-  if (isFinished) {
+  // 소켓이 연결되고 결과를 기다리는 중
+  if (isConnecting) {
     return (
-      <Dialog>
-        <DialogContent className="sm:max-w-[425px]">
-          <div className="w-full flex flex-col">
-            <span className="text-2xl text-accent-foreground">
-              면접이 종료되었습니다.
-            </span>
-            <Button
-              onClick={() => {
-                router.replace("/interview/loading");
-              }}
-            >
-              확인
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <div className="w-full h-full flex flex-col items-center justify-center">
+        <span className="text-2xl text-black font-bold">
+          면접 결과를 기다리는 중...
+        </span>
+      </div>
     );
   }
 
