@@ -39,8 +39,8 @@ const ResultPage = () => {
     answerAnalyses,
     avgScore,
   } = useAppSelector((state) => state.result);
-  // const { interviewId } = useAppSelector((state) => state.interview);
-  const interviewId = localStorage.getItem("InterviewId");
+  const { interviewId } = useAppSelector((state) => state.interview);
+  // const interviewId = localStorage.getItem("InterviewId");
   const dispatch = useAppDispatch();
 
   // 로딩 상태
@@ -48,7 +48,6 @@ const ResultPage = () => {
 
   // 현재 선택된 질문 id
   const [currentSeq, setCurrentSeq] = useState(1);
-
   const handleCurrentSeq = (seq: number) => {
     setCurrentSeq(seq);
   };
@@ -59,7 +58,6 @@ const ResultPage = () => {
       // 결과 받기
       dispatch(getInterviewResult({ interviewId }));
       console.log("interviewId: ", interviewId);
-      console.log(avgScore);
     } catch (err) {
       console.error(err);
     } finally {
@@ -125,24 +123,17 @@ const ResultPage = () => {
           <InterviewVideoComponent />
 
           {/** 그래프 컴포넌트 */}
-          {/* <TotalGraphComponent
+          <TotalGraphComponent
             score={avgScore[0]?.score ? avgScore[0].score : 0.0}
             emotionScore={avgScore[0]?.emotionScore ? avgScore[0].emotionScore : 0.0}
             blinkScore={avgScore[0]?.blinkScore ? avgScore[0].blinkScore : 0.0}
             eyeScore={avgScore[0]?.eyeScore ? avgScore[0].eyeScore : 0.0}
             headScore={avgScore[0]?.headScore ? avgScore[0].headScore : 0.0}
             handScore={avgScore[0]?.handScore ? avgScore[0].handScore : 0.0}
-          /> */}
+          />
 
           {/** 분석 리포트 컴포넌트 */}
           <TotalEvaluationComponent />
-
-          {/** TTS 테스트 컴포넌트 */}
-          <SpeechComponent
-            text={
-              "협업을 해야 하는 과제와 혼자 해야 하는 과제가 이렇게 있다고 하였을 때 지원자님께서 더 선호하시는 과제는 무엇인지 이유와 함께 설명해 주십시오"
-            }
-          />
         </div>
       </div>
     </div>

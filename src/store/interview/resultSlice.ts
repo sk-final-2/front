@@ -137,19 +137,7 @@ const interviewResultSlice = createSlice({
   initialState,
   reducers: {
     // 면접 결과 초기화 액션
-    clearResult: (state) => {
-      state.uuid = null;
-      state.memberId = null;
-      state.createdAt = null;
-      state.job = null;
-      state.career = null;
-      state.type = null;
-      state.level = null;
-      state.language = null;
-      state.count = null;
-      state.answerAnalyses = [];
-      state.avgScore = [];
-    },
+    clearResult: () => initialState,
   },
   extraReducers: (builder) => {
     builder
@@ -162,6 +150,7 @@ const interviewResultSlice = createSlice({
         getInterviewResult.fulfilled,
         (state, action: PayloadAction<InterviewResultResponse>) => {
           const data = action.payload.data;
+          console.log(">>>> ★ 결과 응답 데이터 : ", data);
 
           state.status = "succeeded";
           state.uuid = data.uuid;

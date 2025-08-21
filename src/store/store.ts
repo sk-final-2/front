@@ -2,7 +2,9 @@ import interviewSlice from "./interview/interviewSlice";
 import interviewResultSlice from "./interview/resultSlice";
 import authSlice from "@/store/auth/authSlice";
 import mediaSlice from "./media/mediaSlice";
+import socketSlice from "./socket/socketSlice";
 import { configureStore } from "@reduxjs/toolkit";
+import { listenerMiddleware } from "./socket/socketMiddleware";
 
 export const makeStore = () =>
   configureStore({
@@ -11,7 +13,10 @@ export const makeStore = () =>
       interview: interviewSlice,
       media: mediaSlice,
       result: interviewResultSlice,
+      socket: socketSlice,
     },
+    middleware: (getDefaultMiddleware) =>
+      getDefaultMiddleware().prepend(listenerMiddleware.middleware),
   });
 
 // 타입 정의도 함께 export

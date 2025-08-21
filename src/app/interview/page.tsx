@@ -18,6 +18,8 @@ import UserVideo from "@/components/interview/UserVideo";
 import InterviewerView from "@/components/interview/InterviewerView";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axiosInstance";
+import { Dialog, DialogContent } from "@radix-ui/react-dialog";
+import { Button } from "@/components/ui/button";
 
 /** 에러 메시지 안전 변환 */
 function toErrorMessage(err: unknown): string {
@@ -30,6 +32,7 @@ export default function InterviewPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
 
+  // 인터뷰 store
   const { currentQuestion, interviewId, currentSeq, isFinished } =
     useAppSelector((state) => state.interview);
 
@@ -51,30 +54,31 @@ export default function InterviewPage() {
     setIsClient(true);
   }, []);
 
-const sendEnd = async () => {
-  const res = await api.post("/api/interview/end", { interviewId: interviewId, lastSeq: currentSeq });
-  console.log(res);
-  console.log("interviewId: ", interviewId);
-  localStorage.setItem("InterviewId", interviewId);
-  return res; // axios가 2xx 아니면 throw 하므로 별도 status 체크 불필요
-};
+  const sendEnd = async () => {
+    const res = await api.post("/api/interview/end", {
+      interviewId: interviewId,
+      lastSeq: currentSeq,
+    });
+    console.log(res);
+    console.log("interviewId: ", interviewId);
+    // localStorage.setItem("InterviewId", interviewId);
+    return res; // axios가 2xx 아니면 throw 하므로 별도 status 체크 불필요
+  };
 
-useEffect(() => {
-  if (!isFinished) return;
-  let called = false;
-  (async () => {
-    if (called) return;
-    called = true;
-    try {
-      await sendEnd();
-      router.replace("/");
-    } catch (e) {
-      console.error(e);
-      // 실패 시 이동할지 말지는 여기서 결정
-      // router.replace("/");
-    }
-  })();
-}, [isFinished, interviewId, currentSeq, router]);
+  useEffect(() => {
+    if (!isFinished) return;
+    let called = false;
+    (async () => {
+      if (called) return;
+      called = true;
+      try {
+        // 면접이 끝났음을 알림
+        await sendEnd();
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+  }, [isFinished, interviewId, currentSeq]);
 
   // Redux 상태 변화 로깅 (질문/순번/ID)
   useEffect(() => {
@@ -323,6 +327,28 @@ useEffect(() => {
   if (!isClient) {
     return (
       <div className="p-8 text-center">면접 환경을 불러오는 중입니다...</div>
+    );
+  }
+
+  // 면접이 끝난 경우
+  if (isFinished) {
+    return (
+      <Dialog>
+        <DialogContent className="sm:max-w-[425px]">
+          <div className="w-full flex flex-col">
+            <span className="text-2xl text-accent-foreground">
+              면접이 종료되었습니다.
+            </span>
+            <Button
+              onClick={() => {
+                router.replace("/interview/loading");
+              }}
+            >
+              확인
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   }
 
