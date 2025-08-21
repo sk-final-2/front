@@ -5,7 +5,7 @@ import axios from "axios";
 
 // 면접 결과 요청 형식
 export type InterviewResultRequest = {
-  interviewId: string;
+  interviewId: string | null;
 };
 
 // 개별 답변 분석 결과
@@ -78,6 +78,7 @@ export const getInterviewResult = createAsyncThunk<
       },
     );
     const bodyData = response.data;
+    console.log(bodyData);
 
     // 성공 응답 중 code가 "SUCCESS"인 경우에만 성공으로 처리
     if (response.status === 200) {

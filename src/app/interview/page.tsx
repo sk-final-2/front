@@ -17,6 +17,7 @@ import QuestionDisplay from "@/components/interview/QuestionDisplay";
 import UserVideo from "@/components/interview/UserVideo";
 import InterviewerView from "@/components/interview/InterviewerView";
 import { useRouter } from "next/navigation";
+import api from "@/lib/axiosInstance";
 
 /** 에러 메시지 안전 변환 */
 function toErrorMessage(err: unknown): string {
@@ -50,12 +51,30 @@ export default function InterviewPage() {
     setIsClient(true);
   }, []);
 
-  // 종료되면 결과 페이지로 이동 (경로는 필요에 맞게 수정)
-  useEffect(() => {
-    if (isFinished) {
-      router.replace("/result");
+const sendEnd = async () => {
+  const res = await api.post("/api/interview/end", { interviewId: interviewId, lastSeq: currentSeq });
+  console.log(res);
+  console.log("interviewId: ", interviewId);
+  localStorage.setItem("InterviewId", interviewId);
+  return res; // axios가 2xx 아니면 throw 하므로 별도 status 체크 불필요
+};
+
+useEffect(() => {
+  if (!isFinished) return;
+  let called = false;
+  (async () => {
+    if (called) return;
+    called = true;
+    try {
+      await sendEnd();
+      router.replace("/");
+    } catch (e) {
+      console.error(e);
+      // 실패 시 이동할지 말지는 여기서 결정
+      // router.replace("/");
     }
-  }, [isFinished, router]);
+  })();
+}, [isFinished, interviewId, currentSeq, router]);
 
   // Redux 상태 변화 로깅 (질문/순번/ID)
   useEffect(() => {
