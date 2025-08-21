@@ -68,7 +68,7 @@ export const getInterviewResult = createAsyncThunk<
 >("get/result", async (body: InterviewResultRequest, { rejectWithValue }) => {
   try {
     const response = await api.post<InterviewResultResponse>(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/interview/result`,
+      `/api/interview/result`,
       body,
       {
         headers: {
