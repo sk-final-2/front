@@ -194,30 +194,30 @@ export const endInterview = createAsyncThunk<
   }
 });
 
+// ⬇️ 반환 타입을 void -> { finished: boolean } 로 변경
 export const submitAnswerAndMaybeEnd = createAsyncThunk<
-  void,
+  { finished: boolean },
   FormData,
   { state: { interview: InterviewState }; rejectValue: string }
 >(
   "interview/submitAnswerAndMaybeEnd",
   async (formData, { dispatch, getState, rejectWithValue }) => {
     try {
-      // ✅ 업로드 전의 seq = 방금 "답한" 질문 번호
+      // 업로드 전 seq: 방금 답한 질문 번호
       const { interview } = getState();
       const seqBefore = interview.currentSeq;
       const { interviewId, totalCount } = interview;
 
-      // 1) 업로드 + 다음 질문 수신(로컬 상태는 위 1) 수정으로 항상 전진)
+      // 1) 업로드 + 다음 질문 수신
       const res = await dispatch(getNextQuestion(formData)).unwrap();
 
-      // 2) 종료 여부 판단: 클라 개수 > 서버 keepGoing
-      const isStatic = typeof totalCount === "number" && totalCount > 0; // 🔧 0은 동적
+      // 2) 종료 판단
+      const isStatic = typeof totalCount === "number" && totalCount > 0; // 0/null 은 동적
       const shouldEnd = isStatic
-        ? seqBefore >= (totalCount as number) // 정적: 개수 다 채우면 종료
-        : res.data.keepGoing === false; // 동적: keepGoing false일 때만 종료
+        ? seqBefore >= (totalCount as number) // 정적: 개수 다 채움
+        : res.data.keepGoing === false; // 동적: keepGoing=false
 
       if (shouldEnd && interviewId) {
-        // 🔒 interviewId가 있을 때만 호출(안전)
         await dispatch(
           endInterview({ interviewId, lastSeq: seqBefore }),
         ).unwrap();
@@ -236,8 +236,9 @@ export const submitAnswerAndMaybeEnd = createAsyncThunk<
         shouldEnd,
       ); // [DELETE-ME LOG]
 
+      // 👇 UI가 즉시 분기할 수 있도록 반환
+      return { finished: shouldEnd };
     } catch (e: unknown) {
-      // 에러는 unknown이므로 타입 가드 필요
       if (e instanceof Error) {
         return rejectWithValue(e.message || "업로드/종료 처리 실패");
       }

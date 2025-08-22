@@ -38,7 +38,7 @@ export default function InterviewPage() {
   const router = useRouter();
 
   // 인터뷰 store
-  const { currentQuestion, interviewId, currentSeq, isFinished } =
+  const { currentQuestion, interviewId, currentSeq, isFinished, totalCount } =
     useAppSelector((state) => state.interview);
 
   // 면접 결과 store
@@ -72,6 +72,7 @@ export default function InterviewPage() {
 
   //질문 로딩 관련
   const [awaitingNext, setAwaitingNext] = useState(false);
+  const [finishing, setFinishing] = useState(false);
   const prevSeqRef = useRef<number | null>(null);
 
   // 클라이언트 여부
@@ -342,12 +343,24 @@ export default function InterviewPage() {
       }
     }
 
-    setAwaitingNext(true); // ⬅️ 제출 직후 켠다
+    // 🔎 정적 모드에서 '이번 제출이 마지막'인지 미리 계산
+    const isStaticLast =
+      typeof totalCount === "number" &&
+      totalCount > 0 &&
+      currentSeq === totalCount;
+
+    // ⛔ 정적 마지막이면 '다음 질문 로딩' 대신 곧바로 결과 로딩 화면으로 전환
+    if (isStaticLast) {
+      console.log("✅ 정적 마지막 제출 → finishing ON"); // [DELETE-ME LOG]
+      setFinishing(true);
+    } else {
+      setAwaitingNext(true);
+    }
 
     const t0 = performance.now();
     try {
       // ⬇️ 변경: getNextQuestion → submitAnswerAndMaybeEnd
-      await dispatch(submitAnswerAndMaybeEnd(formData)).unwrap();
+      const res = await dispatch(submitAnswerAndMaybeEnd(formData)).unwrap();
       const t1 = performance.now();
 
       console.log("✅ [Response] wrapper success"); // [DELETE-ME LOG]
@@ -356,12 +369,19 @@ export default function InterviewPage() {
         Math.round(t1 - t0),
       ); // [DELETE-ME LOG]
 
+      // 🔚 동적 모드에서 finished=true면 결과 대기만 보여야 하므로 즉시 끈다
+      if (res?.finished === true) {
+        setFinishing(true);
+        setAwaitingNext(false);
+      }
+
       // 🔵 다음 질문을 위해 다시 false로 두고, 새 질문에서 TTS가 끝나면 true가 됨
       setQuestionStarted(false);
 
       console.log("🧭 [Post] expected next seq:", currentSeq + 1); // [DELETE-ME LOG]
     } catch (e: unknown) {
       setAwaitingNext(false); // 실패 시에는 즉시 해제
+      setFinishing(false);
       console.error("❌ [Dispatch Failed] 제출/다음 질문/종료 오류:", e); // [DELETE-ME LOG]
       alert(toErrorMessage(e));
     } finally {
@@ -375,7 +395,7 @@ export default function InterviewPage() {
     );
   }
 
-  if (loading) {
+  if (loading || finishing) {
     return <div>면접 결과 기다리는 중...</div>;
   }
 
@@ -383,8 +403,7 @@ export default function InterviewPage() {
     <Suspense>
       <div className="p-8 space-y-4">
         {/* 질문 표시 */}
-        {awaitingNext ? (
-          // 스켈레톤 (QuestionDisplay 자리에)
+        {awaitingNext && !isFinished && !finishing ? (
           <div
             className="h-14 rounded-md bg-gray-100 animate-pulse"
             aria-busy="true"
@@ -425,7 +444,7 @@ export default function InterviewPage() {
             <UserVideo stream={stream} />
 
             {/* 🔇 TTS 재생 중이면 컨트롤 완전히 숨김 */}
-            {!isTtsPlaying && currentQuestion ? (
+            {!isTtsPlaying && !finishing && !awaitingNext && currentQuestion ? (
               <RecordingControls
                 stream={stream}
                 questionStarted={questionStarted}
@@ -434,18 +453,16 @@ export default function InterviewPage() {
               />
             ) : null}
 
-            {/* 대기 오버레이 */}
-            {awaitingNext && (
+            {/* '다음 질문 준비 중' 오버레이: 종료상태(isFinished)에서는 절대 보이지 않음 */}
+            {awaitingNext && !isFinished && !finishing && (
               <div
                 className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-white/70 backdrop-blur-sm rounded-md"
                 aria-live="polite"
               >
-                {/* 스피너 */}
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
                 <div className="text-sm text-gray-700">
                   다음 질문을 준비 중이에요…
                 </div>
-                {/* 8초 이상 걸릴 때만 보이는 힌트 (선택) */}
                 {/* <SlowHint /> */}
               </div>
             )}
