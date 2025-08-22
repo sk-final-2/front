@@ -28,8 +28,7 @@ let stompClient: Client | null = null;
 startAppListening({
   actionCreator: startConnecting,
   effect: async (action, listenerApi) => {
-    const { isConnected, isConnecting } = listenerApi.getState().socket;
-    if (stompClient || isConnected || isConnecting) {
+    if (stompClient) {
       console.log("이미 연결 프로세스가 진행 중이거나 연결되어 있습니다.");
       return;
     }
