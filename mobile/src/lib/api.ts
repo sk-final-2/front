@@ -181,3 +181,44 @@ export async function requestFirstQuestion(body: InterviewStartRequest) {
   const res = await api.post('/api/interview/first-question', body);
   return unwrap<FirstQuestionResponse>(res);
 }
+
+// ============ 인터뷰 답변 업로드 ============
+export type UploadAnswerResponse = {
+  interviewId: string;
+  newQuestion: string;
+  keepGoing: boolean;
+};
+
+export async function uploadInterviewAnswer(params: {
+  videoUri: string;
+  interviewId: string;
+  seq: number;
+  question: string;
+}) {
+  const fd = new FormData();
+  fd.append('file', {
+    uri: params.videoUri,
+    name: `answer-${params.seq}.mp4`,
+    type: 'video/mp4',
+  } as any);
+  fd.append('seq', String(params.seq));
+  fd.append('interviewId', params.interviewId);
+  fd.append('question', params.question);
+
+  const res = await api.post('/api/interview/answer', fd, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60_000,
+  });
+  return unwrap<UploadAnswerResponse>(res);
+}
+
+export async function endInterview(interviewId: string, lastSeq: number) {
+  const res = await api.post('/api/interview/end', { interviewId, lastSeq });
+  return unwrap<string>(res); // data는 "string" 문구
+}
+
+// 면접 결과 조회
+export async function fetchInterviewResult(interviewId: string) {
+  const res = await api.post('/api/interview/result', { interviewId });
+  return unwrap<any>(res); // 서버의 InterviewResponseDto 그대로
+}

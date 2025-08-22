@@ -98,6 +98,7 @@ export default function InterviewPrepare() {
           id: first.interviewId,
           seq: String(first.seq),
           question: first.question,
+          expected: String(dynamicCount ? 0 : count), // 0 = 동적 모드
         },
       });
     } catch (e: any) {
