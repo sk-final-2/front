@@ -24,27 +24,34 @@ export default function Login() {
     }
   }
 
-  async function onSocial(provider: 'kakao' | 'google') {
+   async function onSocial(provider: 'kakao' | 'google') {
     try {
-      setSocialLoading(provider);
-      const res = await startSocialLogin(provider); // 딥링크/OTT까지 내부에서 처리
+      setLoading(true);
+      const res = await startSocialLogin(provider);
+
       if (res.needSignup) {
+        // ▶︎ 카카오/구글 별 가입 폼으로 라우팅
+        const pathname =
+          (res.provider ?? provider) === 'kakao'
+            ? '/(auth)/kakao-signup'
+            : '/(auth)/google-signup';
+
         r.push({
-          pathname: '/(auth)/social-signup',
+          pathname,
           params: {
             email: res.email ?? '',
             name: res.name ?? '',
-            provider: res.provider ?? provider,
           },
         });
         return;
       }
+
       Alert.alert('로그인 성공');
       r.replace('/(app)');
     } catch (e: any) {
       Alert.alert('소셜 로그인 실패', e?.message ?? '에러');
     } finally {
-      setSocialLoading(null);
+      setLoading(false);
     }
   }
 
