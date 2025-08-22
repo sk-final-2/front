@@ -70,6 +70,10 @@ export default function InterviewPage() {
   //tts 나오는 동안 recordingcontrols 숨기고 나타내고
   const [isTtsPlaying, setIsTtsPlaying] = useState(false);
 
+  //질문 로딩 관련
+  const [awaitingNext, setAwaitingNext] = useState(false);
+  const prevSeqRef = useRef<number | null>(null);
+
   // 클라이언트 여부
   useEffect(() => {
     setIsClient(true);
@@ -279,6 +283,18 @@ export default function InterviewPage() {
     };
   }, [isClient, selectedVideoDeviceId, selectedAudioDeviceId, preferredVideo]);
 
+  // seq가 증가(=다음 질문 도착)하면 awaitingNext 해제
+  useEffect(() => {
+    if (
+      prevSeqRef.current !== null &&
+      currentSeq &&
+      currentSeq > (prevSeqRef.current ?? 0)
+    ) {
+      setAwaitingNext(false);
+    }
+    prevSeqRef.current = currentSeq ?? null;
+  }, [currentSeq]);
+
   // 제출 핸들러 — 래퍼 thunk로 교체
   const handleSubmit = async (blob: Blob) => {
     console.log("🚀 [Submit] interviewId:", interviewId); // [DELETE-ME LOG]
@@ -326,6 +342,8 @@ export default function InterviewPage() {
       }
     }
 
+    setAwaitingNext(true); // ⬅️ 제출 직후 켠다
+
     const t0 = performance.now();
     try {
       // ⬇️ 변경: getNextQuestion → submitAnswerAndMaybeEnd
@@ -343,6 +361,7 @@ export default function InterviewPage() {
 
       console.log("🧭 [Post] expected next seq:", currentSeq + 1); // [DELETE-ME LOG]
     } catch (e: unknown) {
+      setAwaitingNext(false); // 실패 시에는 즉시 해제
       console.error("❌ [Dispatch Failed] 제출/다음 질문/종료 오류:", e); // [DELETE-ME LOG]
       alert(toErrorMessage(e));
     } finally {
@@ -363,8 +382,16 @@ export default function InterviewPage() {
   return (
     <Suspense>
       <div className="p-8 space-y-4">
-        {/* 질문 표시 (UI엔 로그 없음) */}
-        <QuestionDisplay question={currentQuestion} />
+        {/* 질문 표시 */}
+        {awaitingNext ? (
+          // 스켈레톤 (QuestionDisplay 자리에)
+          <div
+            className="h-14 rounded-md bg-gray-100 animate-pulse"
+            aria-busy="true"
+          />
+        ) : (
+          <QuestionDisplay question={currentQuestion} />
+        )}
 
         {/* 🔵 질문이 바뀌면 자동으로 읽고, 끝나면 녹화/타이머 시작 신호(questionStarted=true) */}
         <TtsComponent
@@ -406,6 +433,22 @@ export default function InterviewPage() {
                 onManualSubmit={handleSubmit}
               />
             ) : null}
+
+            {/* 대기 오버레이 */}
+            {awaitingNext && (
+              <div
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-white/70 backdrop-blur-sm rounded-md"
+                aria-live="polite"
+              >
+                {/* 스피너 */}
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
+                <div className="text-sm text-gray-700">
+                  다음 질문을 준비 중이에요…
+                </div>
+                {/* 8초 이상 걸릴 때만 보이는 힌트 (선택) */}
+                {/* <SlowHint /> */}
+              </div>
+            )}
 
             {/* 미리보기 (UI 로그 없음) */}
             {previewUrl && (
