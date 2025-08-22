@@ -1,8 +1,20 @@
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Dimensions, ActivityIndicator } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 import Svg, { G, Polygon, Line, Text as SvgText } from 'react-native-svg';
+import { getResult } from '../../../src/lib/resultCache';
+import { getAccessToken } from '../../../src/lib/auth';
+
+const { API_BASE } = (Constants.expoConfig?.extra ?? {}) as any;
+
+function mediaUrl(interviewId: string | number, seq: number) {
+  const u = new URL('/api/interview/media', API_BASE);
+  u.searchParams.set('interviewId', String(interviewId));
+  u.searchParams.set('seq', String(seq));
+  return u.toString();
+}
 
 type TS = { time: string; reason: string };
 type AnswerAnalysis = {
@@ -37,56 +49,6 @@ type ResultData = {
   avgScore?: { score: number; emotionScore: number; blinkScore: number; eyeScore: number; headScore: number; handScore: number }[];
 };
 
-// ===== 테스트용 샘플(실사용시 삭제) =====
-const SAMPLE: ResultData = {
-  uuid: "e7ae36ec-5d05-452a-8da8-308a6f847c34",
-  memberId: 1,
-  createdAt: "2025년 08월 19일 17:32:42",
-  job: "프론트엔드 개발자",
-  career: "신입",
-  type: "MIXED",
-  level: "하",
-  language: "KOREAN",
-  count: 2,
-  answerAnalyses: [
-    {
-      seq: 1,
-      question: "자기소개 해보세요",
-      answer: "입력: \"KFC 파트너로 2년 넘게 근무했고 모든 포지션에 투입되어서 근무했었습니다.  KFC에서 제대로 일해보고 싶어서 매니저직에 지원했습니다.\"",
-      good: "직장 경험이 풍부하고 다양한 포지션에 투입된 경험이 있는 것",
-      bad: "지원 동기나 목표가 명확하지 않아 지원 이유를 잘 설명하지 못한 것",
-      score: 60,
-      emotionText: "표정 감지 분석 결과: 행복 1초, 화남 1초, 무표정 3초, 슬픔 6초, 두려움 4초로 인해 감점 20점, 점수는 80점입니다!",
-      mediapipeText: "눈 깜빡임 감지 분석 결과: 감점 없이 만점입니다! 점수는 100점입니다!\n시선처리 감지 분석 결과: 감점 없이 만점입니다! 점수는 100점입니다!\n고개 각도 감지 분석 결과: 감점 없이 만점입니다! 점수는 100점입니다!\n손 움직임 감지 분석 결과: 감점 없이 만점입니다! 점수는 100점입니다!",
-      emotionScore: 80,
-      blinkScore: 100, eyeScore: 100, headScore: 100, handScore: 100,
-      timestamp: [
-        { time: "00:10", reason: "표정 감지" }, { time: "00:11", reason: "표정 감지" }, { time: "00:12", reason: "표정 감지" },
-        { time: "00:13", reason: "표정 감지" }, { time: "00:14", reason: "표정 감지" },
-      ],
-    },
-    {
-      seq: 2,
-      question: "KFC에서 근무하면서 배가 고팠어요 ㅠㅠ 그래서 밥 ",
-      answer: "입력: \"KFC 파트너로 2년 넘게 근무했고 모든 포지션에 투입되어서 근무했었습니다.  KFC에서 제대로 일해보고 싶어서 매니저직에 지원했습니다.\"",
-      good: "직장 경험이 풍부하고 다양한 포지션에 투입된 경험이 있습니다.",
-      bad: "지원동기나 목표가 분명하지 않습니다.",
-      score: 60,
-      emotionText: "표정 감지 분석 결과: 행복 1초, 화남 1초, 무표정 3초, 슬픔 6초, 두려움 4초로 인해 감점 20점, 점수는 80점입니다!",
-      mediapipeText: "눈 깜빡임 감지 분석 결과: 감점 없이 만점입니다! 점수는 100점입니다!\n시선처리 감지 분석 결과: 감점 없이 만점입니다! 점수는 100점입니다!\n고개 각도 감지 분석 결과: 감점 없이 만점입니다! 점수는 100점입니다!\n손 움직임 감지 분석 결과: 감점 없이 만점입니다! 점수는 100점입니다!",
-      emotionScore: 80,
-      blinkScore: 100, eyeScore: 100, headScore: 100, handScore: 100,
-      timestamp: [
-        { time: "00:01", reason: "표정 감지" }, { time: "00:03", reason: "표정 감지" }, { time: "00:04", reason: "표정 감지" },
-        { time: "00:07", reason: "표정 감지" }, { time: "00:08", reason: "표정 감지" }, { time: "00:09", reason: "표정 감지" },
-        { time: "00:10", reason: "표정 감지" }, { time: "00:11", reason: "표정 감지" }, { time: "00:12", reason: "표정 감지" },
-        { time: "00:13", reason: "표정 감지" }, { time: "00:14", reason: "표정 감지" },
-      ],
-    }
-  ],
-  avgScore: [{ score: 83.0, emotionScore: 86.0, blinkScore: 84.4, eyeScore: 84.4, headScore: 74.6, handScore: 81.6 }],
-};
-
 const THEME = {
   primary: '#111827',
   text: '#111827',
@@ -101,121 +63,123 @@ const THEME = {
 };
 
 const screenW = Dimensions.get('window').width;
-const categories = ['감정', '깜빡임', '시선', '고개', '손'];
+
+const mmssToSec = (s: string) => {
+  const [m, sec] = s.split(':').map(n => +n || 0);
+  return m * 60 + sec;
+};
+
+// 안전 숫자 변환
+const toNum = (v: any, def = 0) => {
+  const n = typeof v === 'string' ? parseFloat(v) : Number(v);
+  return Number.isFinite(n) ? n : def;
+};
+// 점수 표시용
+const fmtScore = (v: any) => {
+  const n = toNum(v, NaN);
+  return Number.isFinite(n) ? n.toFixed(1) : '-';
+};
 
 export default function ResultScreen() {
+  const r = useRouter();
+  const { id } = useLocalSearchParams<{ id?: string }>();
 
-  const result: ResultData = SAMPLE;
+  // 캐시에서 결과 꺼내기 (id가 있으면 해당 결과, 없으면 마지막 결과)
+  const result = useMemo(() => getResult(id?.toString()), [id]) as ResultData | undefined;
 
-  // 1) 평균(또는 문항별 평균) 계산
+  // 캐시에 없을 때 안전 처리
+  if (!result) {
+    return (
+      <View style={{ flex:1, alignItems:'center', justifyContent:'center', padding:16 }}>
+        <Text style={{ marginBottom:12 }}>결과 데이터를 찾을 수 없어요.</Text>
+        <TouchableOpacity
+          onPress={() => r.replace('/')}
+          style={{ paddingHorizontal:16, paddingVertical:10, backgroundColor:'#111827', borderRadius:10 }}
+        >
+          <Text style={{ color:'#fff', fontWeight:'700' }}>홈으로</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // 2) 평균(또는 문항별 평균) 계산
   const overall = useMemo(() => {
     const avg = result.avgScore?.[0];
     if (avg) {
       return {
         byCat: [
-          { label: '감정',   value: avg.emotionScore },
-          { label: '깜빡임', value: avg.blinkScore },
-          { label: '시선',   value: avg.eyeScore },
-          { label: '고개',   value: avg.headScore },
-          { label: '손',     value: avg.handScore },
+          { label: '감정',   value: toNum(avg.emotionScore) },
+          { label: '깜빡임', value: toNum(avg.blinkScore) },
+          { label: '시선 처리',   value: toNum(avg.eyeScore) },
+          { label: '고개 움직임',   value: toNum(avg.headScore) },
+          { label: '손 움직임',     value: toNum(avg.handScore) },
         ],
       };
     }
-    // avgScore가 없으면 문항별로 계산
     const n = result.answerAnalyses.length || 1;
     const sum = { emotion:0, blink:0, eye:0, head:0, hand:0 };
     result.answerAnalyses.forEach(a => {
-      sum.emotion += a.emotionScore ?? 0;
-      sum.blink   += a.blinkScore   ?? 0;
-      sum.eye     += a.eyeScore     ?? 0;
-      sum.head    += a.headScore    ?? 0;
-      sum.hand    += a.handScore    ?? 0;
+      sum.emotion += toNum(a.emotionScore);
+      sum.blink   += toNum(a.blinkScore);
+      sum.eye     += toNum(a.eyeScore);
+      sum.head    += toNum(a.headScore);
+      sum.hand    += toNum(a.handScore);
     });
     return {
       byCat: [
-        { label: '감정',   value: +(sum.emotion/n).toFixed(1) },
-        { label: '깜빡임', value: +(sum.blink/n).toFixed(1) },
-        { label: '시선',   value: +(sum.eye/n).toFixed(1) },
-        { label: '고개',   value: +(sum.head/n).toFixed(1) },
-        { label: '손',     value: +(sum.hand/n).toFixed(1) },
+        { label: '감정',   value: sum.emotion / n },
+        { label: '깜빡임', value: sum.blink   / n },
+        { label: '시선',   value: sum.eye     / n },
+        { label: '고개 움직임',   value: sum.head    / n },
+        { label: '손 움직임',     value: sum.hand    / n },
       ],
     };
   }, [result]);
 
-  // 실제에선 params로 JSON/동영상맵을 받을 수 있어요.
-  // const { data, videos } = useLocalSearchParams<{ data?: string; videos?: string }>();
-  // const result: ResultData = data ? JSON.parse(decodeURIComponent(data)) : SAMPLE;
-  // const videosBySeq: Record<string, string> | null = videos ? JSON.parse(decodeURIComponent(videos)) : null;
-  
-  // 데모용: seq→동영상 URL 매핑 (실제 URL로 바꿔주세요)
-  const videosBySeq: Record<string, number> = {
-    '1': require('./test.mp4'),
-    '2': require('./abx.mp4'),
-  };
+  // 3) 질문 탭/현재 질문
+  const [idx, setIdx] = useState(0);
+  const current = result.answerAnalyses[Math.min(idx, result.answerAnalyses.length - 1)];
 
-  const [idx, setIdx] = useState(0); // 현재 선택한 질문 index
-  const current = result.answerAnalyses[idx];
-
-  // 현재 질문의 영상 URL
-  const videoSrc = videosBySeq?.[String(current.seq)] ?? null;
-
-  // ❶ 플레이어 한 번 만들고
-  const player = useVideoPlayer(null, (p) => {
-    p.loop = false;
-  });
-
+  // 5) expo-video player
+  const player = useVideoPlayer(null, (p) => { p.loop = false; });
   const [vidLoading, setVidLoading] = useState(false);
 
-  const mmssToSec = (s: string) => {
-    const [m, sec] = s.split(':').map(n => +n || 0);
-    return m * 60 + sec;
-  };
+  // 현재 질문의 원격 소스 구성
+  const source: VideoSource | null = id ? {
+    uri: mediaUrl(id, current.seq),
+    contentType: 'progressive',  // mp4 스트리밍에 적합
+    useCaching: true,
+    headers: {
+      // 백엔드 인증이 필요 없다면 이 줄은 제거하세요
+      Authorization: `Bearer ${getAccessToken() || ''}`,
+    },
+  } : null;
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setVidLoading(true);
+        player.pause();
+        await player.replaceAsync(source); // iOS도 렉 없이 안전
+        if (!cancelled && source) {
+          // 자동재생 원치 않으면 이 줄을 주석 처리
+          player.play();
+        }
+      } catch (e) {
+        await player.replaceAsync(null);
+      } finally {
+        if (!cancelled) setVidLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // seq나 id가 바뀔 때만 로드
+  }, [source?.uri]);
 
   const onPressTs = (ts: string) => {
     player.currentTime = mmssToSec(ts);
     player.play();
   };
-
-  // ❷ 질문 바뀔 때 소스를 교체
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      const src = videosBySeq[String(current.seq)] ?? null;
-
-      // 기존 동기 replace() 사용 금지
-      try {
-        setVidLoading(true);
-        player.pause();
-
-        if (!src) {
-          await player.replaceAsync(null); // 소스 제거
-          return;
-        }
-
-        // 🔑 iOS에서도 렉 없이 안전
-        await player.replaceAsync(src); // 필요시: { isMuted:false, initialTime:0 } 옵션 객체 사용 가능
-
-        if (!cancelled) {
-          player.play(); // 자동 재생 원치 않으면 제거
-        }
-      } catch (e) {
-        // 에러 핸들링 (원하면 Alert)
-        // console.warn('video replaceAsync failed', e);
-      } finally {
-        if (!cancelled) setVidLoading(false);
-      }
-    };
-    run();
-    return () => { cancelled = true; };
-  }, [current.seq]);
-
-  const bars = useMemo(() => ([
-    { label: '감정', value: current.emotionScore ?? 0 },
-    { label: '깜빡임', value: current.blinkScore ?? 0 },
-    { label: '시선', value: current.eyeScore ?? 0 },
-    { label: '고개', value: current.headScore ?? 0 },
-    { label: '손', value: current.handScore ?? 0 },
-  ]), [current]);
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: THEME.bg }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
@@ -242,7 +206,7 @@ export default function ResultScreen() {
       {/* 현재 질문 제목/요약 */}
       <View style={[styles.card, { marginTop: 12 }]}>
         <Text style={styles.qTitle}>질문 {current.seq}. {current.question}</Text>
-        <Text style={styles.qSub}>점수 {current.score} · 감정 {current.emotionScore} · 깜빡임 {current.blinkScore} · 시선 {current.eyeScore}</Text>
+        <Text style={styles.qSub}>총 점수 {current.score}점</Text>
       </View>
 
       {/* 영상 + 타임스탬프 */}
@@ -250,7 +214,7 @@ export default function ResultScreen() {
         <Text style={styles.sectionTitle}>질문 {current.seq} 답변 영상</Text>
 
         <View style={{ position: 'relative', borderRadius: 8, overflow: 'hidden' }}>
-          {videoSrc ? (
+          {source?.uri ? (
             <>
               <VideoView
                 player={player}
@@ -328,7 +292,7 @@ export default function ResultScreen() {
         <Text style={styles.sectionTitle}>평균 점수</Text>
 
         <RadarChart
-          data={overall.byCat.map(c => ({ label: c.label, value: Number(c.value || 0) }))}
+          data={overall.byCat.map(c => ({ label: c.label, value: toNum(c.value) }))}
           size={Math.min(screenW - 32, 320)}  // 카드 너비에 맞춤
           max={100}
           rings={5}
@@ -338,7 +302,7 @@ export default function ResultScreen() {
           {overall.byCat.map((c) => (
             <View key={c.label} style={{ paddingHorizontal: 10, paddingVertical: 6, backgroundColor: '#f3f4f6', borderRadius: 999 }}>
               <Text style={{ fontSize: 12, fontWeight: '700', color: '#111827' }}>
-                {c.label} <Text style={{ color: '#6b7280' }}>{Number(c.value).toFixed(1)}</Text>
+                {c.label} <Text style={{ color: '#6b7280' }}>{fmtScore(c.value)}</Text>
               </Text>
             </View>
           ))}
@@ -392,7 +356,7 @@ function RadarChart({
 
   const point = (val: number, i: number) => {
     const a = angle(i);
-    const r = radius * (clamp(val) / max);
+    const r = radius * (clamp(toNum(val)) / max);
     const x = cx + r * Math.cos(a);
     const y = cy + r * Math.sin(a);
     return `${x},${y}`;
