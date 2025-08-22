@@ -70,7 +70,10 @@ export default function InterviewPage() {
   }, []);
 
   useEffect(() => {
-    if (analysisComplete) router.replace("/result");
+    if (analysisComplete) {
+      console.log("✅ 답변 분석 완료됨!!");
+      // router.replace("/result");
+    }
   }, [analysisComplete]);
 
   const sendEnd = useCallback(async () => {
