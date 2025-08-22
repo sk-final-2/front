@@ -96,40 +96,6 @@ export default function InterviewPage() {
 
       console.log("소켓 연결 요청 시작 ▶▶▶▶▶");
       dispatch(startConnecting({ interviewId }));
-      console.log(isConnecting ? "연결중..." : null);
-      console.log(isConnected ? "연결 성공" : null);
-
-      // const socket = new SockJS("http://localhost:8080/ws/interview"); // Spring WebSocket 엔드포인트
-      // const stompClient = new Client({
-      //   webSocketFactory: () => socket,
-      //   reconnectDelay: 5000,
-      //   onConnect: () => {
-      //     console.log("✅ WebSocket 연결됨");
-      //     stompClient.subscribe(
-      //       `/topic/interview/${interviewId}`,
-      //       async (message) => {
-      //         console.log("📩 분석 완료 메시지 수신:", message.body);
-
-      //         try {
-      //           dispatch(getInterviewResult({ interviewId }));
-
-      //           console.log("🎯 분석 결과:", answerAnalyses);
-      //           setGoResult(true);
-      //         } catch (err) {
-      //           console.error("❌ 분석 결과 요청 실패", err);
-      //         } finally {
-      //           setLoading(false);
-      //         }
-      //       },
-      //     );
-      //   },
-      // });
-
-      // stompClient.activate();
-
-      // return () => {
-      //   stompClient.deactivate();
-      // };
     }
   }, [isFinished, interviewId, dispatch, sendEnd]);
 
