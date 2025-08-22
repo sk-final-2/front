@@ -8,6 +8,7 @@ import {
   Platform,
   UIManager,
   StyleSheet,
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +17,9 @@ import { useRouter } from 'expo-router';
 
 import { getProfile, setProfile, type Profile } from '../../src/lib/session';
 import { clearTokens } from '../../src/lib/auth';
-import { fetchMe } from '../../src/lib/api';
+import { fetchMe, fetchMyPage, type MyPageResponse } from '../../src/lib/api';
+import EditProfileModal from '../../components/EditProfileModal';
+import ViewProfileModal from '../../components/ViewProfileModal';
 
 // 안드로이드에서 LayoutAnimation 활성화
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -27,6 +30,13 @@ export default function Home() {
   const r = useRouter();
   const [p, setP] = useState<Profile>(null);
   const [open, setOpen] = useState(false);
+
+  // 마이페이지 데이터(모달에 바인딩)
+  const [mp, setMp] = useState<MyPageResponse | null>(null);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [modalKey, setModalKey] = useState(0);  // 리마운트용 키
+  const bumpKey = () => setModalKey(k => k + 1);
 
   useEffect(() => {
     const current = getProfile();
@@ -42,9 +52,16 @@ export default function Home() {
     }
   }, []);
 
-  function toggleProfile() {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setOpen((v) => !v);
+  // 보기 팝업 열기
+  async function openProfile() {
+    try {
+      const m = await fetchMyPage();
+      setMp(m);
+      bumpKey();
+      setShowProfile(true);
+    } catch (e: any) {
+      Alert.alert('내 정보', e?.response?.data?.message || e?.message || '내 정보 로드 실패');
+    }
   }
 
   async function onStartInterview() {
@@ -58,21 +75,80 @@ export default function Home() {
     r.replace('/(auth)/login');
   }
 
+  // 수정 팝업 열기
+  async function openEdit() {
+    try {
+      // 보기에서 “프로필 수정” 눌렀을 때도 최신화
+      const m = mp ?? (await fetchMyPage());
+      setMp(m);
+      bumpKey();
+      setShowEdit(true);
+    } catch (e: any) {
+      Alert.alert('프로필 수정', e?.response?.data?.message || e?.message || '내 정보 로드 실패');
+    }
+  }
+
+  function closeEdit() {
+    setShowEdit(false);
+  }
+
+  // 저장 완료 시 홈 화면의 표시값도 갱신
+  async function handleSaved(updated: MyPageResponse) {
+    try {
+      // ① 서버에서 최종 상태를 다시 한 번 받아와서 불확실한 필드를 보강
+      const fresh = await fetchMyPage().catch(() => updated);
+
+      // ② 기존 세션 스냅샷(다른 필드: role 등 유지)
+      const base = (getProfile() as any) ?? {};
+
+      // ③ name/email은 정의된 값만 덮어쓰기(undef/null이면 기존 값 유지)
+      const merged = {
+        ...base,
+        name: (fresh?.name ?? updated?.name ?? base.name) ?? '',
+        email: (fresh?.email ?? updated?.email ?? base.email) ?? '',
+      };
+
+      // ④ 화면/세션 동시 갱신
+      setMp(fresh);
+      setP(merged);
+      setProfile(merged);
+
+      // ⑤ 모달 닫기
+      setShowEdit(false);
+
+      Alert.alert('완료', '프로필이 수정되었습니다.');
+    } catch (e: any) {
+      // 실패해도 최소한 로컬 updated로 머지해서 화면이 비지 않게
+      const base = (getProfile() as any) ?? {};
+      const merged = {
+        ...base,
+        name: (updated?.name ?? base.name) ?? '',
+        email: (updated?.email ?? base.email) ?? '',
+      };
+      setMp(updated);
+      setP(merged);
+      setProfile(merged);
+      setShowEdit(false);
+      Alert.alert('완료', '프로필이 수정되었습니다.(부분 갱신)');
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       {/* 헤더 */}
       <View style={styles.header}>
         <Text style={styles.brand}>Recruit.AI</Text>
-        <Pressable style={styles.iconBtn} onPress={toggleProfile}>
-          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} />
-          <Text style={styles.iconBtnText}>{open ? '내 정보 숨기기' : '내 정보 보기'}</Text>
+        {/* “내 정보 보기”를 누르면 보기 팝업 */}
+        <Pressable style={styles.iconBtn} onPress={openProfile}>
+          <Ionicons name="person-circle-outline" size={20} />
+          <Text style={styles.iconBtnText}>내 정보 보기</Text>
         </Pressable>
       </View>
 
       {/* 환영 문구 */}
       <View style={{ gap: 6 }}>
         <Text style={styles.hello}>
-          {p ? `안녕하세요, ${p.name}님` : '안녕하세요!'}
+          {p?.name ? `안녕하세요, ${p.name}님` : '안녕하세요!'}
         </Text>
         <Text style={styles.subtitle}>오늘도 좋은 면접 준비 해볼까요?</Text>
       </View>
@@ -91,14 +167,31 @@ export default function Home() {
       {/* 접혀있는 유저 정보 */}
       {open && (
         <View style={styles.profileCard}>
-          <Text style={styles.sectionTitle}>내 정보</Text>
+          <View style={{ flexDirection:'row', justifyContent:'space-between', alignItems:'center' }}>
+            <Text style={styles.sectionTitle}>내 정보</Text>
+            <Pressable
+              onPress={openEdit}
+              style={{ paddingHorizontal:12, paddingVertical:8, borderRadius:10, backgroundColor:'#111827' }}
+            >
+              <Text style={{ color:'#fff', fontWeight:'700' }}>프로필 수정</Text>
+            </Pressable>
+          </View>
+
           <View style={styles.row}>
             <Text style={styles.label}>이름</Text>
-            <Text style={styles.value}>{p?.name ?? '-'}</Text>
+            <Text style={styles.value}>{(mp?.name ?? p?.name) ?? '-'}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>이메일</Text>
-            <Text style={styles.value}>{p?.email ?? '-'}</Text>
+            <Text style={styles.value}>{(mp?.email ?? p?.email) ?? '-'}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>주소</Text>
+            <Text style={styles.value}>
+              {mp
+                ? `${mp.postcode ? `[${mp.postcode}] ` : ''}${mp.address1 ?? ''}${mp.address2 ? ` ${mp.address2}` : ''}` || '-'
+                : '-'}
+            </Text>
           </View>
         </View>
       )}
@@ -115,6 +208,27 @@ export default function Home() {
           <Text style={styles.secondaryText}>로그아웃</Text>
         </Pressable>
       </View>
+
+      {/* 보기 팝업 */}
+      <ViewProfileModal
+        key={`info-${modalKey}`}
+        visible={showProfile}
+        profile={mp}
+        onClose={() => setShowProfile(false)}
+        onEdit={() => {
+          setShowProfile(false);
+          openEdit();
+        }}
+      />
+
+      {/* 수정 팝업 */}
+      <EditProfileModal
+        key={`edit-${modalKey}`}
+        visible={showEdit}
+        profile={mp}                 // 처음엔 null → 로딩 후 채워짐
+        onClose={() => setShowEdit(false)}
+        onSaved={handleSaved}        // 저장 후 홈 상태/세션 업데이트 & 닫기
+      />
     </SafeAreaView>
   );
 }
