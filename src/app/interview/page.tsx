@@ -8,7 +8,7 @@
  * - DeviceSettings 컴포넌트 및 관련 로직(토글/일시정지) 전부 제거
  */
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 // ⬇️ 변경: getNextQuestion 대신 래퍼 thunk 사용
 import { submitAnswerAndMaybeEnd } from "@/store/interview/interviewSlice";
@@ -18,6 +18,13 @@ import UserVideo from "@/components/interview/UserVideo";
 import InterviewerView from "@/components/interview/InterviewerView";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axiosInstance";
+import SockJS from "sockjs-client";
+import { Client } from "@stomp/stompjs";
+import { getInterviewResult } from "@/store/interview/resultSlice";
+import { startConnecting } from "@/store/socket/socketSlice";
+
+// 🔵 추가: TTS
+import TtsComponent from "@/components/tts/TtsComponent";
 
 /** 에러 메시지 안전 변환 */
 function toErrorMessage(err: unknown): string {
@@ -30,11 +37,25 @@ export default function InterviewPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
 
+  // 인터뷰 store
   const { currentQuestion, interviewId, currentSeq, isFinished } =
     useAppSelector((state) => state.interview);
 
+  // 면접 결과 store
+  const { answerAnalyses } = useAppSelector((state) => state.result);
+
+  // 다음 페이지 라우트 가능 ==========================
+  const [goResult, setGoResult] = useState<boolean>(false);
+  // 결과 기다리는 로딩
+  const [loading, setLoading] = useState<boolean>(false);
+  // ===============================================
+  // 소켓 상태 store
+  const { isConnecting, isConnected, analysisComplete } = useAppSelector(
+    (state) => state.socket,
+  );
+
   const [isClient, setIsClient] = useState(false);
-  const [questionStarted, setQuestionStarted] = useState(false);
+  const [questionStarted, setQuestionStarted] = useState(false); // 🔵 TTS 끝나기 전까지 false
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -46,35 +67,43 @@ export default function InterviewPage() {
 
   const lastKeyRef = useRef<string>("");
 
+  //tts 나오는 동안 recordingcontrols 숨기고 나타내고
+  const [isTtsPlaying, setIsTtsPlaying] = useState(false);
+
   // 클라이언트 여부
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-const sendEnd = async () => {
-  const res = await api.post("/api/interview/end", { interviewId: interviewId, lastSeq: currentSeq });
-  console.log(res);
-  console.log("interviewId: ", interviewId);
-  localStorage.setItem("InterviewId", interviewId);
-  return res; // axios가 2xx 아니면 throw 하므로 별도 status 체크 불필요
-};
-
-useEffect(() => {
-  if (!isFinished) return;
-  let called = false;
-  (async () => {
-    if (called) return;
-    called = true;
-    try {
-      await sendEnd();
-      router.replace("/");
-    } catch (e) {
-      console.error(e);
-      // 실패 시 이동할지 말지는 여기서 결정
-      // router.replace("/");
+  useEffect(() => {
+    if (analysisComplete) {
+      console.log("✅ 답변 분석 완료됨!! : ", interviewId);
+      dispatch(getInterviewResult({ interviewId }));
+      router.replace("/result");
     }
-  })();
-}, [isFinished, interviewId, currentSeq, router]);
+  }, [analysisComplete]);
+
+  const sendEnd = useCallback(async () => {
+    await api.post("/api/interview/end", {
+      interviewId: interviewId,
+      lastSeq: currentSeq,
+    });
+    console.log("✅ 면접 종료 API 호출 완료. interviewId:", interviewId);
+  }, [interviewId, currentSeq]);
+
+  useEffect(() => {
+    // isFinished가 true로 바뀌면 면접 종료 및 소켓 연결 시작
+    if (isFinished) {
+      console.log("isFinished 감지. 면접 종료 및 소켓 연결 프로세스 시작.");
+      sendEnd().catch((e) => {
+        console.error("❌ 면접 종료 API 호출 실패:", e);
+      });
+      setLoading(true);
+
+      console.log("소켓 연결 요청 시작 ▶▶▶▶▶");
+      dispatch(startConnecting({ interviewId }));
+    }
+  }, [isFinished, interviewId, dispatch, sendEnd]);
 
   // Redux 상태 변화 로깅 (질문/순번/ID)
   useEffect(() => {
@@ -175,7 +204,9 @@ useEffect(() => {
           stopTracks(prev);
           return local!;
         });
-        setQuestionStarted(true);
+
+        // 🔵 여기서 예전엔 setQuestionStarted(true) 했지만, 이제는 TTS 끝날 때까지 대기!
+        setQuestionStarted(false);
 
         // 디버그(선택): 트랙 로그
         const vTrack = local.getVideoTracks()[0];
@@ -219,7 +250,7 @@ useEffect(() => {
             stopTracks(prev);
             return local!;
           });
-          setQuestionStarted(true);
+          setQuestionStarted(false); // TTS 끝날 때까지 대기
         } catch (e2: unknown) {
           // `e2`가 `Error` 타입인지 확인 후 다루기
           if (e2 instanceof Error) {
@@ -307,9 +338,8 @@ useEffect(() => {
         Math.round(t1 - t0),
       ); // [DELETE-ME LOG]
 
-      // 다음 질문 표시 애니메이션 트리거 (종료여도 곧 라우팅될 것)
+      // 🔵 다음 질문을 위해 다시 false로 두고, 새 질문에서 TTS가 끝나면 true가 됨
       setQuestionStarted(false);
-      setTimeout(() => setQuestionStarted(true), 400);
 
       console.log("🧭 [Post] expected next seq:", currentSeq + 1); // [DELETE-ME LOG]
     } catch (e: unknown) {
@@ -326,11 +356,36 @@ useEffect(() => {
     );
   }
 
+  if (loading) {
+    return <div>면접 결과 기다리는 중...</div>;
+  }
+
   return (
     <Suspense>
       <div className="p-8 space-y-4">
         {/* 질문 표시 (UI엔 로그 없음) */}
         <QuestionDisplay question={currentQuestion} />
+
+        {/* 🔵 질문이 바뀌면 자동으로 읽고, 끝나면 녹화/타이머 시작 신호(questionStarted=true) */}
+        <TtsComponent
+          text={currentQuestion ?? ""}
+          autoPlay
+          onStart={() => {
+            console.log("TTS 시작");
+            setIsTtsPlaying(true);
+            setQuestionStarted(false); // TTS 중에는 녹화 안 함
+          }}
+          onEnd={() => {
+            console.log("TTS 종료 → 녹화 시작");
+            setIsTtsPlaying(false);
+            setQuestionStarted(true); // ← 이 시점에 RecordingControls가 시작
+          }}
+          onError={() => {
+            console.warn("TTS 오류, 바로 녹화 시작으로 폴백");
+            setIsTtsPlaying(false);
+            setQuestionStarted(true);
+          }}
+        />
 
         <div className="flex gap-4">
           {/* 왼쪽: 면접관 화면 */}
@@ -342,13 +397,15 @@ useEffect(() => {
           <div className="flex-[2] flex flex-col gap-2 items-center">
             <UserVideo stream={stream} />
 
-            {/* DeviceSettings 완전 삭제 — 바로 녹화 컨트롤만 표시 */}
-            <RecordingControls
-              stream={stream}
-              questionStarted={questionStarted}
-              onAutoSubmit={handleSubmit}
-              onManualSubmit={handleSubmit}
-            />
+            {/* 🔇 TTS 재생 중이면 컨트롤 완전히 숨김 */}
+            {!isTtsPlaying && currentQuestion ? (
+              <RecordingControls
+                stream={stream}
+                questionStarted={questionStarted}
+                onAutoSubmit={handleSubmit}
+                onManualSubmit={handleSubmit}
+              />
+            ) : null}
 
             {/* 미리보기 (UI 로그 없음) */}
             {previewUrl && (

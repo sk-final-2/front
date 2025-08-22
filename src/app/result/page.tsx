@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 import { getInterviewResult } from "@/store/interview/resultSlice";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 /**
  * 면접 결과 전역 스토어에 영상 데이터가 없는 경우
@@ -39,47 +39,21 @@ const ResultPage = () => {
     answerAnalyses,
     avgScore,
   } = useAppSelector((state) => state.result);
-  // const { interviewId } = useAppSelector((state) => state.interview);
-  const interviewId = localStorage.getItem("InterviewId");
-  const dispatch = useAppDispatch();
 
-  // 로딩 상태
-  const [loading, setLoading] = useState(true);
+  const { interviewId } = useAppSelector((state) => state.interview);
 
   // 현재 선택된 질문 id
   const [currentSeq, setCurrentSeq] = useState(1);
-
   const handleCurrentSeq = (seq: number) => {
     setCurrentSeq(seq);
   };
 
-  useEffect(() => {
-    try {
-      setLoading(true);
-      // 결과 받기
-      dispatch(getInterviewResult({ interviewId }));
-      console.log("interviewId: ", interviewId);
-      console.log(avgScore);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  if (loading) {
-    {
-      /** TODO: 로딩 처리 */
-    }
-    return <>로딩중...</>;
-  }
-
-  if (status === "failed") {
-    {
-      /** TODO: 나중에 오류 페이지 만들어서 띄워줄 것! */
-    }
-    return <>{error}</>;
-  }
+  // if (status === "failed" ) {
+  //   {
+  //     /** TODO: 나중에 오류 페이지 만들어서 띄워줄 것! */
+  //   }
+  //   return <>{error}</>;
+  // }
 
   return (
     <div className="flex-col justify-center overflow-y-scroll overflow-x-hidden">
@@ -122,27 +96,28 @@ const ResultPage = () => {
           />
 
           {/** 사용자 면접 영상 + 타임 스탬프 컴포넌트 */}
-          <InterviewVideoComponent />
+          <Suspense fallback={<p>Loading video...</p>}>
+            <InterviewVideoComponent
+              interviewId={interviewId}
+              currentSeq={currentSeq}
+              timestamp={answerAnalyses[currentSeq - 1]?.timestamp}
+            />
+          </Suspense>
 
           {/** 그래프 컴포넌트 */}
-          {/* <TotalGraphComponent
+          <TotalGraphComponent
             score={avgScore[0]?.score ? avgScore[0].score : 0.0}
-            emotionScore={avgScore[0]?.emotionScore ? avgScore[0].emotionScore : 0.0}
+            emotionScore={
+              avgScore[0]?.emotionScore ? avgScore[0].emotionScore : 0.0
+            }
             blinkScore={avgScore[0]?.blinkScore ? avgScore[0].blinkScore : 0.0}
             eyeScore={avgScore[0]?.eyeScore ? avgScore[0].eyeScore : 0.0}
             headScore={avgScore[0]?.headScore ? avgScore[0].headScore : 0.0}
             handScore={avgScore[0]?.handScore ? avgScore[0].handScore : 0.0}
-          /> */}
+          />
 
           {/** 분석 리포트 컴포넌트 */}
           <TotalEvaluationComponent />
-
-          {/** TTS 테스트 컴포넌트 */}
-          <SpeechComponent
-            text={
-              "협업을 해야 하는 과제와 혼자 해야 하는 과제가 이렇게 있다고 하였을 때 지원자님께서 더 선호하시는 과제는 무엇인지 이유와 함께 설명해 주십시오"
-            }
-          />
         </div>
       </div>
     </div>
