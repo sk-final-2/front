@@ -23,6 +23,9 @@ import { Client } from "@stomp/stompjs";
 import { getInterviewResult } from "@/store/interview/resultSlice";
 import { startConnecting } from "@/store/socket/socketSlice";
 
+// 🔵 추가: TTS
+import TtsComponent from "@/components/tts/TtsComponent";
+
 /** 에러 메시지 안전 변환 */
 function toErrorMessage(err: unknown): string {
   if (typeof err === "string") return err;
@@ -52,7 +55,7 @@ export default function InterviewPage() {
   );
 
   const [isClient, setIsClient] = useState(false);
-  const [questionStarted, setQuestionStarted] = useState(false);
+  const [questionStarted, setQuestionStarted] = useState(false); // 🔵 TTS 끝나기 전까지 false
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -198,7 +201,9 @@ export default function InterviewPage() {
           stopTracks(prev);
           return local!;
         });
-        setQuestionStarted(true);
+
+        // 🔵 여기서 예전엔 setQuestionStarted(true) 했지만, 이제는 TTS 끝날 때까지 대기!
+        setQuestionStarted(false);
 
         // 디버그(선택): 트랙 로그
         const vTrack = local.getVideoTracks()[0];
@@ -330,9 +335,8 @@ export default function InterviewPage() {
         Math.round(t1 - t0),
       ); // [DELETE-ME LOG]
 
-      // 다음 질문 표시 애니메이션 트리거 (종료여도 곧 라우팅될 것)
+      // 🔵 다음 질문을 위해 다시 false로 두고, 새 질문에서 TTS가 끝나면 true가 됨
       setQuestionStarted(false);
-      setTimeout(() => setQuestionStarted(true), 400);
 
       console.log("🧭 [Post] expected next seq:", currentSeq + 1); // [DELETE-ME LOG]
     } catch (e: unknown) {
@@ -358,6 +362,21 @@ export default function InterviewPage() {
       <div className="p-8 space-y-4">
         {/* 질문 표시 (UI엔 로그 없음) */}
         <QuestionDisplay question={currentQuestion} />
+
+        {/* 🔵 질문이 바뀌면 자동으로 읽고, 끝나면 녹화/타이머 시작 신호(questionStarted=true) */}
+        <TtsComponent
+          text={currentQuestion ?? ""}
+          autoPlay
+          onStart={() => console.log("TTS 시작")}
+          onEnd={() => {
+            console.log("TTS 종료 → 녹화 시작");
+            setQuestionStarted(true); // ← 이 시점에 RecordingControls가 시작
+          }}
+          onError={() => {
+            console.warn("TTS 오류, 바로 녹화 시작으로 폴백");
+            setQuestionStarted(true);
+          }}
+        />
 
         <div className="flex gap-4">
           {/* 왼쪽: 면접관 화면 */}
