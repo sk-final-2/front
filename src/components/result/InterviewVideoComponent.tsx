@@ -1,8 +1,17 @@
+import { TimeStampListType } from "@/store/interview/resultSlice";
 import { useEffect, useRef, useState } from "react";
+import { Carousel, CarouselContent, CarouselItem } from "../ui/carousel";
+import { Card, CardContent } from "../ui/card";
 
-
-const InterviewVideoComponent = () => {
-
+const InterviewVideoComponent = ({
+  interviewId,
+  currentSeq,
+  timestamp = [],
+}: {
+  interviewId: string;
+  currentSeq: number;
+  timestamp: Array<TimeStampListType>;
+}) => {
   // 영상 상태
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -20,21 +29,49 @@ const InterviewVideoComponent = () => {
     }
   };
 
-  
+  const handleTimeStampClick = (item: TimeStampListType) => {
+    const time = item.time; // 00:01, 00:13
+    if (videoRef.current) {
+      const [minutes, seconds] = item.time.split(":").map(Number);
+      const seekTime = minutes * 60 + seconds;
+      videoRef.current.currentTime = seekTime;
+    }
+  };
 
   return (
-    <div className="mt-5">
+    <div className="mt-5 flex md:flex-col flex-row">
       <video
-      className="border-2 border-amber-200 rounded-2xl"
+        key={currentSeq}
+        className="rounded-2xl"
         ref={videoRef}
         controls
         width="780"
         height="420"
-        src="http://localhost:8080/api/interview/media?interviewId=1&seq=1"
+        src={`http://localhost:8080/api/interview/media?interviewId=${interviewId}&seq=${currentSeq}`}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
       ></video>
-      
+      {/** 타임 스탬프 리스트 */}
+      <div className="flex flex-row">
+        <Carousel>
+          <CarouselContent className="flex gap-2">
+            {timestamp.map((item, idx) => (
+              <CarouselItem
+                key={idx}
+                onClick={() => handleTimeStampClick(item)}
+                className="bg-accent"
+              >
+                <Card>
+                  <CardContent className="flex flex-col text-accent-foreground">
+                    <span>{item.time ?? `Timestamp ${idx + 1}`}</span>
+                    <span>{item.reason}</span>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
+      </div>
     </div>
   );
 };

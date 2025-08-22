@@ -19,11 +19,11 @@ const InterviewInfoComponent = ({
 }: InterviewInfoType) => {
   return (
     <Card>
-      <span className="text-base font-bold">선택한 직종: {job}</span>
-      <span className="text-base font-bold">선택한 경력: {career}</span>
-      <span className="text-base font-bold">면접 형식: {type}</span>
-      <span className="text-base font-bold">난이도: {level}</span>
-      <span className="text-base font-bold">언어: {language}</span>
+      <span className="text-base font-bold mx-4">선택한 직종: {job}</span>
+      <span className="text-base font-bold mx-4">선택한 경력: {career}</span>
+      <span className="text-base font-bold mx-4">면접 형식: {type}</span>
+      <span className="text-base font-bold mx-4">난이도: {level}</span>
+      <span className="text-base font-bold mx-4">언어: {language}</span>
     </Card>
   );
 };

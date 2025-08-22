@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 import { getInterviewResult } from "@/store/interview/resultSlice";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 /**
  * 면접 결과 전역 스토어에 영상 데이터가 없는 경우
@@ -40,38 +40,20 @@ const ResultPage = () => {
     avgScore,
   } = useAppSelector((state) => state.result);
 
+  const { interviewId } = useAppSelector((state) => state.interview);
+
   // 현재 선택된 질문 id
   const [currentSeq, setCurrentSeq] = useState(1);
   const handleCurrentSeq = (seq: number) => {
     setCurrentSeq(seq);
   };
 
-  // useEffect(() => {
-  //   try {
-  //     setLoading(true);
-  //     // 결과 받기
-  //     dispatch(getInterviewResult({ interviewId }));
-  //     console.log("interviewId: ", interviewId);
-  //   } catch (err) {
-  //     console.error(err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }, []);
-
-  // if (loading) {
+  // if (status === "failed" ) {
   //   {
-  //     /** TODO: 로딩 처리 */
+  //     /** TODO: 나중에 오류 페이지 만들어서 띄워줄 것! */
   //   }
-  //   return <>로딩중...</>;
+  //   return <>{error}</>;
   // }
-
-  if (status === "failed") {
-    {
-      /** TODO: 나중에 오류 페이지 만들어서 띄워줄 것! */
-    }
-    return <>{error}</>;
-  }
 
   return (
     <div className="flex-col justify-center overflow-y-scroll overflow-x-hidden">
@@ -114,12 +96,20 @@ const ResultPage = () => {
           />
 
           {/** 사용자 면접 영상 + 타임 스탬프 컴포넌트 */}
-          <InterviewVideoComponent />
+          <Suspense fallback={<p>Loading video...</p>}>
+            <InterviewVideoComponent
+              interviewId={interviewId}
+              currentSeq={currentSeq}
+              timestamp={answerAnalyses[currentSeq - 1]?.timestamp}
+            />
+          </Suspense>
 
           {/** 그래프 컴포넌트 */}
           <TotalGraphComponent
             score={avgScore[0]?.score ? avgScore[0].score : 0.0}
-            emotionScore={avgScore[0]?.emotionScore ? avgScore[0].emotionScore : 0.0}
+            emotionScore={
+              avgScore[0]?.emotionScore ? avgScore[0].emotionScore : 0.0
+            }
             blinkScore={avgScore[0]?.blinkScore ? avgScore[0].blinkScore : 0.0}
             eyeScore={avgScore[0]?.eyeScore ? avgScore[0].eyeScore : 0.0}
             headScore={avgScore[0]?.headScore ? avgScore[0].headScore : 0.0}
