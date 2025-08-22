@@ -21,6 +21,7 @@ import api from "@/lib/axiosInstance";
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
 import { getInterviewResult } from "@/store/interview/resultSlice";
+import { startConnecting } from "@/store/socket/socketSlice";
 
 /** 에러 메시지 안전 변환 */
 function toErrorMessage(err: unknown): string {
@@ -40,11 +41,15 @@ export default function InterviewPage() {
   // 면접 결과 store
   const { answerAnalyses } = useAppSelector((state) => state.result);
 
-  // 다음 페이지 라우트 가능
+  // 다음 페이지 라우트 가능 ==========================
   const [goResult, setGoResult] = useState<boolean>(false);
-
   // 결과 기다리는 로딩
   const [loading, setLoading] = useState<boolean>(false);
+  // ===============================================
+  // 소켓 상태 store
+  const { isConnecting, isConnected, analysisComplete } = useAppSelector(
+    (state) => state.socket,
+  );
 
   const [isClient, setIsClient] = useState(false);
   const [questionStarted, setQuestionStarted] = useState(false);
@@ -65,8 +70,8 @@ export default function InterviewPage() {
   }, []);
 
   useEffect(() => {
-    if (goResult) router.replace("/result");
-  }, [goResult]);
+    if (analysisComplete) router.replace("/result");
+  }, [analysisComplete]);
 
   const sendEnd = useCallback(async () => {
     await api.post("/api/interview/end", {
@@ -84,37 +89,43 @@ export default function InterviewPage() {
         console.error("❌ 면접 종료 API 호출 실패:", e);
       });
       setLoading(true);
-      const socket = new SockJS("http://localhost:8080/ws/interview"); // Spring WebSocket 엔드포인트
-      const stompClient = new Client({
-        webSocketFactory: () => socket,
-        reconnectDelay: 5000,
-        onConnect: () => {
-          console.log("✅ WebSocket 연결됨");
-          stompClient.subscribe(
-            `/topic/interview/${interviewId}`,
-            async (message) => {
-              console.log("📩 분석 완료 메시지 수신:", message.body);
 
-              try {
-                dispatch(getInterviewResult({ interviewId }));
+      console.log("소켓 연결 요청 시작 ▶▶▶▶▶");
+      dispatch(startConnecting({ interviewId }));
+      console.log(isConnecting ? "연결중..." : null);
+      console.log(isConnected ? "연결 성공" : null);
 
-                console.log("🎯 분석 결과:", answerAnalyses);
-                setGoResult(true);
-              } catch (err) {
-                console.error("❌ 분석 결과 요청 실패", err);
-              } finally {
-                setLoading(false);
-              }
-            },
-          );
-        },
-      });
+      // const socket = new SockJS("http://localhost:8080/ws/interview"); // Spring WebSocket 엔드포인트
+      // const stompClient = new Client({
+      //   webSocketFactory: () => socket,
+      //   reconnectDelay: 5000,
+      //   onConnect: () => {
+      //     console.log("✅ WebSocket 연결됨");
+      //     stompClient.subscribe(
+      //       `/topic/interview/${interviewId}`,
+      //       async (message) => {
+      //         console.log("📩 분석 완료 메시지 수신:", message.body);
 
-      stompClient.activate();
+      //         try {
+      //           dispatch(getInterviewResult({ interviewId }));
 
-      return () => {
-        stompClient.deactivate();
-      };
+      //           console.log("🎯 분석 결과:", answerAnalyses);
+      //           setGoResult(true);
+      //         } catch (err) {
+      //           console.error("❌ 분석 결과 요청 실패", err);
+      //         } finally {
+      //           setLoading(false);
+      //         }
+      //       },
+      //     );
+      //   },
+      // });
+
+      // stompClient.activate();
+
+      // return () => {
+      //   stompClient.deactivate();
+      // };
     }
   }, [isFinished, interviewId, dispatch, sendEnd]);
 

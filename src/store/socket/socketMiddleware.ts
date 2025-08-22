@@ -39,7 +39,7 @@ startAppListening({
 
       console.log("interviewId: ", interviewId);
       const socket = new SockJS(
-        `http://localhost:8080/ws/interview`,
+        `${process.env.NEXT_PUBLIC_API_URL}/ws/interview`,
       );
       stompClient = new Client({
         webSocketFactory: () => socket,
