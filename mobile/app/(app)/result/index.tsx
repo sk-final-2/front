@@ -181,8 +181,15 @@ export default function ResultScreen() {
     player.play();
   };
 
+  function formatMediapipeText(text: string) {
+    return text
+      .split(/(?=눈 깜빡임 감지 분석 결과|시선처리 감지 분석 결과|고개 각도 감지 분석 결과|손 움직임 감지 분석 결과)/)
+      .map(t => t.trim())
+      .filter(Boolean);
+  }
+
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: THEME.bg }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: THEME.bg }} contentContainerStyle={{ padding: 16, paddingTop: 50, paddingBottom: 40 }}>
       {/* 헤더 */}
       <Text style={styles.title}>면접 결과</Text>
       <Text style={styles.meta}>
@@ -211,7 +218,7 @@ export default function ResultScreen() {
 
       {/* 영상 + 타임스탬프 */}
       <View style={[styles.card, { marginTop: 12 }]}>
-        <Text style={styles.sectionTitle}>질문 {current.seq} 답변 영상</Text>
+        <Text style={styles.sectionTitle}>✅ 질문 {current.seq} 답변 영상</Text>
 
         <View style={{ position: 'relative', borderRadius: 8, overflow: 'hidden' }}>
           {source?.uri ? (
@@ -266,7 +273,7 @@ export default function ResultScreen() {
         {/* 감점 포인트 타임스탬프 */}
         {current.timestamp?.length ? (
           <View style={{ marginTop: 12 }}>
-            <Text style={styles.sectionTitle}>감점 포인트</Text>
+            <Text style={styles.sectionTitle}>🚨 감점 포인트</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {current.timestamp.map((t, i) => (
                 <TouchableOpacity key={`${t.time}-${i}`} onPress={() => onPressTs(t.time)} style={styles.tsChip}>
@@ -281,15 +288,29 @@ export default function ResultScreen() {
       {/* 상세 정보 */}
       <View style={[styles.card, { marginTop: 12, gap: 10 }]}>
         <Text style={styles.sectionTitle}>자세한 정보</Text>
-        <KV k="잘한 점" v={current.good} />
-        <KV k="아쉬운 점" v={current.bad} />
-        {current.emotionText ? <KV k="감정 분석" v={current.emotionText} /> : null}
-        {current.mediapipeText ? <KV k="동작 분석" v={current.mediapipeText.replace(/\n/g, '  ')} /> : null}
+        <KV k="😊 잘한 점" v={current.good} />
+        <KV k="😭 아쉬운 점" v={current.bad} />
+        {current.emotionText ? <KV k="😁 감정 분석" v={current.emotionText} /> : null}
+        {current.mediapipeText ? (
+          <KV
+            k="🏃‍♂️ 동작 분석"
+            v={
+              <Text style={styles.kvVal}>
+                {formatMediapipeText(current.mediapipeText).map((line, i) => (
+                  <Text key={i}>
+                    • {line}
+                    {"\n"}
+                  </Text>
+                ))}
+              </Text>
+            }
+          />
+        ) : null}
       </View>
 
       {/* 평균 점수 (오각형 레이더) */}
-      <View style={[styles.card, { marginTop: 12, alignItems: 'center' }]}>
-        <Text style={styles.sectionTitle}>평균 점수</Text>
+      <View style={[styles.card, { marginTop: 10, alignItems: 'center' }]}>
+        <Text style={styles.sectionTitle}>- 평균 점수- </Text>
 
         <RadarChart
           data={overall.byCat.map(c => ({ label: c.label, value: toNum(c.value) }))}
@@ -298,11 +319,11 @@ export default function ResultScreen() {
           rings={5}
         />
 
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 4 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: -30 }}>
           {overall.byCat.map((c) => (
             <View key={c.label} style={{ paddingHorizontal: 10, paddingVertical: 6, backgroundColor: '#f3f4f6', borderRadius: 999 }}>
               <Text style={{ fontSize: 12, fontWeight: '700', color: '#111827' }}>
-                {c.label} <Text style={{ color: '#6b7280' }}>{fmtScore(c.value)}</Text>
+                {c.label} <Text style={{ color: '#3359a5ff' }}>{fmtScore(c.value)}</Text>
               </Text>
             </View>
           ))}
@@ -339,7 +360,7 @@ function Bar({ label, value }: { label: string; value: number }) {
 }
 
 function RadarChart({
-  data,               // [{ label:'감정', value:86 }, ...]
+  data,
   size = 280,
   max = 100,
   rings = 5,
@@ -347,16 +368,25 @@ function RadarChart({
   data: { label: string; value: number }[];
   size?: number; max?: number; rings?: number;
 }) {
+  // ➜ 라벨 공간을 위해 바깥 패딩
+  const PADDING = 20; // 16~28 사이로 조절 가능
+  const W = size + PADDING * 2;
+  const H = size + PADDING * 2;
+
   const n = data.length;
-  const cx = size / 2, cy = size / 2;
-  const radius = (size / 2) - 16;
+  const cx = W / 2, cy = H / 2;
+
+  // ➜ 라벨 겹침 줄이려고 반지름 살짝 감소
+  const radius = (size / 2) - 8;
+
+  // ➜ 화면/사이즈에 따라 라벨 폰트 자동 축소
+  const labelFontSize = size < 260 ? 11 : 12;
 
   const angle = (i: number) => -Math.PI / 2 + (i * 2 * Math.PI / n);
   const clamp = (v: number) => Math.max(0, Math.min(max, v));
-
   const point = (val: number, i: number) => {
     const a = angle(i);
-    const r = radius * (clamp(toNum(val)) / max);
+    const r = radius * (clamp(Number(val) || 0) / max);
     const x = cx + r * Math.cos(a);
     const y = cy + r * Math.sin(a);
     return `${x},${y}`;
@@ -364,7 +394,6 @@ function RadarChart({
 
   const areaPoints = data.map((d, i) => point(d.value ?? 0, i)).join(' ');
 
-  // 동심원(다각형) 링
   const ringPolys = Array.from({ length: rings }, (_, k) => {
     const rr = (k + 1) / rings;
     const pts = data.map((_, i) => {
@@ -376,7 +405,6 @@ function RadarChart({
     return <Polygon key={k} points={pts} fill="none" stroke="#e5e7eb" />;
   });
 
-  // 바큇살(축)
   const spokes = data.map((_, i) => {
     const a = angle(i);
     const x = cx + radius * Math.cos(a);
@@ -384,28 +412,62 @@ function RadarChart({
     return <Line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#e5e7eb" />;
   });
 
-  // 라벨
-  const labels = data.map((d, i) => {
-    const a = angle(i);
-    const lx = cx + (radius + 12) * Math.cos(a);
-    const ly = cy + (radius + 12) * Math.sin(a);
-    const ta = Math.abs(Math.cos(a)) < 0.01 ? 'middle' : (Math.cos(a) > 0 ? 'start' : 'end');
-    return (
-      <SvgText key={d.label} x={lx} y={ly} fontSize="12" fill="#374151" textAnchor={ta}>
-        {d.label}
-      </SvgText>
-    );
-  });
+  // 라벨 여백/보정 상수
+const LABEL_GAP = 14;    // 축에서 라벨까지 기본 간격
+const INSET_X   = -20;     // 좌우 라벨을 안쪽으로 당기는 픽셀
+const ADJ_TOP   = 10;     // 맨 위 라벨을 아래로 내리는 픽셀
+const ADJ_BOTTOM= 2;     // 맨 아래 라벨을 살짝 올리는 픽셀
+
+const labels = data.map((d, i) => {
+  const a = angle(i);
+  const cosA = Math.cos(a);
+  const sinA = Math.sin(a);
+
+  // 기본 위치(축 끝에서 LABEL_GAP만큼 바깥)
+  let lx = cx + (radius + LABEL_GAP) * cosA;
+  let ly = cy + (radius + LABEL_GAP) * sinA;
+
+  // 앵커: 오른쪽은 안쪽으로('end'), 왼쪽은 안쪽으로('start'), 위/아래는 중앙
+  const isVertical = Math.abs(cosA) < 0.01;
+  const ta = isVertical ? 'middle' : (cosA > 0 ? 'end' : 'start');
+
+  // ✔ 좌우 라벨은 축에서 더 "안쪽"으로 INSET_X만큼 추가 이동
+  if (!isVertical) {
+    lx += cosA > 0 ? -INSET_X : INSET_X;  // 오른쪽이면 왼쪽(-), 왼쪽이면 오른쪽(+)
+  } else {
+    // ✔ 맨 위/맨 아래 라벨은 살짝 세로 보정
+    if (sinA < 0) ly += ADJ_TOP;      // top(위) → 조금 내리기(+)
+    else          ly -= ADJ_BOTTOM;   // bottom(아래) → 조금 올리기(-)
+  }
 
   return (
-    <Svg width={size} height={size}>
+    <SvgText
+      key={d.label}
+      x={lx}
+      y={ly}
+      fontSize={size < 300 ? 11 : 12}
+      fill="#113c81ff"
+      textAnchor={ta as any}
+    >
+      {d.label}
+    </SvgText>
+  );
+});
+
+  return (
+    <Svg
+      width={W}
+      height={H}
+      // ➜ 텍스트가 SVG 바깥으로 나가도 보이도록
+      style={{ overflow: 'visible' }}
+    >
       <G>
         {ringPolys}
         {spokes}
         <Polygon
           points={areaPoints}
-          fill="rgba(17,24,39,0.15)"   // #111827 15%
-          stroke="#111827"
+          fill="rgba(52, 63, 209, 0.15)"
+          stroke="#244488ff"
           strokeWidth={2}
         />
         {labels}
