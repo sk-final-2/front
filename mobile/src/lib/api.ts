@@ -261,3 +261,31 @@ export async function fetchInterviewResult(interviewId: string) {
 }
 
 
+
+export type MyPageResponse = {
+  id: number;
+  email: string;
+  name: string;
+  postcode?: string | null;
+  address1?: string | null;
+  address2?: string | null;
+  gender: 'MALE' | 'FEMALE';
+  birth: string;
+  createdAt: string;
+  updatedAt?: string | null;
+};
+
+export async function fetchMyPage() {
+  const res = await api.get('/api/mypage');
+  return unwrap<MyPageResponse>(res);
+}
+
+export async function updateMyPage(body: {
+  password?: string;
+  postcode?: string;
+  address1?: string;
+  address2?: string;
+}) {
+  const res = await api.patch('/api/mypage', body);
+  return unwrap<MyPageResponse>(res);
+}
