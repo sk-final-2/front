@@ -2,7 +2,7 @@
 import 'dotenv/config';
 
 export default ({ config }) => ({
-  ...config,                         // 기존 값 유지(있다면)
+  ...config,
   name: 'mobile',
   slug: 'mobile',
   version: '1.0.0',
@@ -12,14 +12,32 @@ export default ({ config }) => ({
   userInterfaceStyle: 'automatic',
   newArchEnabled: true,
 
-  ios: { supportsTablet: true },
+  ios: {
+    ...(config.ios || {}),
+    supportsTablet: true,
+    // ⬇️ iOS 권한 설명 추가
+    infoPlist: {
+      ...(config.ios?.infoPlist || {}),
+      NSCameraUsageDescription:
+        '면접 답변 영상을 촬영하기 위해 카메라 권한이 필요합니다.',
+      NSMicrophoneUsageDescription:
+        '면접 답변의 음성을 녹음하기 위해 마이크 권한이 필요합니다.',
+    },
+  },
 
   android: {
+    ...(config.android || {}),
     adaptiveIcon: {
       foregroundImage: './assets/images/adaptive-icon.png',
       backgroundColor: '#ffffff',
     },
     edgeToEdgeEnabled: true,
+    // ⬇️ 안드로이드 권한 (expo-camera/AV 사용 시 필요)
+    permissions: [
+      ...(config.android?.permissions || []),
+      'CAMERA',
+      'RECORD_AUDIO',
+    ],
   },
 
   web: {
@@ -39,11 +57,13 @@ export default ({ config }) => ({
         backgroundColor: '#ffffff',
       },
     ],
+    // (카메라/녹화 쓸 거면 설치되어 있어야 합니다)
+    // 'expo-camera',
+    // 'expo-av',
   ],
 
   experiments: { typedRoutes: true },
 
-  // ⬇️ 여기서 환경변수 주입
   extra: {
     API_BASE: process.env.API_BASE,
     WS_BASE: process.env.WS_BASE,
