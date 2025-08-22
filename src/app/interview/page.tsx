@@ -71,8 +71,9 @@ export default function InterviewPage() {
 
   useEffect(() => {
     if (analysisComplete) {
-      console.log("✅ 답변 분석 완료됨!!");
-      // router.replace("/result");
+      console.log("✅ 답변 분석 완료됨!! : ", interviewId);
+      dispatch(getInterviewResult({ interviewId }));
+      router.replace("/result");
     }
   }, [analysisComplete]);
 
