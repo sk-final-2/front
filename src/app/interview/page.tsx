@@ -67,6 +67,9 @@ export default function InterviewPage() {
 
   const lastKeyRef = useRef<string>("");
 
+  //tts 나오는 동안 recordingcontrols 숨기고 나타내고
+  const [isTtsPlaying, setIsTtsPlaying] = useState(false);
+
   // 클라이언트 여부
   useEffect(() => {
     setIsClient(true);
@@ -247,7 +250,7 @@ export default function InterviewPage() {
             stopTracks(prev);
             return local!;
           });
-          setQuestionStarted(true);
+          setQuestionStarted(false); // TTS 끝날 때까지 대기
         } catch (e2: unknown) {
           // `e2`가 `Error` 타입인지 확인 후 다루기
           if (e2 instanceof Error) {
@@ -367,13 +370,19 @@ export default function InterviewPage() {
         <TtsComponent
           text={currentQuestion ?? ""}
           autoPlay
-          onStart={() => console.log("TTS 시작")}
+          onStart={() => {
+            console.log("TTS 시작");
+            setIsTtsPlaying(true);
+            setQuestionStarted(false); // TTS 중에는 녹화 안 함
+          }}
           onEnd={() => {
             console.log("TTS 종료 → 녹화 시작");
+            setIsTtsPlaying(false);
             setQuestionStarted(true); // ← 이 시점에 RecordingControls가 시작
           }}
           onError={() => {
             console.warn("TTS 오류, 바로 녹화 시작으로 폴백");
+            setIsTtsPlaying(false);
             setQuestionStarted(true);
           }}
         />
@@ -388,13 +397,15 @@ export default function InterviewPage() {
           <div className="flex-[2] flex flex-col gap-2 items-center">
             <UserVideo stream={stream} />
 
-            {/* DeviceSettings 완전 삭제 — 바로 녹화 컨트롤만 표시 */}
-            <RecordingControls
-              stream={stream}
-              questionStarted={questionStarted}
-              onAutoSubmit={handleSubmit}
-              onManualSubmit={handleSubmit}
-            />
+            {/* 🔇 TTS 재생 중이면 컨트롤 완전히 숨김 */}
+            {!isTtsPlaying && currentQuestion ? (
+              <RecordingControls
+                stream={stream}
+                questionStarted={questionStarted}
+                onAutoSubmit={handleSubmit}
+                onManualSubmit={handleSubmit}
+              />
+            ) : null}
 
             {/* 미리보기 (UI 로그 없음) */}
             {previewUrl && (
