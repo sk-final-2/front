@@ -60,6 +60,7 @@ export default ({ config }) => ({
     // (카메라/녹화 쓸 거면 설치되어 있어야 합니다)
     // 'expo-camera',
     // 'expo-av',
+    'expo-web-browser', 
   ],
 
   experiments: { typedRoutes: true },
@@ -67,5 +68,6 @@ export default ({ config }) => ({
   extra: {
     API_BASE: process.env.API_BASE,
     WS_BASE: process.env.WS_BASE,
+    OAUTH_BACKEND_BASE: process.env.OAUTH_BACKEND_BASE
   },
 });

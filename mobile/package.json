@@ -20,6 +20,7 @@
     "@stomp/stompjs": "^7.1.1",
     "axios": "^1.11.0",
     "expo": "~53.0.20",
+    "expo-auth-session": "~6.2.1",
     "expo-av": "~15.1.7",
     "expo-blur": "~14.1.5",
     "expo-camera": "~16.1.11",
@@ -50,7 +51,7 @@
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
     "sockjs-client": "^1.6.1",
-    "tslib": "^2.8.1"      
+    "tslib": "^2.8.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
