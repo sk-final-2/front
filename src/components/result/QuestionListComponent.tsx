@@ -2,16 +2,19 @@ import { Button } from "../ui/button";
 
 type QuestionListComponentProps = {
   seq: number;
-  count: number;
+  seqList: number[]; // ✅ 변경: 렌더할 번호 배열을 직접 받음
   handleCurrentSeq: (seq: number) => void;
 };
 
 const QuestionListComponent = ({
   seq,
-  count,
+  seqList,
   handleCurrentSeq,
 }: QuestionListComponentProps) => {
-  const seqList = Array.from({ length: count }, (_, index) => index + 1);
+  if (!seqList || seqList.length === 0) {
+    // 동적 모드에서 아직 결과가 없을 때 대비한 가드
+    return null; // 혹은 스켈레톤/메시지
+  }
 
   return (
     <div className="flex gap-3">

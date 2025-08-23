@@ -7,12 +7,11 @@ import QuestionAnswerComponent from "@/components/result/QuestionAnswerComponent
 import QuestionListComponent from "@/components/result/QuestionListComponent";
 import TotalEvaluationComponent from "@/components/result/TotalEvaluationComponent";
 import TotalGraphComponent from "@/components/result/TotalGraphComponent";
-import SpeechComponent from "@/components/tts/TTSComponent";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 import { getInterviewResult } from "@/store/interview/resultSlice";
 import Link from "next/link";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useMemo } from "react";
 
 /**
  * 면접 결과 전역 스토어에 영상 데이터가 없는 경우
@@ -55,6 +54,39 @@ const ResultPage = () => {
   //   return <>{error}</>;
   // }
 
+  // ✅ 번호 리스트 생성 로직
+  const seqList = useMemo(() => {
+    // 정적: count가 양수면 1..count
+    if (count && count > 0) {
+      return Array.from({ length: count }, (_, i) => i + 1);
+    }
+
+    // 동적: answerAnalyses의 seq 기반 (결과가 없으면 빈 배열)
+    const seqs = (answerAnalyses ?? [])
+      .map((a) => a?.seq)
+      .filter((n): n is number => typeof n === "number");
+    // 유니크 + 정렬
+    return Array.from(new Set(seqs)).sort((a, b) => a - b);
+  }, [count, answerAnalyses]);
+
+  // ✅ 현재 선택된 seq가 리스트 범위를 벗어나지 않도록 클램프
+  useEffect(() => {
+    if (seqList.length === 0) return;
+    if (!seqList.includes(currentSeq)) {
+      setCurrentSeq(seqs => (seqList.includes(seqs) ? seqs : seqList[0]));
+    }
+  }, [seqList, currentSeq]);
+
+  // 현재 seq에 해당하는 분석 찾기 (동적에서도 안전)
+  const currentAnalysis = useMemo(() => {
+    if (!answerAnalyses || answerAnalyses.length === 0) return undefined;
+    // 우선 seq로 찾고, 없으면 인덱스 폴백
+    return (
+      answerAnalyses.find((a) => a?.seq === currentSeq) ||
+      answerAnalyses[seqList.indexOf(currentSeq)]
+    );
+  }, [answerAnalyses, currentSeq, seqList]);
+
   return (
     <div className="flex-col justify-center overflow-y-scroll overflow-x-hidden">
       <div className="w-full bg-white z-50 shadow-md fixed h-12 flex items-center px-5">
@@ -79,7 +111,7 @@ const ResultPage = () => {
           {/** 질문 번호 리스트 컴포넌트 */}
           <QuestionListComponent
             seq={currentSeq}
-            count={count ? count : 0}
+            seqList={seqList}
             handleCurrentSeq={handleCurrentSeq}
           />
 
