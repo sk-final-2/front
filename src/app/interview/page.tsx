@@ -81,7 +81,7 @@ export default function InterviewPage() {
       dispatch(getInterviewResult({ interviewId }));
       router.replace("/result");
     }
-  }, [analysisComplete]);
+  }, [analysisComplete, dispatch, router]);
 
   const sendEnd = useCallback(async () => {
     await api.post("/api/interview/end", {

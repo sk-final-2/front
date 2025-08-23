@@ -53,6 +53,7 @@ startAppListening({
             `/topic/interview/${interviewId}`,
             (message) => {
               try {
+                console.log("메세지 수신 완료");
                 listenerApi.dispatch(setAnalysisComplete());
               } catch (e) {
                 console.error("메시지 처리 오류:", e);
