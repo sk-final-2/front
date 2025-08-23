@@ -13,6 +13,8 @@ import {
   disconnect,
   setAnalysisComplete,
 } from "./socketSlice";
+import api from "@/lib/axiosInstance";
+import { useAppSelector } from "@/hooks/storeHook";
 
 // Listener 미들웨어 인스턴스 생성
 export const listenerMiddleware = createListenerMiddleware();

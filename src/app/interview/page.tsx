@@ -94,16 +94,20 @@ export default function InterviewPage() {
   useEffect(() => {
     // isFinished가 true로 바뀌면 면접 종료 및 소켓 연결 시작
     if (isFinished) {
-      console.log("isFinished 감지. 면접 종료 및 소켓 연결 프로세스 시작.");
-      sendEnd().catch((e) => {
-        console.error("❌ 면접 종료 API 호출 실패:", e);
-      });
       setLoading(true);
+      console.log("isFinished 감지. 면접 종료 및 소켓 연결 프로세스 시작.");
 
       console.log("소켓 연결 요청 시작 ▶▶▶▶▶");
       dispatch(startConnecting({ interviewId }));
+
+      if (isConnected) {
+        sendEnd().catch((e) => {
+          console.error("❌ 면접 종료 API 호출 실패:", e);
+        });
+        setLoading(false);
+      }
     }
-  }, [isFinished, interviewId, dispatch, sendEnd]);
+  }, [isFinished, interviewId, dispatch, sendEnd, isConnected]);
 
   // Redux 상태 변화 로깅 (질문/순번/ID)
   useEffect(() => {
