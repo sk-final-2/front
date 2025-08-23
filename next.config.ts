@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   //     ppr: "incremental",
   // },
   output: "standalone",
+  transpilePackages: ["three"],
 };
 
 export default nextConfig;

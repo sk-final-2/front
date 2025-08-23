@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { logout, logoutUser } from "@/store/auth/authSlice";
 import { useAppDispatch } from "@/hooks/storeHook";
+import Image from "next/image";
+import { Link } from "lucide-react";
 
 export default function MainHeader() {
   const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
@@ -40,13 +42,15 @@ export default function MainHeader() {
   };
 
   return (
-    <header className="p-4 bg-gray-100 flex justify-between items-center relative">
-      <h1
-        className="font-bold text-lg cursor-pointer"
+    <header className="p-4 shadow-lg flex justify-between items-center relative">
+      <Image
+        src="/REAI.png"
+        alt="icon"
+        width={60}
+        height={20}
         onClick={() => router.push("/")}
-      >
-        메인 페이지
-      </h1>
+        className="cursor-pointer"
+      ></Image>
 
       <nav className="flex gap-4 items-center">
         {isLoggedIn ? (
