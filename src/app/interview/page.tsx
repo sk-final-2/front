@@ -353,6 +353,7 @@ export default function InterviewPage() {
     if (isStaticLast) {
       console.log("✅ 정적 마지막 제출 → finishing ON"); // [DELETE-ME LOG]
       setFinishing(true);
+      setAwaitingNext(false);
     } else {
       setAwaitingNext(true);
     }
@@ -371,6 +372,7 @@ export default function InterviewPage() {
 
       // 🔚 동적 모드에서 finished=true면 결과 대기만 보여야 하므로 즉시 끈다
       if (res?.finished === true) {
+        console.log("✅ 동적 마지막 제출 → finishing ON"); // [DELETE-ME LOG]
         setFinishing(true);
         setAwaitingNext(false);
       }
