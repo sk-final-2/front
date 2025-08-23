@@ -289,9 +289,6 @@ async function waitForSocketSignal(interviewId: string): Promise<void> {
     return (
       <View style={{ flex:1, alignItems:'center', justifyContent:'center', padding:16 }}>
         <Text>카메라/마이크 권한이 필요합니다. 설정에서 허용 후 다시 시도해 주세요.</Text>
-        <Pressable onPress={() => r.back()} style={{ padding:10, marginTop:8 }}>
-          <Text>← 준비 화면으로</Text>
-        </Pressable>
       </View>
     );
   }
@@ -300,7 +297,7 @@ async function waitForSocketSignal(interviewId: string): Promise<void> {
   }
 
   return (
-    <View style={{ flex:1 }}>
+    <View style={{ flex:1, paddingTop: 50 }}>
       {/* 상단: 질문/자막 */}
       <View style={{ padding:16, gap:8 }}>
         <Text style={{ fontSize:16, fontWeight:'800' }}>{curSeq}. 질문</Text>
@@ -353,9 +350,6 @@ async function waitForSocketSignal(interviewId: string): Promise<void> {
           </Pressable>
         )}
 
-        <Pressable onPress={() => r.back()} style={btnGhost}>
-          <Text style={btnGhostText}>← 준비 화면으로</Text>
-        </Pressable>
       </View>
 
       {/* 다음 질문/업로드 대기 오버레이 */}

@@ -109,7 +109,7 @@ export default function InterviewPrepare() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }}>
+    <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingTop: 50  }}>
       <Text style={{ fontSize: 22, fontWeight: '800' }}>면접 준비</Text>
 
       {/* 직무 */}

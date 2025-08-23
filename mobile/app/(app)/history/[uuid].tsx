@@ -77,7 +77,7 @@ export default function HistoryDetail() {
   const avg: AvgScore | undefined = iv.avgScore?.[0];
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <ScrollView contentContainerStyle={{ padding: 16, gap: 12, marginTop: 50 }}>
       {/* 헤더 */}
       <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>
         <Pressable onPress={() => r.back()} style={{ paddingVertical:6, paddingRight:8, flexDirection:'row', alignItems:'center', gap:6 }}>

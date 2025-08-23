@@ -45,7 +45,6 @@ type ResultData = {
   language: string;
   count: number;
   answerAnalyses: AnswerAnalysis[];
-  // 선택: 평균 점수 들어오면 하단에서 쓸 수 있어요
   avgScore?: { score: number; emotionScore: number; blinkScore: number; eyeScore: number; headScore: number; handScore: number }[];
 };
 
@@ -69,6 +68,38 @@ const mmssToSec = (s: string) => {
   return m * 60 + sec;
 };
 
+// 초 → "MM:SS"
+const secToMmss = (sec: number) => {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+};
+
+// 5초 버킷으로 그룹핑
+function groupViolations(timestamps: TS[] = [], bucketSec = 5) {
+  const map = new Map<number, { start: number; end: number; counts: Record<string, number> }>();
+
+  for (const { time, reason } of timestamps) {
+    const sec = mmssToSec(time);
+    const start = Math.floor(sec / bucketSec) * bucketSec;
+    const end = start + bucketSec;
+
+    if (!map.has(start)) map.set(start, { start, end, counts: {} });
+    const g = map.get(start)!;
+    g.counts[reason] = (g.counts[reason] || 0) + 1;
+  }
+
+  return Array.from(map.values()).sort((a, b) => a.start - b.start);
+}
+
+// "시선 처리 3, 손 움직임 1" 형태로 출력
+function countsToString(counts: Record<string, number>) {
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1]) // 많이 나온 순
+    .map(([reason, cnt]) => `${reason} ${cnt}회`)
+    .join(', ');
+}
+
 // 안전 숫자 변환
 const toNum = (v: any, def = 0) => {
   const n = typeof v === 'string' ? parseFloat(v) : Number(v);
@@ -80,9 +111,20 @@ const fmtScore = (v: any) => {
   return Number.isFinite(n) ? n.toFixed(1) : '-';
 };
 
+// 점수 → 등급/색상 팔레트
+function getGrade(score: number) {
+  const s = Math.max(0, Math.min(100, Number(score) || 0));
+  if (s >= 90) return { grade: 'A', color: '#10b981', tint: 'rgba(16,185,129,0.10)', border: '#10b981' }; // emerald
+  if (s >= 80) return { grade: 'B', color: '#0ea5e9', tint: 'rgba(14,165,233,0.10)', border: '#0ea5e9' }; // sky
+  if (s >= 70) return { grade: 'C', color: '#f59e0b', tint: 'rgba(245,158,11,0.10)', border: '#f59e0b' }; // amber
+  if (s >= 60) return { grade: 'D', color: '#f97316', tint: 'rgba(249,115,22,0.10)', border: '#f97316' }; // orange
+  return { grade: 'F', color: '#ef4444', tint: 'rgba(239,68,68,0.10)', border: '#ef4444' };                // red
+}
+
 export default function ResultScreen() {
   const r = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
+  const timeBySeqRef = useRef<Record<number, number>>({});
 
   // 캐시에서 결과 꺼내기 (id가 있으면 해당 결과, 없으면 마지막 결과)
   const result = useMemo(() => getResult(id?.toString()), [id]) as ResultData | undefined;
@@ -138,48 +180,37 @@ export default function ResultScreen() {
 
   // 3) 질문 탭/현재 질문
   const [idx, setIdx] = useState(0);
+  const [reloadTick, setReloadTick] = useState(0);
   const current = result.answerAnalyses[Math.min(idx, result.answerAnalyses.length - 1)];
-
-  // 5) expo-video player
-  const player = useVideoPlayer(null, (p) => { p.loop = false; });
-  const [vidLoading, setVidLoading] = useState(false);
-
-  // 현재 질문의 원격 소스 구성
-  const source: VideoSource | null = id ? {
-    uri: mediaUrl(id, current.seq),
-    contentType: 'progressive',  // mp4 스트리밍에 적합
-    useCaching: true,
-    headers: {
-      // 백엔드 인증이 필요 없다면 이 줄은 제거하세요
-      Authorization: `Bearer ${getAccessToken() || ''}`,
-    },
-  } : null;
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        setVidLoading(true);
-        player.pause();
-        await player.replaceAsync(source); // iOS도 렉 없이 안전
-        if (!cancelled && source) {
-          // 자동재생 원치 않으면 이 줄을 주석 처리
-          player.play();
-        }
-      } catch (e) {
-        await player.replaceAsync(null);
-      } finally {
-        if (!cancelled) setVidLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-    // seq나 id가 바뀔 때만 로드
-  }, [source?.uri]);
+  const playerRef = useRef<any>(null);
+  const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const onPressTs = (ts: string) => {
-    player.currentTime = mmssToSec(ts);
-    player.play();
+    const p = playerRef.current;
+    if (!p) return;
+    p.currentTime = mmssToSec(ts);
+    p.play?.();
   };
+
+  function playSegment(startSec: number, endSec: number) {
+    const p = playerRef.current;
+    if (!p) return;
+
+    // 이전 타이머 정리
+    if (stopTimerRef.current) {
+      clearTimeout(stopTimerRef.current);
+      stopTimerRef.current = null;
+    }
+
+    // 구간 재생
+    p.currentTime = startSec;
+    p.play?.();
+
+    const durMs = Math.max(0, (endSec - startSec) * 1000);
+    stopTimerRef.current = setTimeout(() => {
+      playerRef.current?.pause?.();
+    }, durMs);
+  }
 
   function formatMediapipeText(text: string) {
     return text
@@ -202,7 +233,12 @@ export default function ResultScreen() {
         {result.answerAnalyses.map((a, i) => (
           <TouchableOpacity
             key={a.seq}
-            onPress={() => setIdx(i)}
+            onPress={() => {
+              if (idx !== i) {
+                setIdx(i);
+                setReloadTick(t => t + 1); // 되돌아와도 매번 새로운 key 보장
+              }
+            }}
             style={[styles.tab, i === idx && styles.tabActive]}
           >
             <Text style={[styles.tabText, i === idx && styles.tabTextActive]}>{a.seq}</Text>
@@ -212,46 +248,58 @@ export default function ResultScreen() {
 
       {/* 현재 질문 제목/요약 */}
       <View style={[styles.card, { marginTop: 12 }]}>
+        {/* 상단: 질문 */}
         <Text style={styles.qTitle}>질문 {current.seq}. {current.question}</Text>
-        <Text style={styles.qSub}>총 점수 {current.score}점</Text>
+
+        {/* 하단: 점수/등급 뱃지 2개 */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+          {/* 점수 뱃지 */}
+          <View style={[styles.Badge, { borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)' }]}>
+            <Text style={[styles.BadgeText, { color: '#f59e0b' }]}>{Math.round(current.score)}</Text>
+          </View>
+          <Text style={[styles.scoreLabel, { marginLeft: 6 }]}>점수</Text>
+
+          {/* 구분점 */}
+          <View style={[styles.dotDivider, { marginHorizontal: 10 }]} />
+
+          {/* 등급 뱃지 */}
+          {(() => {
+            const { grade, color, tint, border } = getGrade(toNum(current.score));
+            return (
+              <>
+                <View style={[styles.Badge, { borderColor: border, backgroundColor: tint }]}>
+                  <Text style={[styles.BadgeText, { color }]}>{grade}</Text>
+                </View>
+                <Text style={[styles.scoreLabel, { marginLeft: 6 }]}>등급</Text>
+              </>
+            );
+          })()}
+        </View>
       </View>
+
+
 
       {/* 영상 + 타임스탬프 */}
       <View style={[styles.card, { marginTop: 12 }]}>
         <Text style={styles.sectionTitle}>✅ 질문 {current.seq} 답변 영상</Text>
 
         <View style={{ position: 'relative', borderRadius: 8, overflow: 'hidden' }}>
-          {source?.uri ? (
+          {id ? (
             <>
-              <VideoView
-                player={player}
-                style={{
-                  width: '100%',
-                  height: Math.round((screenW - 32) * 9 / 16),
-                  backgroundColor: '#e5e7eb',
-                }}
-                nativeControls
-                allowsFullscreen
-                allowsPictureInPicture
-                contentFit="contain"
-              />
-
-              {/* 로딩 오버레이 */}
-              {vidLoading && (
-                <View
-                  pointerEvents="none"
-                  style={{
-                    position: 'absolute',
-                    left: 0, right: 0, top: 0, bottom: 0,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: 'rgba(255,255,255,0.4)',
-                  }}
-                >
-                  <ActivityIndicator />
-                  <Text style={{ marginTop: 6, color: THEME.muted }}>영상 불러오는 중…</Text>
-                </View>
-              )}
+              {(() => {
+                const videoHeight = Math.round((screenW - 32) * 9 / 16);
+                const cacheBuster = reloadTick;
+                const videoUri = `${mediaUrl(id, current.seq)}&cb=${cacheBuster}`;
+                return (
+                  <QuestionVideo
+                    key={`${id}-${current.seq}-${reloadTick}`}   // 항상 리마운트
+                    uri={videoUri}
+                    headers={{ Authorization: `Bearer ${getAccessToken() || ''}` }}
+                    height={videoHeight}
+                    onPlayer={(p) => { playerRef.current = p; }}
+                  />
+                );
+              })()}
             </>
           ) : (
             <View
@@ -269,16 +317,19 @@ export default function ResultScreen() {
         </View>
       </View>
 
-
         {/* 감점 포인트 타임스탬프 */}
         {current.timestamp?.length ? (
           <View style={{ marginTop: 12 }}>
             <Text style={styles.sectionTitle}>🚨 감점 포인트</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {current.timestamp.map((t, i) => (
-                <TouchableOpacity key={`${t.time}-${i}`} onPress={() => onPressTs(t.time)} style={styles.tsChip}>
-                  <Text style={styles.tsChipTime}>{t.time}</Text>
-                  <Text style={styles.tsChipReason}> · {t.reason}</Text>
+              {groupViolations(current.timestamp, 5).map((seg) => (
+                <TouchableOpacity
+                  key={seg.start}
+                  onPress={() => playSegment(seg.start, seg.end)}
+                  style={styles.tsChip}
+                >
+                  <Text style={styles.tsChipTime}>{secToMmss(seg.start)}~{secToMmss(seg.end)}</Text>
+                  <Text style={styles.tsChipReason}> · {countsToString(seg.counts)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -330,6 +381,48 @@ export default function ResultScreen() {
         </View>
       </View>
     </ScrollView>
+  );
+}
+
+function QuestionVideo({
+  uri,
+  headers,
+  height,
+  initialTime = 0, // 이어보기
+  onPlayer,
+}: {
+  uri: string;
+  headers?: Record<string, string>;
+  height: number;
+  initialTime?: number;
+  onPlayer?: (p: any) => void;
+}) {
+  const player = useVideoPlayer(
+    { uri, contentType: 'progressive', useCaching: true, headers },
+    (p) => { p.loop = false; }
+  );
+
+  useEffect(() => {
+    onPlayer?.(player);
+  }, [player]);
+
+  useEffect(() => {
+    if (initialTime > 0) {
+      player.currentTime = initialTime;
+      // player.play(); // 원하면 자동재생
+    }
+  }, [initialTime]);
+
+  return (
+    <VideoView
+      player={player}
+      style={{ width: '100%', height, backgroundColor: '#e5e7eb' }}
+      nativeControls
+      allowsFullscreen
+      allowsPictureInPicture
+      contentFit="contain"
+      onError={(e) => console.warn('video error', e)}
+    />
   );
 }
 
@@ -529,4 +622,37 @@ const styles = StyleSheet.create({
   barValue: { color: THEME.text, fontWeight: '800' },
   barTrack: { height: 12, borderRadius: 999, backgroundColor: THEME.track },
   barFill: { height: '100%', borderRadius: 999, backgroundColor: THEME.fill },
+
+  scoreNumber: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#f97316',
+    marginRight: 4,
+  },
+  scoreLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '700',
+  },
+  dotDivider: {
+    width: 6,
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: '#e5e7eb',
+  },
+  Badge: {
+    minWidth: 32,
+    height: 28,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 4,
+  },
+  BadgeText: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+
 });
