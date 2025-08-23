@@ -47,19 +47,25 @@ startAppListening({
           console.log(new Date(), str);
         },
         onConnect: () => {
+          console.log("STOMP 연결 성공. 구독 시작...");
           listenerApi.dispatch(connectionEstablished());
 
-          stompClient?.subscribe(
-            `/topic/interview/${interviewId}`,
-            (message) => {
-              try {
-                console.log("메세지 수신 완료");
-                listenerApi.dispatch(setAnalysisComplete());
-              } catch (e) {
-                console.error("메시지 처리 오류:", e);
-              }
-            },
-          );
+          try {
+            stompClient?.subscribe(
+              `/topic/interview/${interviewId}`,
+              (message) => {
+                try {
+                  console.log("메세지 수신 완료", message.body);
+                  listenerApi.dispatch(setAnalysisComplete());
+                } catch (e) {
+                  console.error("메시지 처리 오류:", e);
+                }
+              },
+            );
+            console.log("구독 성공:", `/topic/interview/${interviewId}`);
+          } catch (e) {
+            console.error("구독 중 오류 발생:", e);
+          }
         },
         onStompError: (frame) => {
           console.error("STOMP 오류:", frame);
