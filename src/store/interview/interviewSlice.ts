@@ -195,7 +195,7 @@ export const endInterview = createAsyncThunk<
 });
 
 export const submitAnswerAndMaybeEnd = createAsyncThunk<
-  void,
+  { finished: boolean },
   FormData,
   { state: { interview: InterviewState }; rejectValue: string }
 >(
@@ -236,6 +236,7 @@ export const submitAnswerAndMaybeEnd = createAsyncThunk<
         shouldEnd,
       ); // [DELETE-ME LOG]
 
+      return { finished: shouldEnd };
     } catch (e: unknown) {
       // 에러는 unknown이므로 타입 가드 필요
       if (e instanceof Error) {
