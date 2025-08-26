@@ -111,14 +111,24 @@ const fmtScore = (v: any) => {
   return Number.isFinite(n) ? n.toFixed(1) : '-';
 };
 
-// 점수 → 등급/색상 팔레트
+// 등급 뱃지 색상 팔레트
 function getGrade(score: number) {
   const s = Math.max(0, Math.min(100, Number(score) || 0));
-  if (s >= 90) return { grade: 'A', color: '#10b981', tint: 'rgba(16,185,129,0.10)', border: '#10b981' }; // emerald
-  if (s >= 80) return { grade: 'B', color: '#0ea5e9', tint: 'rgba(14,165,233,0.10)', border: '#0ea5e9' }; // sky
-  if (s >= 70) return { grade: 'C', color: '#f59e0b', tint: 'rgba(245,158,11,0.10)', border: '#f59e0b' }; // amber
-  if (s >= 60) return { grade: 'D', color: '#f97316', tint: 'rgba(249,115,22,0.10)', border: '#f97316' }; // orange
-  return { grade: 'F', color: '#ef4444', tint: 'rgba(239,68,68,0.10)', border: '#ef4444' };                // red
+  if (s >= 90) return { grade: 'A', color: '#10b981', tint: 'rgba(16,185,129,0.10)', border: '#10b981' };
+  if (s >= 80) return { grade: 'B', color: '#0ea5e9', tint: 'rgba(14,165,233,0.10)', border: '#0ea5e9' };
+  if (s >= 70) return { grade: 'C', color: '#f59e0b', tint: 'rgba(245,158,11,0.10)', border: '#f59e0b' };
+  if (s >= 60) return { grade: 'D', color: '#f97316', tint: 'rgba(249,115,22,0.10)', border: '#f97316' };
+  return { grade: 'F', color: '#ef4444', tint: 'rgba(239,68,68,0.10)', border: '#ef4444' };
+}
+
+// 점수 뱃지 색상 팔레트
+function getScoreBadgeStyle(score: number) {
+  const s = Math.max(0, Math.min(100, Number(score) || 0));
+  if (s >= 90) return { color: '#059669', bg: '#a7f3d0', border: '#60a991ff' };
+  if (s >= 80) return { color: '#0284c7', bg: '#bae6fd', border: '#3baae1ff' };
+  if (s >= 70) return { color: '#ffd220ff', bg: '#fef3c7', border: '#fde68a' };
+  if (s >= 60) return { color: '#ff8800ff', bg: '#fdba74', border: '#f79e3fff' };
+  return { color: '#bf1b1bff', bg: '#f8d6d6ff', border: '#d87575ff' };
 }
 
 export default function ResultScreen() {
@@ -219,6 +229,124 @@ export default function ResultScreen() {
       .filter(Boolean);
   }
 
+  function PenaltyPoints({
+    timestamps,
+    bucketSec = 5,
+    multiThreshold = 2,
+    onPlaySegment,
+  }: {
+    timestamps: TS[] | undefined;
+    bucketSec?: number;              // 5초 버킷
+    multiThreshold?: number;         // 복수 감지 기준(총 횟수 >= N)
+    onPlaySegment: (start: number, end: number) => void;
+  }) {
+    const [mode, setMode] = useState<'all' | 'multi'>('all');
+
+    const segments = useMemo(() => groupViolations(timestamps ?? [], bucketSec), [timestamps, bucketSec]);
+
+    const filtered = useMemo(() => {
+      if (mode === 'all') return segments;
+      // 복수 감지만: 해당 버킷에서 총 감지 횟수의 합이 threshold 이상
+      return segments.filter(seg => Object.values(seg.counts).reduce((a, b) => a + b, 0) >= multiThreshold);
+    }, [segments, mode, multiThreshold]);
+
+     // multi 모드에서 '복수 감지'가 발생한 버킷 시작초 집합
+  const multiBuckets = useMemo(() => {
+    const set = new Set<number>();
+    segments.forEach(seg => {
+      const total = Object.values(seg.counts).reduce((a, b) => a + b, 0);
+      if (total >= multiThreshold) set.add(seg.start);
+    });
+    return set;
+  }, [segments, multiThreshold]);
+
+  // ALL 모드: 기존처럼 구간 칩
+  const allView = (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+      {segments.map((seg) => (
+        <TouchableOpacity
+          key={`all-${seg.start}`}
+          onPress={() => onPlaySegment(seg.start, seg.end)}
+          style={styles.tsChip}
+        >
+          <Text style={styles.tsChipTime}>
+            {secToMmss(seg.start)}~{secToMmss(seg.end)}
+          </Text>
+          <Text style={styles.tsChipReason}> · {countsToString(seg.counts)}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  // MULTI 모드: 해당 버킷에 속한 '개별 감지 시각'만 칩으로 표기
+  const MULTI_PREVIEW_SEC = 3; // 시점부터 3초만 재생
+
+  const multiGrouped = useMemo(() => {
+    if (!timestamps?.length) return [];
+    const map = new Map<number, string[]>();
+
+    for (const { time, reason } of timestamps) {
+      const sec = mmssToSec(time);
+      const bucketStart = Math.floor(sec / bucketSec) * bucketSec;
+      if (multiBuckets.has(bucketStart)) {
+        if (!map.has(sec)) map.set(sec, []);
+        map.get(sec)!.push(reason);
+      }
+    }
+
+    return Array.from(map.entries())
+      .map(([sec, reasons]) => ({ sec, reasons }))
+      .sort((a, b) => a.sec - b.sec);
+  }, [timestamps, multiBuckets, bucketSec]);
+
+  const multiView = multiGrouped.length ? (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+      {multiGrouped.map(({ sec, reasons }) => (
+        <TouchableOpacity
+          key={`multi-${sec}`}
+          onPress={() => onPlaySegment(sec, sec + MULTI_PREVIEW_SEC)}
+          style={styles.tsChip}
+        >
+          <Text style={styles.tsChipTime}>{secToMmss(sec)}</Text>
+          <Text style={styles.tsChipReason}> · {reasons.join(', ')}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  ) : (
+    <Text style={[styles.kvKey, { marginTop: 6 }]}>복수로 감지된 시각이 없어요.</Text>
+  );
+
+    return (
+      <View style={[styles.card, { marginTop: 12 }]}>
+        {/* 헤더
+         + 토글 */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={styles.sectionTitle}>🚨 감점 포인트</Text>
+
+          {/* 토글 (pill) */}
+          <View style={styles.toggleWrap}>
+            <TouchableOpacity
+              style={[styles.toggleBtn, mode === 'all' && styles.toggleBtnActive]}
+              onPress={() => setMode('all')}
+            >
+              <Text style={[styles.toggleText, mode === 'all' && styles.toggleTextActive]}>구간 별</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toggleBtn, mode === 'multi' && styles.toggleBtnActive]}
+              onPress={() => setMode('multi')}
+            >
+              <Text style={[styles.toggleText, mode === 'multi' && styles.toggleTextActive]}>시간 별</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* 본문 */}
+        {mode === 'all' ? allView : multiView}
+      </View>
+    );
+  }
+
+
   return (
     <ScrollView style={{ flex: 1, backgroundColor: THEME.bg }} contentContainerStyle={{ padding: 16, paddingTop: 50, paddingBottom: 40 }}>
       {/* 헤더 */}
@@ -253,20 +381,24 @@ export default function ResultScreen() {
 
         {/* 하단: 점수/등급 뱃지 2개 */}
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-          {/* 점수 뱃지 */}
-          <View style={[styles.Badge, { borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)' }]}>
-            <Text style={[styles.BadgeText, { color: '#f59e0b' }]}>{Math.round(current.score)}</Text>
-          </View>
-          <Text style={[styles.scoreLabel, { marginLeft: 6 }]}>점수</Text>
-
-          {/* 구분점 */}
-          <View style={[styles.dotDivider, { marginHorizontal: 10 }]} />
-
-          {/* 등급 뱃지 */}
           {(() => {
             const { grade, color, tint, border } = getGrade(toNum(current.score));
+            const scoreStyle = getScoreBadgeStyle(toNum(current.score));
+
             return (
               <>
+                {/* 점수 뱃지 (파스텔) */}
+                <View style={[styles.Badge, { borderColor: scoreStyle.border, backgroundColor: scoreStyle.bg }]}>
+                  <Text style={[styles.BadgeText, { color: scoreStyle.color }]}>
+                    {Math.round(current.score)}
+                  </Text>
+                </View>
+                <Text style={[styles.scoreLabel, { marginLeft: 6 }]}>점수</Text>
+
+                {/* 구분점 */}
+                <View style={[styles.dotDivider, { marginHorizontal: 10 }]} />
+
+                {/* 등급 뱃지 (진한색) */}
                 <View style={[styles.Badge, { borderColor: border, backgroundColor: tint }]}>
                   <Text style={[styles.BadgeText, { color }]}>{grade}</Text>
                 </View>
@@ -276,8 +408,6 @@ export default function ResultScreen() {
           })()}
         </View>
       </View>
-
-
 
       {/* 영상 + 타임스탬프 */}
       <View style={[styles.card, { marginTop: 12 }]}>
@@ -319,21 +449,12 @@ export default function ResultScreen() {
 
         {/* 감점 포인트 타임스탬프 */}
         {current.timestamp?.length ? (
-          <View style={{ marginTop: 12 }}>
-            <Text style={styles.sectionTitle}>🚨 감점 포인트</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {groupViolations(current.timestamp, 5).map((seg) => (
-                <TouchableOpacity
-                  key={seg.start}
-                  onPress={() => playSegment(seg.start, seg.end)}
-                  style={styles.tsChip}
-                >
-                  <Text style={styles.tsChipTime}>{secToMmss(seg.start)}~{secToMmss(seg.end)}</Text>
-                  <Text style={styles.tsChipReason}> · {countsToString(seg.counts)}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+          <PenaltyPoints
+            timestamps={current.timestamp}
+            bucketSec={5}                // 필요시 10/15로 변경 가능
+            multiThreshold={2}           // 복수 감지 기준 (총 횟수 2회 이상)
+            onPlaySegment={(s, e) => playSegment(s, e)}
+          />
         ) : null}
 
       {/* 상세 정보 */}
@@ -569,9 +690,7 @@ const labels = data.map((d, i) => {
   );
 }
 
-
 /* ------- 스타일 ------- */
-
 const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: '800', color: THEME.text },
   meta: { color: THEME.muted, marginTop: 2 },
@@ -653,6 +772,29 @@ const styles = StyleSheet.create({
   BadgeText: {
     fontSize: 14,
     fontWeight: '800',
+  },
+
+  toggleWrap: {
+    flexDirection: 'row',
+    backgroundColor: '#eef2ff',
+    borderRadius: 999,
+    padding: 2,
+  },
+  toggleBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  toggleBtnActive: {
+    backgroundColor: '#111827',
+  },
+  toggleText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#312e81',
+  },
+  toggleTextActive: {
+    color: '#fff',
   },
 
 });
