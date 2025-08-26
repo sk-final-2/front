@@ -293,5 +293,8 @@ export async function updateMyPage(body: {
 export async function deleteMyAccount() {
   const res = await api.delete('/api/auth/me');
   await clearTokens();
+  delete (api.defaults.headers as any).Authorization;
+  delete (api.defaults.headers as any).common?.Authorization;
+  
   return unwrap<string>(res); 
 }

@@ -7,8 +7,10 @@ import {
   Pressable,
   TouchableOpacity,
   ScrollView,
+  Alert
 } from 'react-native';
-import type { MyPageResponse } from '../src/lib/api';
+import { type MyPageResponse, deleteMyAccount } from '../src/lib/api';
+import { router } from 'expo-router';
 
 export default function ViewProfileModal({
   visible,
@@ -21,6 +23,40 @@ export default function ViewProfileModal({
   onClose: () => void;
   onEdit: () => void;
 }) {
+
+  //수정일 포맷터
+  const fmtKorean = (ts?: string | null) => {
+    if (!ts) return '-';
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return String(ts);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}년 ${pad(d.getMonth() + 1)}월 ${pad(d.getDate())}일 ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  };
+
+  const onPressDelete = () => {
+    Alert.alert(
+      '계정 탈퇴',
+      '정말 탈퇴하시겠습니까?\n탈퇴 후 모든 데이터가 손실됩니다.',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '탈퇴',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const msg = await deleteMyAccount(); // "계정이 삭제되었습니다"
+              Alert.alert('알림', msg);
+              onClose(); // 모달 닫기
+              router.replace('/login');
+            } catch (e: any) {
+              Alert.alert('오류', e?.message ?? '탈퇴 중 오류가 발생했어.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <Modal
       visible={visible}
@@ -61,8 +97,15 @@ export default function ViewProfileModal({
               }
             />
             <Row label="가입일" value={profile?.createdAt ? String(profile.createdAt) : '-'} />
-            <Row label="수정일" value={profile?.updatedAt ? String(profile.updatedAt) : '-'} />
+            <Row label="수정일" value={fmtKorean(profile?.updatedAt)} />
           </ScrollView>
+
+          {/* ✅ 하단 액션 */}
+          <View style={s.footer}>
+            <TouchableOpacity onPress={onPressDelete} style={s.deleteBtn}>
+              <Text style={s.deleteText}>계정 탈퇴</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -118,4 +161,20 @@ const s = StyleSheet.create({
   },
   label: { color: '#6b7280' },
   value: { color: '#111827', fontWeight: '600', flexShrink: 1, textAlign: 'right' },
+
+  footer: {
+    padding: 12,
+    borderTopWidth: 1,
+    borderColor: '#eee',
+  },
+  deleteBtn: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  deleteText: {
+    color: '#ef4444',
+    fontWeight: '800',
+    fontSize: 15,
+  },
 });
