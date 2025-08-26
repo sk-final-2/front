@@ -289,3 +289,9 @@ export async function updateMyPage(body: {
   const res = await api.patch('/api/mypage', body);
   return unwrap<MyPageResponse>(res);
 }
+
+export async function deleteMyAccount() {
+  const res = await api.delete('/api/auth/me');
+  await clearTokens();
+  return unwrap<string>(res); 
+}
