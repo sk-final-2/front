@@ -49,62 +49,80 @@ export default function HeroSection() {
 
   return (
     <motion.section
-      className="snap-start w-full min-h-screen flex flex-col justify-center items-center text-center px-4"
+      className="relative overflow-hidden snap-start w-full min-h-screen flex flex-col justify-center items-center text-center px-4"
       variants={sectionVariants}
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
     >
-      <motion.h1
-        className="text-4xl md:text-5xl font-extrabold tracking-tight"
-        variants={itemVariants}
-      >
-        실전처럼 완벽하게,
-        <br />
-        <span className="text-primary text-5xl md:text-6xl">AI</span>와 함께하는
-        면접 준비
-      </motion.h1>
-      <motion.p
-        className="mt-4 text-lg text-muted-foreground"
-        variants={itemVariants}
-      >
-        AI 면접관과 함께 언제 어디서든 실전 감각을 키워보세요.
-      </motion.p>
-      <motion.div variants={itemVariants}>
-        <AlertDialog>
-          {/** 알림창 트리거 */}
-          <AlertDialogTrigger asChild>
-            <Button
-              size="lg"
-              onClick={handleButtonClick}
-              className="mt-10 cursor-pointer text-xl font-bold px-10 py-6 transition-transform transform hover:border-ring"
-            >
-              AI 면접 시작하기
-            </Button>
-          </AlertDialogTrigger>
-          {!isLoggedIn && (
-            <AlertDialogContent className="border-none bg-background">
-              <AlertDialogHeader>
-                <AlertDialogTitle>로그인이 필요합니다.</AlertDialogTitle>
-                <AlertDialogDescription>
-                  로그인 페이지로 이동하시겠습니까?
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel className="cursor-pointer">
-                  취소
-                </AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => router.push("/login")}
-                  className="cursor-pointer"
-                >
-                  확인
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          )}
-        </AlertDialog>
-      </motion.div>
+      {/** 여기에 3D 백그라운드 들어감 */}
+
+      <div className="relative z-10 flex flex-col items-center">
+        <motion.h1
+          className="text-4xl md:text-5xl font-extrabold tracking-tight"
+          variants={itemVariants}
+        >
+          실전처럼 완벽하게,
+          <br />
+          <span className="text-primary text-5xl md:text-6xl">AI</span>와
+          함께하는 면접 준비
+        </motion.h1>
+        <motion.p
+          className="mt-4 text-lg text-muted-foreground"
+          variants={itemVariants}
+        >
+          AI 면접관과 함께 언제 어디서든 실전 감각을 키워보세요.
+        </motion.p>
+        <motion.div variants={itemVariants}>
+          <AlertDialog>
+            {/** 알림창 트리거 */}
+            <AlertDialogTrigger asChild>
+              <Button
+                size="lg"
+                onClick={handleButtonClick}
+                className="mt-10 cursor-pointer text-xl font-bold px-10 py-6 transform hover:border-ring 
+                      rounded-full
+                      border-0
+                      bg-primary
+                      shadow-[0_0_8px_rgba(0,0,0,0.05)]
+                      tracking-[1.5px]
+                      transition-all
+                      duration-500
+                      ease-in-out
+                      hover:tracking-[3px]
+                      hover:bg-[hsl(240,80%,48%)]
+                      hover:text-white
+                      hover:shadow-[0px_7px_29px_0px_#1818dc]
+                      active:shadow-none
+                      active:duration-100"
+              >
+                AI 면접 시작하기
+              </Button>
+            </AlertDialogTrigger>
+            {!isLoggedIn && (
+              <AlertDialogContent className="border-none bg-background">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>로그인이 필요합니다.</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    로그인 페이지로 이동하시겠습니까?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="cursor-pointer">
+                    취소
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => router.push("/login")}
+                    className="cursor-pointer"
+                  >
+                    확인
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            )}
+          </AlertDialog>
+        </motion.div>
+      </div>
     </motion.section>
   );
 }

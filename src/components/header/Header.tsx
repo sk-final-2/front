@@ -7,7 +7,8 @@ import { useState } from "react";
 import { logout, logoutUser } from "@/store/auth/authSlice";
 import { useAppDispatch } from "@/hooks/storeHook";
 import Image from "next/image";
-import { Link } from "lucide-react";
+import { SidebarTrigger } from "../ui/sidebar";
+import { Button } from "../ui/button";
 
 export default function MainHeader() {
   const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
@@ -16,13 +17,13 @@ export default function MainHeader() {
   const dispatch = useAppDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleNav = (path: string) => {
-    if (!isLoggedIn) {
-      router.push("/login"); // 로그인 안 했으면 무조건 로그인 페이지로
-    } else {
-      router.push(path);
-    }
-  };
+  // const handleNav = (path: string) => {
+  //   if (!isLoggedIn) {
+  //     router.push("/login"); // 로그인 안 했으면 무조건 로그인 페이지로
+  //   } else {
+  //     router.push(path);
+  //   }
+  // };
 
   const handleLogout = async () => {
     try {
@@ -41,9 +42,8 @@ export default function MainHeader() {
     }
   };
 
-
   return (
-    <header className="p-4 flex justify-between items-center fixed w-full z-50 bg-background shadow-lg">
+    <header className="p-4 flex justify-between items-center fixed left-0 right-0 z-10 bg-background shadow-lg">
       <Image
         src="/REAI.png"
         alt="icon"
@@ -81,29 +81,37 @@ export default function MainHeader() {
             )}
 
             {/* 면접준비페이지 버튼 */}
-            <button
+            {/* <button
               className="hover:underline cursor-pointer"
               onClick={() => handleNav("/ready")}
             >
               면접준비페이지
-            </button>
+            </button> */}
           </>
         ) : (
           <>
-            <button
-              className="hover:underline cursor-pointer"
+            <Button
+              className="cursor-pointer bg-gradient-to-b from-indigo-500 to-indigo-600 shadow-[0px_4px_32px_0_rgba(99,102,241,.70)] px-6 py-3 rounded-xl border-[1px] border-slate-500 text-white font-medium group"
               onClick={() => router.push("/login")}
             >
-              로그인/회원가입
-            </button>
-            <button
+              <div className="relative overflow-hidden">
+                <p className="group-hover:-translate-y-7 duration-[1.125s] ease-[cubic-bezier(0.19,1,0.22,1)]">
+                  로그인 & 회원가입
+                </p>
+                <p className="absolute top-7 left-0 group-hover:top-0 duration-[1.125s] ease-[cubic-bezier(0.19,1,0.22,1)]">
+                  로그인 & 회원가입
+                </p>
+              </div>
+            </Button>
+            {/* <button
               className="hover:underline cursor-pointer"
               onClick={() => handleNav("/login")}
             >
               면접준비페이지
-            </button>
+            </button> */}
           </>
         )}
+        <SidebarTrigger />
       </nav>
     </header>
   );

@@ -42,7 +42,7 @@ const cardVariants = {
 export default function FeaturesSection() {
   return (
     <motion.section
-      className="w-full min-h-screen snap-center flex flex-col justify-center items-center px-6 py-12 md:px-10"
+      className="w-full min-h-screen bg-background snap-center flex flex-col justify-center items-center px-6 py-12 md:px-10"
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.2 }}
