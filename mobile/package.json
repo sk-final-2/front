@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@actbase/react-daum-postcode": "^1.0.4",
+    "@expo-google-fonts/rubik-glitch": "^0.4.0",
     "@expo/vector-icons": "^14.1.0",
     "@react-native-community/datetimepicker": "8.4.1",
     "@react-native-picker/picker": "^2.11.1",
@@ -21,6 +22,7 @@
     "@stomp/stompjs": "^7.1.1",
     "axios": "^1.11.0",
     "expo": "~53.0.20",
+    "expo-app-loading": "^2.1.1",
     "expo-auth-session": "~6.2.1",
     "expo-av": "~15.1.7",
     "expo-blur": "~14.1.5",

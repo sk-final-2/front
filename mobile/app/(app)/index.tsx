@@ -11,7 +11,8 @@ import {
   Alert,
   Animated,
   Image,
-  ScrollView
+  ScrollView,
+  Easing
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +27,7 @@ import { fetchMe, fetchMyPage, type MyPageResponse, type AvgScore,
   type AnswerAnalysis, } from '../../src/lib/api';
 import EditProfileModal from '../../components/EditProfileModal';
 import ViewProfileModal from '../../components/ViewProfileModal';
+import FadeSlideInText from '../../components/FadeSlideInText';
 
 // 안드로이드에서 LayoutAnimation 활성화
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -180,7 +182,6 @@ const ss = StyleSheet.create({
   },
 });
 
-
 export default function Home() {
   const r = useRouter();
   const [p, setP] = useState<Profile>(null);
@@ -200,6 +201,9 @@ export default function Home() {
 
   //평균 점수
   const [summaryScore, setSummaryScore] = useState<AvgScore | null>(null);
+
+  //로고 애니메이션
+  const [animKey, setAnimKey] = useState(0);
 
   const replay = () => {
     // 1) 로봇 탭 반응
@@ -377,19 +381,32 @@ export default function Home() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView
+      <Animated.ScrollView
         contentContainerStyle={{ paddingBottom: 40, gap: 16 }} // 내용 전체를 스크롤 가능하게
         showsVerticalScrollIndicator={false}
+        onScrollEndDrag={() => setAnimKey(k => k + 1)}
+        onMomentumScrollEnd={() => setAnimKey(k => k + 1)}
       >
       {/* 헤더 */}
       <View style={styles.header}>
-        <Text style={styles.brand}>Recruit.AI</Text>
-        {/* “내 정보 보기”를 누르면 보기 팝업 */}
-        <Pressable style={styles.iconBtn} onPress={openProfile}>
-          <Ionicons name="person-circle-outline" size={20} />
-          <Text style={styles.iconBtnText}>내 정보 보기</Text>
-        </Pressable>
-      </View>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+          <Text style={[styles.brand, { fontFamily: 'RubikGlitch' }]}>Re:AI</Text>
+            {/* ▼ 애니메이션 태그라인 */}
+            <View style={{ marginLeft: 8, marginBottom: -2 }}>
+              <FadeSlideInText triggerKey={animKey} delay={150} style={[styles.taglineSecondary, { fontFamily: 'RubikGlitch' }]}>
+                Rehearse with AI
+              </FadeSlideInText>
+              <FadeSlideInText triggerKey={animKey} delay={350} style={[styles.tagline, { fontFamily: 'RubikGlitch' }]}>
+                Reinforce with AI
+              </FadeSlideInText>
+            </View>
+          </View>
+          {/* “내 정보 보기”를 누르면 보기 팝업 */}
+          <Pressable style={styles.iconBtn} onPress={openProfile}>
+            <Ionicons name="person-circle-outline" size={20} />
+            <Text style={styles.iconBtnText}>내 정보 보기</Text>
+          </Pressable>
+        </View>
 
       {/* 환영 문구 */}
       <View style={{ gap: 6 }}>
@@ -496,7 +513,7 @@ export default function Home() {
         onClose={() => setShowEdit(false)}
         onSaved={handleSaved}        // 저장 후 홈 상태/세션 업데이트 & 닫기
       />
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }
@@ -598,4 +615,7 @@ const styles = StyleSheet.create({
   },
   featureTitle: { fontWeight: '800', color: '#111827' },
   featureDesc: { color: '#6b7280', marginTop: 2, lineHeight: 18 },
+
+  tagline: { fontSize: 14, fontWeight: '700', color: '#4f46e5' },
+  taglineSecondary: { fontSize: 14, fontWeight: '700', color: '#393a3cff', opacity: 0.85 },
 });
