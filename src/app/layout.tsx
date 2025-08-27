@@ -1,18 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Sans_KR } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { ReduxProvider } from "@/store/provider";
 import { cookies } from "next/headers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const notoSansKr = Noto_Sans_KR({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["400"], // 사용할 폰트 두께
 });
 
 export const metadata: Metadata = {
@@ -35,9 +30,7 @@ export default async function RootLayout({
           strategy="afterInteractive"
         />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${notoSansKr.className} antialiased`}>
         <ReduxProvider accessToken={accessToken}>{children}</ReduxProvider>
       </body>
     </html>

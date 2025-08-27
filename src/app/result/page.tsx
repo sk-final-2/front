@@ -47,12 +47,12 @@ const ResultPage = () => {
     setCurrentSeq(seq);
   };
 
-  // if (status === "failed" ) {
-  //   {
-  //     /** TODO: 나중에 오류 페이지 만들어서 띄워줄 것! */
-  //   }
-  //   return <>{error}</>;
-  // }
+  if (status === "failed" ) {
+    {
+      /** TODO: 나중에 오류 페이지 만들어서 띄워줄 것! */
+    }
+    return <>{error}</>;
+  }
 
   // ✅ 번호 리스트 생성 로직
   const seqList = useMemo(() => {
