@@ -22,6 +22,7 @@ import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
 import { getInterviewResult } from "@/store/interview/resultSlice";
 import { startConnecting } from "@/store/socket/socketSlice";
+import Loading from "@/components/loading/Loading";
 
 // 🔵 추가: TTS
 import TtsComponent from "@/components/tts/TtsComponent";
@@ -74,6 +75,22 @@ export default function InterviewPage() {
   const [awaitingNext, setAwaitingNext] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const prevSeqRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      // 크롬, 엣지 등 대부분 브라우저는 커스텀 메시지를 무시하고
+      // 자체 기본 문구를 보여줍니다.
+      event.preventDefault();
+      event.returnValue = ""; 
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // 컴포넌트가 사라질 때 정리
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
 
   // 클라이언트 여부
   useEffect(() => {
@@ -402,7 +419,7 @@ export default function InterviewPage() {
   }
 
   if (loading || finishing) {
-    return <div>면접 결과 기다리는 중...</div>;
+    return <Loading message="면접 결과를 기다리는 중이에요..." />;
   }
 
   return (
@@ -461,18 +478,7 @@ export default function InterviewPage() {
 
              {/* '다음 질문 준비 중' 오버레이: 종료상태(isFinished)에서는 절대 보이지 않음 */}
             {awaitingNext && !isFinished && !finishing && (
-              <div
-                className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-white/70 backdrop-blur-sm rounded-md"
-                aria-live="polite"
-              >
-                {/* 스피너 */}
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
-                <div className="text-sm text-gray-700">
-                  다음 질문을 준비 중이에요…
-                </div>
-                {/* 8초 이상 걸릴 때만 보이는 힌트 (선택) */}
-                {/* <SlowHint /> */}
-              </div>
+              <Loading message="다음 질문을 준비 중이에요..." />
             )}
 
             {/* 미리보기 (UI 로그 없음) */}
