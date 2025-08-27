@@ -432,7 +432,7 @@ export default function InterviewPage() {
             aria-busy="true"
           />
         ) : (
-          <QuestionDisplay question={currentQuestion} />
+          <QuestionDisplay seq={currentSeq} question={currentQuestion} />
         )}
 
         {/* 🔵 질문이 바뀌면 자동으로 읽고, 끝나면 녹화/타이머 시작 신호(questionStarted=true) */}
