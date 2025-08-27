@@ -136,7 +136,7 @@ function RowSelect<T extends string>({
 
 const s = StyleSheet.create({
   backdrop: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.25)' },
-  wrap: { position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'flex-end' },
+  wrap: { position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' },
   sheet: {
     width: '100%', backgroundColor: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16,
     padding: 16, gap: 8, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 12, elevation: 8,

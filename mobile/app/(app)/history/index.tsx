@@ -1,6 +1,6 @@
 // mobile/app/(app)/history/index.tsx
 import { useEffect, useState, useMemo } from 'react';
-import { View, Text, FlatList, Pressable, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, Pressable, ActivityIndicator, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { fetchInterviewHistory, type Interview } from '../../../src/lib/api';
 import { cacheInterviews } from '../../../src/lib/historyCache';
 import { Picker } from '@react-native-picker/picker';
 import FiltersModal, { DDOption, Period } from '../../../components/FiltersModal';
+import FadeSlideInText from '../../../components/FadeSlideInText';
 
   type Filters = {
     period: Period;
@@ -87,6 +88,9 @@ export default function HistoryList() {
   const insets = useSafeAreaInsets(); // ⬅️ 안전영역
   const [list, setList] = useState<Interview[] | null>(null);
   const [loading, setLoading] = useState(true);
+
+  //로고 애니메이션
+  const [animKey, setAnimKey] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -214,114 +218,142 @@ export default function HistoryList() {
 
   return (
     <SafeAreaView style={[styles.safe, { paddingTop: insets.top + 3 }]} edges={['top']}>
-      {/* 트리거 버튼 */}
-      <View style={styles.filtersWrap}>
-        <Pressable onPress={() => setOpenFilters(true)} style={styles.filterTrigger}>
-          <Ionicons name="funnel-outline" size={16} color="#111827" />
-          <Text style={styles.filterTriggerTxt}>필터 · 정렬</Text>
-          {activeCount > 0 && (
-            <View style={styles.countBadge}>
-              <Text style={styles.countBadgeTxt}>{activeCount}</Text>
+      <Animated.FlatList
+      // ===== 데이터 / 렌더 =====
+      data={pageSlice}
+      keyExtractor={(it) => it.uuid}
+      renderItem={({ item }) => {
+        const avg = avgFrom(item);
+        return (
+          <Pressable
+            onPress={() => r.push({ pathname: '/(app)/history/[uuid]', params: { uuid: item.uuid } })}
+            style={styles.card}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={styles.title2}>{item.job || '직무 미지정'}</Text>
+              <Text style={styles.badge}>{item.type} · {item.level}</Text>
             </View>
-          )}
-        </Pressable>
-      </View>
 
-      {/* 필터/정렬 모달 */}
-      <FiltersModal
-        visible={openFilters}
-        onClose={() => setOpenFilters(false)}
-        value={{ ...filters, sortAsc }}
-        options={{
-          period: periodOpts,
-          job: jobOpts,
-          type: typeOpts,
-          level: levelOpts,
-          language: langOpts,
-        }}
-        onApply={(v) => {
-          setFilters({
-            period: v.period,
-            job: v.job,
-            type: v.type,
-            level: v.level,
-            language: v.language,
-          });
-          setSortAsc(v.sortAsc);
-        }}
-        onReset={() => {
-          setFilters({ period: 'all', job: 'ALL', type: 'ALL', level: 'ALL', language: 'ALL' });
-          setSortAsc(false); // 최신순
-        }}
-      />
+            <Text style={styles.sub}>{formatDate(item.createdAt)} · {item.language} · {item.count}문항</Text>
 
-      <FlatList
-        contentInsetAdjustmentBehavior="automatic" // ⬅️ iOS 자동 보정
-        contentContainerStyle={{ padding: 16, gap: 12 }}
-        data={pageSlice}
-        keyExtractor={(it) => it.uuid}
-        renderItem={({ item }) => {
-          const avg = avgFrom(item);
-          return (
-            <Pressable
-              onPress={() => r.push({ pathname: '/(app)/history/[uuid]', params: { uuid: item.uuid } })}
-              style={styles.card}
-            >
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={styles.title}>{item.job || '직무 미지정'}</Text>
-                <Text style={styles.badge}>{item.type} · {item.level}</Text>
+            {avg && (
+              <View style={styles.metrics}>
+                <MetricChip label="평균 종합" value={avg.score} />
+                <MetricChip label="표정" value={(avg as any).emotionScore * ((avg as any)._scale || 1)} />
+                <MetricChip label="시선" value={(avg as any).eyeScore * ((avg as any)._scale || 1)} />
               </View>
+            )}
 
-              <Text style={styles.sub}>{formatDate(item.createdAt)} · {item.language} · {item.count}문항</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+              <Text style={{ color: '#666' }}>자세히 보기</Text>
+              <Ionicons name="chevron-forward" />
+            </View>
+          </Pressable>
+        );
+      }}
 
-              {avg && (
-                <View style={styles.metrics}>
-                  <MetricChip label="평균 종합" value={avg.score} />
-                  <MetricChip label="표정" value={(avg as any).emotionScore * ((avg as any)._scale || 1)} />
-                  <MetricChip label="시선" value={(avg as any).eyeScore * ((avg as any)._scale || 1)} />
-                </View>
-              )}
-
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
-                <Text style={{ color: '#666' }}>자세히 보기</Text>
-                <Ionicons name="chevron-forward" />
-              </View>
-            </Pressable>
-          );
-        }}
-        ListFooterComponent={(
-          <View style={styles.paginationWrap}>
-            <View style={styles.paginationRow}>
-              {/* 이전 */}
-              <Pressable
-                style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]}
-                disabled={currentPage === 1}
-                onPress={() => setPage(p => Math.max(1, p - 1))}
+      // ===== 상단 헤더 (브랜드 + 태그라인 + 필터 트리거) =====
+      ListHeaderComponent={
+        <View style={{ paddingHorizontal: 5, paddingTop: 0, paddingBottom: 8 }}>
+          {/* 브랜드 헤더 */}
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+            <Text style={[ss.brand, { fontFamily: 'RubikGlitch' }]}>Re:AI</Text>
+            <View style={{ marginLeft: 8, marginBottom: -2 }}>
+              <FadeSlideInText
+                triggerKey={animKey}
+                delay={150}
+                style={[ss.taglineSecondary, { fontFamily: 'RubikGlitch' }]}
               >
-                <View style={styles.btnInner}>
-                  <Ionicons name="arrow-back" size={16} color="#fff" style={styles.iconLeft} />
-                  <Text style={styles.pageBtnText}>이전</Text>
-                </View>
-              </Pressable>
-
-              <Text style={styles.pageIndicator}>{currentPage} / {totalPages}</Text>
-
-              {/* 다음 */}
-              <Pressable
-                style={[styles.pageBtn, currentPage === totalPages && styles.pageBtnDisabled]}
-                disabled={currentPage === totalPages}
-                onPress={() => setPage(p => Math.min(totalPages, p + 1))}
+                Rehearse with AI
+              </FadeSlideInText>
+              <FadeSlideInText
+                triggerKey={animKey}
+                delay={350}
+                style={[ss.tagline, { fontFamily: 'RubikGlitch' }]}
               >
-                <View style={styles.btnInner}>
-                  <Ionicons name="arrow-forward" size={16} color="#fff" style={styles.iconRight} />
-                  <Text style={styles.pageBtnText}>다음</Text>
-                </View>
-              </Pressable>
+                Reinforce with AI
+              </FadeSlideInText>
             </View>
           </View>
-        )}
-      />
-    </SafeAreaView>
+
+          {/* 필터 트리거 + 제목 */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
+            {/* 왼쪽 텍스트 */}
+            <Text style={styles.title}>🧾 면접 기록 관리</Text>
+
+            {/* 오른쪽 버튼 */}
+            <Pressable onPress={() => setOpenFilters(true)} style={styles.filterTrigger}>
+              <Ionicons name="funnel-outline" size={16} color="#111827" />
+              <Text style={styles.filterTriggerTxt}>필터 · 정렬</Text>
+              {activeCount > 0 && (
+                <View style={styles.countBadge}>
+                  <Text style={styles.countBadgeTxt}>{activeCount}</Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      }
+
+      // ===== 하단 푸터 (페이지네이션) =====
+      ListFooterComponent={
+        <View style={styles.paginationWrap}>
+          <View style={styles.paginationRow}>
+            {/* 이전 */}
+            <Pressable
+              style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]}
+              disabled={currentPage === 1}
+              onPress={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              <View style={styles.btnInner}>
+                <Ionicons name="arrow-back" size={16} color="#fff" style={styles.iconLeft} />
+                <Text style={styles.pageBtnText}>이전</Text>
+              </View>
+            </Pressable>
+
+            <Text style={styles.pageIndicator}>{currentPage} / {totalPages}</Text>
+
+            {/* 다음 */}
+            <Pressable
+              style={[styles.pageBtn, currentPage === totalPages && styles.pageBtnDisabled]}
+              disabled={currentPage === totalPages}
+              onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              <View style={styles.btnInner}>
+                <Ionicons name="arrow-forward" size={16} color="#fff" style={styles.iconRight} />
+                <Text style={styles.pageBtnText}>다음</Text>
+              </View>
+            </Pressable>
+          </View>
+        </View>
+      }
+
+      // ===== 레이아웃 / 스크롤 옵션 =====
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 28, gap: 12 }}
+      showsVerticalScrollIndicator={false}
+
+      // ===== 스크롤 멈춤시 애니메이션 트리거 =====
+      onScrollEndDrag={() => setAnimKey((k) => k + 1)}
+      onMomentumScrollEnd={() => setAnimKey((k) => k + 1)}
+    />
+
+    {/* 필터/정렬 모달은 리스트 바깥에 유지 */}
+    <FiltersModal
+      visible={openFilters}
+      onClose={() => setOpenFilters(false)}
+      value={{ ...filters, sortAsc }}
+      options={{ period: periodOpts, job: jobOpts, type: typeOpts, level: levelOpts, language: langOpts }}
+      onApply={(v) => {
+        setFilters({ period: v.period, job: v.job, type: v.type, level: v.level, language: v.language });
+        setSortAsc(v.sortAsc);
+      }}
+      onReset={() => {
+        setFilters({ period: 'all', job: 'ALL', type: 'ALL', level: 'ALL', language: 'ALL' });
+        setSortAsc(false);
+      }}
+    />
+  </SafeAreaView>
   );
 }
 
@@ -364,6 +396,7 @@ const fb = StyleSheet.create({
 
 
 const styles = StyleSheet.create({
+  title: { fontSize: 24, fontWeight: '800', color: '#111827' },
   safe: { flex: 1, backgroundColor: '#f7f7f7' }, // ⬅️ 추가
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
   card: {
@@ -373,7 +406,7 @@ const styles = StyleSheet.create({
     gap: 6,
     shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
   },
-  title: { fontSize: 16, fontWeight: '700' },
+  title2: { fontSize: 16, fontWeight: '700' },
   sub: { color: '#666' },
   badge: { backgroundColor: '#eef2ff', color: '#4338ca', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, overflow: 'hidden' },
   metrics: { flexDirection: 'row', gap: 8, marginTop: 6 },
@@ -384,11 +417,13 @@ const styles = StyleSheet.create({
   filtersWrap: {
     paddingHorizontal: 16,
     paddingTop: 8,
+    paddingRight: 0,
     gap: 8,
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
     alignItems: 'center',
     zIndex: 10,
+    justifyContent: 'flex-end',
   },
 
   paginationWrap: {
@@ -443,4 +478,32 @@ const styles = StyleSheet.create({
     backgroundColor: '#111827',
   },
   countBadgeTxt: { color: '#fff', fontWeight: '800' },
+});
+
+const ss = StyleSheet.create({
+  header: {
+    paddingTop: 34,
+    paddingBottom: 0,
+    gap: 6,
+  },
+  brand: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111',
+  },
+  tagline: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  taglineSecondary: {
+    fontSize: 12,
+    color: '#4338ca',
+  },
+
+  picker: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    backgroundColor: '#fff',
+  },
 });

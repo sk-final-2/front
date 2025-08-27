@@ -253,7 +253,7 @@ return (
                   <Text style={ss.note}>1~10개</Text>
                 </Row>
               )}
-              {dynamicCount && <Text style={ss.hint}>동적 모드에서는 LangGraph를 통해 질문 개수를 정해요.</Text>}
+              {dynamicCount && <Text style={ss.hint}>동적 모드에서는 Koelectra 모델을 통해 질문 개수를 정해요.</Text>}
             </View>
           </Section>
 
