@@ -1,6 +1,5 @@
-"use client"
+"use client";
 
-import AnimationLayout from "@/components/animation/AnimationLayout";
 import MainHeader from "@/components/header/Header";
 import FeaturesSection from "@/components/home/FeaturesSection";
 import HeroSection from "@/components/home/HeroSection";
@@ -12,7 +11,7 @@ export default function Home() {
       <MainHeader />
       {/** 히어로 섹션 div */}
       <HeroSection />
-        <FeaturesSection />
+      <FeaturesSection />
       <div className="w-full h-screen snap-center">
         <MainScene />
       </div>

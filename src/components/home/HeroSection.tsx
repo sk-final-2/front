@@ -2,8 +2,17 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/hooks/storeHook";
-import { AlertDialogTrigger } from "@radix-ui/react-alert-dialog";
-import GeneralAlertDialog from "../dialog/GeneralAlertDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // 애니메이션 Variants 정의
 const sectionVariants = {
@@ -31,6 +40,13 @@ export default function HeroSection() {
   // 로그인 상태 store
   const { isLoggedIn } = useAppSelector((state) => state.auth);
 
+  // 면접 바로가기 버튼 액션
+  const handleButtonClick = () => {
+    if (isLoggedIn) {
+      router.push("/ready");
+    }
+  };
+
   return (
     <motion.section
       className="snap-start w-full min-h-screen flex flex-col justify-center items-center text-center px-4"
@@ -55,22 +71,39 @@ export default function HeroSection() {
         AI 면접관과 함께 언제 어디서든 실전 감각을 키워보세요.
       </motion.p>
       <motion.div variants={itemVariants}>
-        {/** 알림창 트리거 */}
-        <AlertDialogTrigger asChild>
-          <Button
-            size="lg"
-            onClick={() => {
-              if (isLoggedIn) {
-                router.push("/ready");
-              } else {
-                // <GeneralAlertDialog props={{ title: "", description: "" }} />;
-              }
-            }}
-            className="mt-10 cursor-pointer text-xl font-bold px-10 py-6 transition-transform transform hover:border-ring"
-          >
-            AI 면접 시작하기
-          </Button>
-        </AlertDialogTrigger>
+        <AlertDialog>
+          {/** 알림창 트리거 */}
+          <AlertDialogTrigger asChild>
+            <Button
+              size="lg"
+              onClick={handleButtonClick}
+              className="mt-10 cursor-pointer text-xl font-bold px-10 py-6 transition-transform transform hover:border-ring"
+            >
+              AI 면접 시작하기
+            </Button>
+          </AlertDialogTrigger>
+          {!isLoggedIn && (
+            <AlertDialogContent className="border-none bg-background">
+              <AlertDialogHeader>
+                <AlertDialogTitle>로그인이 필요합니다.</AlertDialogTitle>
+                <AlertDialogDescription>
+                  로그인 페이지로 이동하시겠습니까?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="cursor-pointer">
+                  취소
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => router.push("/login")}
+                  className="cursor-pointer"
+                >
+                  확인
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          )}
+        </AlertDialog>
       </motion.div>
     </motion.section>
   );
