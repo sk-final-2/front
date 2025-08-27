@@ -41,8 +41,9 @@ export default function MainHeader() {
     }
   };
 
+
   return (
-    <header className="p-4 shadow-lg flex justify-between items-center relative">
+    <header className="p-4 flex justify-between items-center fixed w-full z-50 bg-background shadow-lg">
       <Image
         src="/REAI.png"
         alt="icon"
@@ -57,7 +58,7 @@ export default function MainHeader() {
           <>
             {/* 내정보 버튼 */}
             <button
-              className="hover:underline relative"
+              className="hover:underline relative cursor-pointer"
               onClick={() => setIsModalOpen((prev) => !prev)}
             >
               내정보
@@ -71,7 +72,7 @@ export default function MainHeader() {
                 <p className="text-sm text-gray-600">이메일: {user?.email}</p>
 
                 <button
-                  className="mt-4 w-full bg-red-500 text-white py-1 rounded hover:bg-red-600"
+                  className="mt-4 w-full cursor-pointer bg-red-500 text-white py-1 rounded hover:bg-red-600"
                   onClick={handleLogout}
                 >
                   로그아웃
@@ -81,7 +82,7 @@ export default function MainHeader() {
 
             {/* 면접준비페이지 버튼 */}
             <button
-              className="hover:underline"
+              className="hover:underline cursor-pointer"
               onClick={() => handleNav("/ready")}
             >
               면접준비페이지
@@ -90,13 +91,13 @@ export default function MainHeader() {
         ) : (
           <>
             <button
-              className="hover:underline"
+              className="hover:underline cursor-pointer"
               onClick={() => router.push("/login")}
             >
               로그인/회원가입
             </button>
             <button
-              className="hover:underline"
+              className="hover:underline cursor-pointer"
               onClick={() => handleNav("/login")}
             >
               면접준비페이지

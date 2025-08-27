@@ -4,6 +4,16 @@
 @custom-variant hover (&:hover);
 @custom-variant focus (&:focus);
 @custom_variant disabled (&:disabled);
+@custom-variant snap (&.snap);
+
+.snap-mandatory {
+  --tw-scroll-snap-strictness: mandatory;
+}
+@property --tw-scroll-snap-strictness {
+  syntax: "*";
+  inherits: false;
+  initial-value: proximity;
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -40,70 +50,69 @@
 }
 
 :root {
-  --background: #FFFFFF;
+  --background: #ffffff;
   --foreground: #111827;
-  --card: #FFFFFF;
+  --card: #ffffff;
   --card-foreground: #111827;
-  --popover: #FFFFFF;
+  --popover: #ffffff;
   --popover-foreground: #111827;
-  --primary: #3B82F6;
-  --primary-foreground: #FFFFFF;
-  --secondary: #F3F4F6;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f4f6;
   --secondary-foreground: #111827;
-  --muted: #F3F4F6;
-  --muted-foreground: #6B7280;
-  --accent: #E5E7EB;
-  --accent-foreground: #1F2937;
-  --destructive: #EF4444;
-  --border: #E5E7EB;
-  --input: #E5E7EB;
-  --ring: #3B82F6;
-  --sidebar: #FFFFFF;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --accent: #e5e7eb;
+  --accent-foreground: #1f2937;
+  --destructive: #ef4444;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #3b82f6;
+  --sidebar: #ffffff;
   --sidebar-foreground: #111827;
-  --sidebar-primary: #3B82F6;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #E5E7EB;
-  --sidebar-accent-foreground: #1F2937;
-  --sidebar-border: #E5E7EB;
-  --sidebar-ring: #3B82F6;
-  --chart-1: #10B981;  /* Green */
-  --chart-2: #F59E0B;  /* Amber */
-  --chart-3: #8B5CF6;  /* Violet */
-  --chart-4: #EC4899;  /* Pink */
-  --chart-5: #6366F1;  /* Indigo */
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e5e7eb;
+  --sidebar-accent-foreground: #1f2937;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #3b82f6;
+  --chart-1: #10b981; /* Green */
+  --chart-2: #f59e0b; /* Amber */
+  --chart-3: #8b5cf6; /* Violet */
+  --chart-4: #ec4899; /* Pink */
+  --chart-5: #6366f1; /* Indigo */
 }
 
 .dark {
   --background: #111827;
-  --foreground: #F9FAFB;
-  --card: #1F2937;
-  --card-foreground: #F9FAFB;
-  --popover: #1F2937;
-  --popover-foreground: #F9FAFB;
-  --primary: #60A5FA;
+  --foreground: #f9fafb;
+  --card: #1f2937;
+  --card-foreground: #f9fafb;
+  --popover: #1f2937;
+  --popover-foreground: #f9fafb;
+  --primary: #60a5fa;
   --primary-foreground: #111827;
   --secondary: #374151;
-  --secondary-foreground: #F9FAFB;
+  --secondary-foreground: #f9fafb;
   --muted: #374151;
-  --muted-foreground: #9CA3AF;
-  --accent: #4B5563;
-  --accent-foreground: #F9FAFB;
-  --destructive: #F87171;
+  --muted-foreground: #9ca3af;
+  --accent: #4b5563;
+  --accent-foreground: #f9fafb;
+  --destructive: #f87171;
   --border: #374151;
   --input: #374151;
-  --ring: #60A5FA;
-  --sidebar: #1F2937;
-  --sidebar-foreground: #F9FAFB;
-  --sidebar-primary: #60A5FA;
+  --ring: #60a5fa;
+  --sidebar: #1f2937;
+  --sidebar-foreground: #f9fafb;
+  --sidebar-primary: #60a5fa;
   --sidebar-primary-foreground: #111827;
-  --sidebar-accent: #4B5563;
-  --sidebar-accent-foreground: #F9FAFB;
+  --sidebar-accent: #4b5563;
+  --sidebar-accent-foreground: #f9fafb;
   --sidebar-border: #374151;
-  --sidebar-ring: #60A5FA;
-  --chart-1: #34D399;  /* Bright Green */
-  --chart-2: #FBBF24;  /* Bright Amber */
-  --chart-3: #A78BFA;  /* Bright Violet */
-  --chart-4: #F472B6;  /* Bright Pink */
-  --chart-5: #818CF8;  /* Bright Indigo */
+  --sidebar-ring: #60a5fa;
+  --chart-1: #34d399; /* Bright Green */
+  --chart-2: #fbbf24; /* Bright Amber */
+  --chart-3: #a78bfa; /* Bright Violet */
+  --chart-4: #f472b6; /* Bright Pink */
+  --chart-5: #818cf8; /* Bright Indigo */
 }
-
