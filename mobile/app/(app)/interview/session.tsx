@@ -317,14 +317,14 @@ async function waitForSocketSignal(interviewId: string): Promise<void> {
             <FadeSlideInText
               triggerKey={animKey}
               delay={150}
-              style={{ fontSize: 12, color: '#4338ca', fontFamily: 'RubikGlitch' }}
+              style={{ fontSize: 12, color: '#3B82F6', fontFamily: 'RubikGlitch' }}
             >
               Rehearse with AI
             </FadeSlideInText>
             <FadeSlideInText
               triggerKey={animKey}
               delay={350}
-              style={{ fontSize: 12, color: '#6b7280', fontFamily: 'RubikGlitch' }}
+              style={{ fontSize: 12, color: '#5f5f5fff', fontFamily: 'RubikGlitch' }}
             >
               Reinforce with AI
             </FadeSlideInText>
@@ -417,7 +417,7 @@ async function waitForSocketSignal(interviewId: string): Promise<void> {
 }
 
 const btnPrimary = {
-  backgroundColor: '#4f46e5',
+  backgroundColor: '#3B82F6',
   paddingVertical: 14,
   borderRadius: 12,
   alignItems: 'center',

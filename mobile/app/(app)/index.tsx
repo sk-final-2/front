@@ -393,10 +393,10 @@ export default function Home() {
           <Text style={[styles.brand, { fontFamily: 'RubikGlitch' }]}>Re:AI</Text>
             {/* ▼ 애니메이션 태그라인 */}
             <View style={{ marginLeft: 8, marginBottom: -2 }}>
-              <FadeSlideInText triggerKey={animKey} delay={150} style={[styles.taglineSecondary, { fontFamily: 'RubikGlitch' }]}>
+              <FadeSlideInText triggerKey={animKey} delay={150} style={[styles.tagline, { fontFamily: 'RubikGlitch' }]}>
                 Rehearse with AI
               </FadeSlideInText>
-              <FadeSlideInText triggerKey={animKey} delay={350} style={[styles.tagline, { fontFamily: 'RubikGlitch' }]}>
+              <FadeSlideInText triggerKey={animKey} delay={350} style={[styles.taglineSecondary, { fontFamily: 'RubikGlitch' }]}>
                 Reinforce with AI
               </FadeSlideInText>
             </View>
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#4f46e5',
+    backgroundColor: '#3B82F6',
     borderRadius: 12,
     paddingVertical: 12,
     justifyContent: 'center',
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 999,
-    backgroundColor: '#eef2ff',
+    backgroundColor: '#b3cffcff',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
@@ -616,6 +616,6 @@ const styles = StyleSheet.create({
   featureTitle: { fontWeight: '800', color: '#111827' },
   featureDesc: { color: '#6b7280', marginTop: 2, lineHeight: 18 },
 
-  tagline: { fontSize: 14, fontWeight: '700', color: '#4f46e5' },
-  taglineSecondary: { fontSize: 14, fontWeight: '700', color: '#393a3cff', opacity: 0.85 },
+  tagline: { fontSize: 14, fontWeight: '700', color: '#3B82F6' },
+  taglineSecondary: { fontSize: 14, fontWeight: '700', color: '#5f5f5fff', opacity: 0.85 },
 });

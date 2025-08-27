@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
   },
   title2: { fontSize: 16, fontWeight: '700' },
   sub: { color: '#666' },
-  badge: { backgroundColor: '#eef2ff', color: '#4338ca', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, overflow: 'hidden' },
+  badge: { backgroundColor: '#eef2ff', color: '#3B82F6', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, overflow: 'hidden' },
   metrics: { flexDirection: 'row', gap: 8, marginTop: 6 },
   chip: { flexDirection: 'row', gap: 6, borderWidth: 1, borderColor: '#eee', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, alignItems: 'center' },
   chipLabel: { color: '#666' },
@@ -493,11 +493,11 @@ const ss = StyleSheet.create({
   },
   tagline: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#5f5f5fff',
   },
   taglineSecondary: {
     fontSize: 12,
-    color: '#4338ca',
+    color: '#3B82F6',
   },
 
   picker: {

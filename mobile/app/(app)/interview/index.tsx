@@ -392,11 +392,11 @@ function Chip({ selected, onPress, text }: { selected: boolean; onPress: () => v
       onPress={onPress}
       style={{
         paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999,
-        borderWidth: 1, borderColor: selected ? '#4338ca' : '#e5e7eb',
+        borderWidth: 1, borderColor: selected ? '#3B82F6' : '#e5e7eb',
         backgroundColor: selected ? '#eef2ff' : '#fff'
       }}
     >
-      <Text style={{ color: selected ? '#4338ca' : '#111', fontWeight: '700' }}>{text}</Text>
+      <Text style={{ color: selected ? '#3B82F6' : '#111', fontWeight: '700' }}>{text}</Text>
     </Pressable>
   );
 }
@@ -470,7 +470,7 @@ const ss = StyleSheet.create({
 
   cta: {
     marginTop: 4,
-    backgroundColor: '#4f46e5',
+    backgroundColor: '#3B82F6',
     paddingVertical: 14,
     borderRadius: 14,
     alignItems: 'center',
@@ -502,7 +502,7 @@ const ss = StyleSheet.create({
   },
   taglineSecondary: {
     fontSize: 12,
-    color: '#4338ca',
+    color: '#3B82F6',
   },
 
   picker: {

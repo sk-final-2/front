@@ -166,7 +166,7 @@ export default function ResultScreen() {
       return {
         byCat: [
           { label: '감정',   value: toNum(avg.emotionScore) },
-          { label: '깜빡임', value: toNum(avg.blinkScore) },
+          { label: '눈 깜빡임', value: toNum(avg.blinkScore) },
           { label: '시선 처리',   value: toNum(avg.eyeScore) },
           { label: '고개 움직임',   value: toNum(avg.headScore) },
           { label: '손 움직임',     value: toNum(avg.handScore) },
@@ -185,8 +185,8 @@ export default function ResultScreen() {
     return {
       byCat: [
         { label: '감정',   value: sum.emotion / n },
-        { label: '깜빡임', value: sum.blink   / n },
-        { label: '시선',   value: sum.eye     / n },
+        { label: '눈 깜빡임', value: sum.blink   / n },
+        { label: '시선 처리',   value: sum.eye     / n },
         { label: '고개 움직임',   value: sum.head    / n },
         { label: '손 움직임',     value: sum.hand    / n },
       ],
@@ -238,7 +238,7 @@ export default function ResultScreen() {
   function PenaltyPoints({
     timestamps,
     bucketSec = 5,
-    multiThreshold = 2,
+    multiThreshold = 1,
     onPlaySegment,
   }: {
     timestamps: TS[] | undefined;
@@ -387,32 +387,32 @@ export default function ResultScreen() {
         <Text style={[styles.title, { marginBottom: 12 }]}>면접 정보</Text>
 
         <View style={styles.resultRow}>
-          <Ionicons name="briefcase-outline" size={16} color="#4f46e5" />
+          <Ionicons name="briefcase-outline" size={16} color="#3B82F6" />
           <Text style={styles.meta}>직무: {result.job}</Text>
         </View>
 
         <View style={styles.resultRow}>
-          <Ionicons name="person-outline" size={16} color="#4f46e5" />
+          <Ionicons name="person-outline" size={16} color="#3B82F6" />
           <Text style={styles.meta}>경력: {result.career}</Text>
         </View>
 
         <View style={styles.resultRow}>
-          <Ionicons name="grid-outline" size={16} color="#4f46e5" />
+          <Ionicons name="grid-outline" size={16} color="#3B82F6" />
           <Text style={styles.meta}>면접 타입: {result.type}</Text>
         </View>
 
         <View style={styles.resultRow}>
-          <Ionicons name="star-outline" size={16} color="#4f46e5" />
+          <Ionicons name="star-outline" size={16} color="#3B82F6" />
           <Text style={styles.meta}>레벨: {result.level}</Text>
         </View>
 
         <View style={styles.resultRow}>
-          <Ionicons name="language-outline" size={16} color="#4f46e5" />
+          <Ionicons name="language-outline" size={16} color="#3B82F6" />
           <Text style={styles.meta}>언어: {result.language}</Text>
         </View>
 
         <View style={[styles.resultRow, { marginTop: 6 }]}>
-          <Ionicons name="calendar-outline" size={16} color="#4f46e5" />
+          <Ionicons name="calendar-outline" size={16} color="#3B82F6" />
           <Text style={styles.meta}>면접 일시: {result.createdAt}</Text>
         </View>
       </View>
@@ -514,7 +514,7 @@ export default function ResultScreen() {
           <PenaltyPoints
             timestamps={current.timestamp}
             bucketSec={5}                // 필요시 10/15로 변경 가능
-            multiThreshold={2}           // 복수 감지 기준 (총 횟수 2회 이상)
+            multiThreshold={1}           // 복수 감지 기준
             onPlaySegment={(s, e) => playSegment(s, e)}
           />
         ) : null}
@@ -557,7 +557,7 @@ export default function ResultScreen() {
           {overall.byCat.map((c) => (
             <View key={c.label} style={{ paddingHorizontal: 10, paddingVertical: 6, backgroundColor: '#f3f4f6', borderRadius: 999 }}>
               <Text style={{ fontSize: 12, fontWeight: '700', color: '#111827' }}>
-                {c.label} <Text style={{ color: '#3359a5ff' }}>{fmtScore(c.value)}</Text>
+                {c.label} <Text style={{ color: '#3B82F6' }}>{fmtScore(c.value)}<Text style={{ fontSize: 12, fontWeight: '700', color: '#111827' }}>{'점'}</Text></Text>
               </Text>
             </View>
           ))}
@@ -722,7 +722,7 @@ const labels = data.map((d, i) => {
       x={lx}
       y={ly}
       fontSize={size < 300 ? 11 : 12}
-      fill="#113c81ff"
+      fill="#146effff"
       textAnchor={ta as any}
     >
       {d.label}
@@ -743,7 +743,7 @@ const labels = data.map((d, i) => {
         <Polygon
           points={areaPoints}
           fill="rgba(52, 63, 209, 0.15)"
-          stroke="#244488ff"
+          stroke="#609cfdff"
           strokeWidth={2}
         />
         {labels}
@@ -881,10 +881,10 @@ const ss = StyleSheet.create({
   },
   tagline: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#5f5f5fff',
   },
   taglineSecondary: {
     fontSize: 12,
-    color: '#4338ca',
+    color: '#3B82F6',
   },
 });
