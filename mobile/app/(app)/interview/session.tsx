@@ -330,7 +330,7 @@ async function waitForSocketSignal(interviewId: string): Promise<void> {
             </FadeSlideInText>
           </View>
         </View>
-        <Text style={{ fontSize:16, fontWeight:'800' }}>{curSeq}. 질문</Text>
+        <Text style={{ fontSize:16, fontWeight:'800' }}>질문 {curSeq}</Text>
         
 
         {!!caption && (

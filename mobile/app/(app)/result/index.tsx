@@ -1,11 +1,13 @@
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Dimensions, ActivityIndicator, Animated } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import Svg, { G, Polygon, Line, Text as SvgText } from 'react-native-svg';
 import { getResult } from '../../../src/lib/resultCache';
 import { getAccessToken } from '../../../src/lib/auth';
+import FadeSlideInText from '../../../components/FadeSlideInText';
+import { Ionicons } from '@expo/vector-icons';
 
 const { API_BASE } = (Constants.expoConfig?.extra ?? {}) as any;
 
@@ -124,11 +126,11 @@ function getGrade(score: number) {
 // 점수 뱃지 색상 팔레트
 function getScoreBadgeStyle(score: number) {
   const s = Math.max(0, Math.min(100, Number(score) || 0));
-  if (s >= 90) return { color: '#059669', bg: '#a7f3d0', border: '#60a991ff' };
-  if (s >= 80) return { color: '#0284c7', bg: '#bae6fd', border: '#3baae1ff' };
-  if (s >= 70) return { color: '#ffd220ff', bg: '#fef3c7', border: '#fde68a' };
-  if (s >= 60) return { color: '#ff8800ff', bg: '#fdba74', border: '#f79e3fff' };
-  return { color: '#bf1b1bff', bg: '#f8d6d6ff', border: '#d87575ff' };
+  if (s >= 90) return { color: '#059669', border: '#60a991ff' };
+  if (s >= 80) return { color: '#0284c7', border: '#3baae1ff' };
+  if (s >= 70) return { color: '#ffd220ff', border: '#fde68a' };
+  if (s >= 60) return { color: '#ff8800ff', border: '#f79e3fff' };
+  return { color: '#bf1b1bff', border: '#d87575ff' };
 }
 
 export default function ResultScreen() {
@@ -153,6 +155,9 @@ export default function ResultScreen() {
       </View>
     );
   }
+
+  //로고 애니메이션
+  const [animKey, setAnimKey] = useState(0);
 
   // 2) 평균(또는 문항별 평균) 계산
   const overall = useMemo(() => {
@@ -194,6 +199,7 @@ export default function ResultScreen() {
   const current = result.answerAnalyses[Math.min(idx, result.answerAnalyses.length - 1)];
   const playerRef = useRef<any>(null);
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 
   const onPressTs = (ts: string) => {
     const p = playerRef.current;
@@ -348,14 +354,69 @@ export default function ResultScreen() {
 
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: THEME.bg }} contentContainerStyle={{ padding: 16, paddingTop: 50, paddingBottom: 40 }}>
-      {/* 헤더 */}
-      <Text style={styles.title}>면접 결과</Text>
-      <Text style={styles.meta}>
-        {result.job} · {result.career} · {result.type} · {result.level} · {result.language}
-      </Text>
-      <Text style={[styles.meta, { marginBottom: 10 }]}>{result.createdAt}</Text>
+    <Animated.ScrollView style={{ flex: 1, backgroundColor: THEME.bg }} 
+        contentContainerStyle={{ padding: 16, paddingTop: 50, paddingBottom: 40 }}
+        onScrollEndDrag={() => setAnimKey(k => k + 1)}
+        onMomentumScrollEnd={() => setAnimKey(k => k + 1)}
+      >
+      <View style={ss.header}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+              {/* 브랜드 */}
+              <Text style={[ss.brand, { fontFamily: 'RubikGlitch' }]}>Re:AI</Text>
 
+              {/* 애니메이션 태그라인 */}
+              <View style={{ marginLeft: 8, marginBottom: -2 }}>
+                <FadeSlideInText
+                  triggerKey={animKey}
+                  delay={150}
+                  style={[ss.taglineSecondary, { fontFamily: 'RubikGlitch' }]}
+                >
+                  Rehearse with AI
+                </FadeSlideInText>
+                <FadeSlideInText
+                  triggerKey={animKey}
+                  delay={350}
+                  style={[ss.tagline, { fontFamily: 'RubikGlitch' }]}
+                >
+                  Reinforce with AI
+                </FadeSlideInText>
+              </View>
+            </View>
+      {/* 면접 결과 카드 */}
+      <View style={[styles.card, { marginTop: 12, marginBottom: 10, paddingVertical: 20 }]}>
+        <Text style={[styles.title, { marginBottom: 12 }]}>면접 정보</Text>
+
+        <View style={styles.resultRow}>
+          <Ionicons name="briefcase-outline" size={16} color="#4f46e5" />
+          <Text style={styles.meta}>직무: {result.job}</Text>
+        </View>
+
+        <View style={styles.resultRow}>
+          <Ionicons name="person-outline" size={16} color="#4f46e5" />
+          <Text style={styles.meta}>경력: {result.career}</Text>
+        </View>
+
+        <View style={styles.resultRow}>
+          <Ionicons name="grid-outline" size={16} color="#4f46e5" />
+          <Text style={styles.meta}>면접 타입: {result.type}</Text>
+        </View>
+
+        <View style={styles.resultRow}>
+          <Ionicons name="star-outline" size={16} color="#4f46e5" />
+          <Text style={styles.meta}>레벨: {result.level}</Text>
+        </View>
+
+        <View style={styles.resultRow}>
+          <Ionicons name="language-outline" size={16} color="#4f46e5" />
+          <Text style={styles.meta}>언어: {result.language}</Text>
+        </View>
+
+        <View style={[styles.resultRow, { marginTop: 6 }]}>
+          <Ionicons name="calendar-outline" size={16} color="#4f46e5" />
+          <Text style={styles.meta}>면접 일시: {result.createdAt}</Text>
+        </View>
+      </View>
+      </View>
       {/* 상단 질문 번호 탭 */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         {result.answerAnalyses.map((a, i) => (
@@ -377,6 +438,7 @@ export default function ResultScreen() {
       {/* 현재 질문 제목/요약 */}
       <View style={[styles.card, { marginTop: 12 }]}>
         {/* 상단: 질문 */}
+        <Text style={[styles.title, { marginBottom: 12 }]}>📊 면접 결과</Text>
         <Text style={styles.qTitle}>질문 {current.seq}. {current.question}</Text>
 
         {/* 하단: 점수/등급 뱃지 2개 */}
@@ -388,7 +450,7 @@ export default function ResultScreen() {
             return (
               <>
                 {/* 점수 뱃지 (파스텔) */}
-                <View style={[styles.Badge, { borderColor: scoreStyle.border, backgroundColor: scoreStyle.bg }]}>
+                <View style={[styles.Badge, { borderColor: scoreStyle.border, backgroundColor: tint }]}>
                   <Text style={[styles.BadgeText, { color: scoreStyle.color }]}>
                     {Math.round(current.score)}
                   </Text>
@@ -411,7 +473,7 @@ export default function ResultScreen() {
 
       {/* 영상 + 타임스탬프 */}
       <View style={[styles.card, { marginTop: 12 }]}>
-        <Text style={styles.sectionTitle}>✅ 질문 {current.seq} 답변 영상</Text>
+        <Text style={styles.sectionTitle}>🎥 질문 {current.seq} 답변 영상</Text>
 
         <View style={{ position: 'relative', borderRadius: 8, overflow: 'hidden' }}>
           {id ? (
@@ -460,7 +522,7 @@ export default function ResultScreen() {
       {/* 상세 정보 */}
       <View style={[styles.card, { marginTop: 12, gap: 10 }]}>
         <Text style={styles.sectionTitle}>자세한 정보</Text>
-        <KV k="😊 잘한 점" v={current.good} />
+        <KV k="😊 긍정 피드백" v={current.good} />
         <KV k="😭 아쉬운 점" v={current.bad} />
         {current.emotionText ? <KV k="😁 감정 분석" v={current.emotionText} /> : null}
         {current.mediapipeText ? (
@@ -501,7 +563,7 @@ export default function ResultScreen() {
           ))}
         </View>
       </View>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 
@@ -797,4 +859,32 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 
+  resultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+
+});
+
+const ss = StyleSheet.create({
+  header: {
+    paddingTop: 34,
+    paddingBottom: 0,
+    gap: 6,
+  },
+  brand: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111',
+  },
+  tagline: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  taglineSecondary: {
+    fontSize: 12,
+    color: '#4338ca',
+  },
 });
