@@ -839,7 +839,7 @@ const styles = StyleSheet.create({
   tabActive: {
     backgroundColor: '#111827',
   },
-  tabText: { color: '#312e81', fontWeight: '800' },
+  tabText: { color: '#0088ffff', fontWeight: '800' },
   tabTextActive: { color: '#fff' },
 
   qTitle: { fontSize: 15, fontWeight: '700', color: THEME.text },

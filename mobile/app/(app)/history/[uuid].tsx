@@ -3,19 +3,34 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable,
-  ViewStyle, TextStyle
+  ViewStyle, TextStyle, Animated, TouchableOpacity
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getInterview } from '../../../src/lib/historyCache';
 import type { Interview, AnswerAnalysis, AvgScore } from '../../../src/lib/api';
+import FadeSlideInText from '../../../components/FadeSlideInText';
+import Svg, { G, Path, Text as SvgText } from 'react-native-svg';
+
+const THEME = {
+  primary: '#111827',
+  text: '#111827',
+  muted: '#6b7280',
+  bg: '#f8fafc',
+  white: '#fff',
+  border: '#e5e7eb',
+  radius: 12,
+  track: '#e5e7eb',
+  fill: '#111827',
+  ok: '#10b981',
+};
 
 const METRICS = [
   { key: 'score',        label: '종합' },
   { key: 'emotionScore', label: '감정' },
-  { key: 'blinkScore',   label: '깜빡임' },
-  { key: 'eyeScore',     label: '시선' },
-  { key: 'headScore',    label: '머리' },
-  { key: 'handScore',    label: '손' },
+  { key: 'blinkScore',   label: '눈 깜빡임' },
+  { key: 'eyeScore',     label: '시선처리' },
+  { key: 'headScore',    label: '고개 움직임' },
+  { key: 'handScore',    label: '손 움직임' },
 ] as const;
 
 function normalizePair(value: number, avg: number) {
@@ -63,6 +78,12 @@ export default function HistoryDetail() {
   const r = useRouter();
   const [iv, setIv] = useState<Interview | null>(null);
 
+  //로고 애니메이션
+  const [animKey, setAnimKey] = useState(0);
+
+  // 현재 선택된 질문 index
+  const [idx, setIdx] = useState(0);
+
   useEffect(() => { setIv(getInterview(uuid)); }, [uuid]);
 
   if (!iv) {
@@ -75,24 +96,64 @@ export default function HistoryDetail() {
   }
 
   const avg: AvgScore | undefined = iv.avgScore?.[0];
+  const current = iv.answerAnalyses[Math.min(idx, iv.answerAnalyses.length - 1)];
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12, marginTop: 50 }}>
+    <Animated.ScrollView style={{ flex: 1, backgroundColor: THEME.bg }} 
+            contentContainerStyle={{ padding: 16, paddingTop: 50, paddingBottom: 40 }}
+            onScrollEndDrag={() => setAnimKey(k => k + 1)}
+            onMomentumScrollEnd={() => setAnimKey(k => k + 1)}
+    >
+      <View style={ss.header}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+              {/* 브랜드 */}
+              <Text style={[ss.brand, { fontFamily: 'RubikGlitch' }]}>Re:AI</Text>
+
+              {/* 애니메이션 태그라인 */}
+              <View style={{ marginLeft: 8, marginBottom: -2 }}>
+                <FadeSlideInText
+                  triggerKey={animKey}
+                  delay={150}
+                  style={[ss.taglineSecondary, { fontFamily: 'RubikGlitch' }]}
+                >
+                  Rehearse with AI
+                </FadeSlideInText>
+                <FadeSlideInText
+                  triggerKey={animKey}
+                  delay={350}
+                  style={[ss.tagline, { fontFamily: 'RubikGlitch' }]}
+                >
+                  Reinforce with AI
+                </FadeSlideInText>
+              </View>
+            </View>
+        </View>
       {/* 헤더 */}
-      <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>
-        <Pressable onPress={() => r.back()} style={{ paddingVertical:6, paddingRight:8, flexDirection:'row', alignItems:'center', gap:6 }}>
-          <Ionicons name="chevron-back" size={20} /><Text>뒤로</Text>
-        </Pressable>
-        <Text style={{ fontSize:16, fontWeight:'700' }}>{iv.job || '면접 기록'}</Text>
-        <View style={{ width: 48 }} />
-      </View>
+      <Text style={[styles.title, { marginBottom: 12, marginTop: 12 }]}> 면접 상세보기</Text>
+
+      {/* ✅ 질문 번호 탭 추가 */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 8, marginBottom: 12 }}
+      >
+        {iv.answerAnalyses.map((a, i) => (
+          <TouchableOpacity
+            key={a.seq}
+            onPress={() => setIdx(i)}
+            style={[styles.tab, i === idx && styles.tabActive]}
+          >
+            <Text style={[styles.tabText, i === idx && styles.tabTextActive]}>{a.seq}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
       {/* 평균 요약 */}
       {avg ? (
-        <View style={styles.avgCard}>
+        <View style={styles.qCard}>
           <Text style={styles.sectionTitle}>세션 평균</Text>
           <View style={styles.avgRow}>
-            {METRICS.slice(0, 3).map((m) => {
+            {METRICS.map((m) => {
               const raw = (avg as any)?.[m.key] ?? 0;
               const shown = raw <= 1 ? raw * 100 : raw;
               return (
@@ -106,18 +167,16 @@ export default function HistoryDetail() {
         </View>
       ) : null}
 
-      {/* 문항별 차이 */}
-      {iv.answerAnalyses.map((a) => (
-        <QuestionCard key={a.id ?? a.seq} a={a} avg={avg} />
-      ))}
-    </ScrollView>
+      {/* 현재 선택된 문항만 출력 */}
+      <QuestionCard key={current.id ?? current.seq} a={current} avg={avg} />
+    </Animated.ScrollView>
   );
 }
 
 function QuestionCard({ a, avg }: { a: AnswerAnalysis; avg?: AvgScore }) {
   return (
     <View style={styles.qCard}>
-      <Text style={styles.qTitle}>{a.seq + 1}. {a.question}</Text>
+      <Text style={styles.qTitle}>{a.seq}. {a.question}</Text>
       <Text style={styles.qAnswer} numberOfLines={3}>{a.answer}</Text>
 
       <View style={{ gap: 8 }}>
@@ -174,6 +233,11 @@ type Styles = {
   coachBox: ViewStyle;
   coachGood: TextStyle;
   coachBad: TextStyle;
+
+  tab: ViewStyle;
+  tabActive: ViewStyle;
+  tabText: TextStyle;
+  tabTextActive: TextStyle;
 };
 
 const styles = StyleSheet.create<Styles>({
@@ -186,7 +250,7 @@ const styles = StyleSheet.create<Styles>({
     borderWidth: 1,
   },
   sectionTitle: { fontSize: 14, fontWeight: '700' },
-  avgRow: { flexDirection: 'row', gap: 8 },
+  avgRow: { flexDirection: 'row', gap: 5, rowGap: 8, flexWrap: 'wrap' },
   avgChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -210,6 +274,7 @@ const styles = StyleSheet.create<Styles>({
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
+    marginBottom: 12
   },
   qTitle: { fontWeight: '700' },
   qAnswer: { color: '#444' },
@@ -223,4 +288,44 @@ const styles = StyleSheet.create<Styles>({
   coachBox: { backgroundColor: '#FAFAFA', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#EEE', gap: 4 },
   coachGood: { color: '#166534', fontWeight: '600' },
   coachBad: { color: '#991B1B', fontWeight: '600' },
+
+  title: { fontSize: 24, fontWeight: '800', color: THEME.text },
+
+  tab: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    backgroundColor: '#eef2ff',
+  },
+  tabActive: {
+    backgroundColor: '#111827',
+  },
+  tabText: {
+    color: '#0088ffff',
+    fontWeight: '800',
+  },
+  tabTextActive: {
+    color: '#fff',
+  },
+});
+
+const ss = StyleSheet.create({
+  header: {
+    paddingTop: 34,
+    paddingBottom: 0,
+    gap: 6,
+  },
+  brand: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111',
+  },
+  tagline: {
+    fontSize: 12,
+    color: '#5f5f5fff',
+  },
+  taglineSecondary: {
+    fontSize: 12,
+    color: '#3B82F6',
+  },
 });
