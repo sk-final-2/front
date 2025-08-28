@@ -1,7 +1,7 @@
 // mobile/app/(app)/interview/session.tsx
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, Alert, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, Alert, Platform, ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
 import * as Speech from 'expo-speech';
 import { saveResult } from '../../../src/lib/resultCache';
 import {
@@ -20,6 +20,8 @@ import {
 } from '../../../src/lib/api';
 import SockJS from 'sockjs-client';
 import Constants from 'expo-constants';
+import FadeSlideInText from '../../../components/FadeSlideInText';
+
 type Params = { id: string; seq: string; question: string; expected?: string };
 
 const { API_BASE, WS_BASE } = (Constants.expoConfig?.extra ?? {}) as any;
@@ -62,6 +64,9 @@ export default function InterviewSession() {
   const camRef = useRef<CameraView | null>(null);
   const facing: CameraType | 'front' | 'back' = 'front';
   const shouldUploadRef = useRef(false); // 중복 업로드 방지
+
+  //로고 애니메이션
+  const [animKey, setAnimKey] = useState(0);
 
   // 권한 요청/정리
   useEffect(() => {
@@ -289,9 +294,6 @@ async function waitForSocketSignal(interviewId: string): Promise<void> {
     return (
       <View style={{ flex:1, alignItems:'center', justifyContent:'center', padding:16 }}>
         <Text>카메라/마이크 권한이 필요합니다. 설정에서 허용 후 다시 시도해 주세요.</Text>
-        <Pressable onPress={() => r.back()} style={{ padding:10, marginTop:8 }}>
-          <Text>← 준비 화면으로</Text>
-        </Pressable>
       </View>
     );
   }
@@ -300,11 +302,36 @@ async function waitForSocketSignal(interviewId: string): Promise<void> {
   }
 
   return (
-    <View style={{ flex:1 }}>
+    <View style={{ flex:1, paddingTop: 50 }}>
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+      >
       {/* 상단: 질문/자막 */}
-      <View style={{ padding:16, gap:8 }}>
-        <Text style={{ fontSize:16, fontWeight:'800' }}>{curSeq}. 질문</Text>
-        <Text style={{ fontSize:18 }}>{curQ}</Text>
+      <View style={{ padding:16, gap:4 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+          <Text style={{ fontSize: 28, fontWeight: '800', color: '#111', fontFamily: 'RubikGlitch' }}>
+            Re:AI
+          </Text>
+          <View style={{ marginLeft: 8, marginBottom: -2 }}>
+            <FadeSlideInText
+              triggerKey={animKey}
+              delay={150}
+              style={{ fontSize: 12, color: '#3B82F6', fontFamily: 'RubikGlitch' }}
+            >
+              Rehearse with AI
+            </FadeSlideInText>
+            <FadeSlideInText
+              triggerKey={animKey}
+              delay={350}
+              style={{ fontSize: 12, color: '#5f5f5fff', fontFamily: 'RubikGlitch' }}
+            >
+              Reinforce with AI
+            </FadeSlideInText>
+          </View>
+        </View>
+        <Text style={{ fontSize:16, fontWeight:'800' }}>질문 {curSeq}</Text>
+        
 
         {!!caption && (
           <View style={{ backgroundColor:'#111', padding:10, borderRadius:10 }}>
@@ -312,23 +339,38 @@ async function waitForSocketSignal(interviewId: string): Promise<void> {
           </View>
         )}
 
-        <View style={{ flexDirection:'row', gap:8 }}>
+        <View style={{ flexDirection:'row', gap:8, justifyContent: 'flex-end' }}>
           <Pressable onPress={() => speakQuestion(curQ)} style={btnSecondary}>
-            <Text style={btnSecondaryText}>{speaking ? '읽는 중…' : '다시 읽어줘'}</Text>
+            <Text style={btnSecondaryText}>{speaking ? '읽는 중…' : '다시 듣기 🔊'}</Text>
           </Pressable>
         </View>
       </View>
 
       {/* 카메라 */}
-      <View style={{ flex:1, borderTopWidth:1, borderColor:'#eee' }}>
-        {Platform.OS === 'web' ? (
-          <View style={{ flex:1, alignItems:'center', justifyContent:'center', padding:16 }}>
-            <Text>웹에서는 카메라 미리보기가 제한될 수 있어요. 모바일 기기에서 테스트해 주세요.</Text>
-          </View>
-        ) : (
-          <CameraView ref={camRef} style={{ flex:1 }} facing={facing} videoQuality="720p" mode="video" />
-        )}
+      <View style={styles.cameraCard}>
+        {/* 프리뷰 박스 */}
+        <View style={styles.cameraBox}>
+          {Platform.OS === 'web' ? (
+            <View style={{ flex:1, alignItems:'center', justifyContent:'center', padding:16 }}>
+              <Text>웹에서는 카메라 미리보기가 제한될 수 있어요. 모바일 기기에서 테스트해 주세요.</Text>
+            </View>
+          ) : (
+            <CameraView
+              ref={camRef}
+              style={styles.cameraView}
+              facing={facing}
+              videoQuality="720p"
+              mode="video"
+            />
+          )}
+        </View>
+
+        {/* 하단 도움말 */}
+        <View style={styles.cameraHintRow}>
+          <Text style={styles.cameraHintText}>· 답변 시작 시 화면 중앙을 응시해 주세요.</Text>
+        </View>
       </View>
+
 
       {/* 하단 컨트롤 */}
       <View style={{ padding:16, gap:10, borderTopWidth:1, borderColor:'#eee' }}>
@@ -352,11 +394,8 @@ async function waitForSocketSignal(interviewId: string): Promise<void> {
             <Text style={btnPrimaryText}>답변 종료 및 제출</Text>
           </Pressable>
         )}
-
-        <Pressable onPress={() => r.back()} style={btnGhost}>
-          <Text style={btnGhostText}>← 준비 화면으로</Text>
-        </Pressable>
       </View>
+      </ScrollView>
 
       {/* 다음 질문/업로드 대기 오버레이 */}
       {waitingNext && (
@@ -378,7 +417,7 @@ async function waitForSocketSignal(interviewId: string): Promise<void> {
 }
 
 const btnPrimary = {
-  backgroundColor: '#4f46e5',
+  backgroundColor: '#3B82F6',
   paddingVertical: 14,
   borderRadius: 12,
   alignItems: 'center',
@@ -407,3 +446,66 @@ const overlay = {
   gap: 10,
 } as const;
 const overlayText = { color: '#fff', fontWeight: '700' } as const;
+
+const styles = StyleSheet.create({
+
+  cameraCard: {
+    marginHorizontal: 16,
+    marginTop: -10,
+    marginBottom: 12,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    // shadow (iOS)
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    // elevation (Android)
+    elevation: 2,
+    overflow: 'hidden',
+  },
+  cameraHeader: {
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  cameraTitle: { fontWeight: '800', color: '#111827' },
+  cameraBox: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    backgroundColor: '#f8fafc',
+  },
+  cameraView: {
+    width: '80%',
+    height: 450,
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  cameraHintRow: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderColor: '#f1f5f9',
+    backgroundColor: '#fff',
+  },
+  cameraHintText: { color: '#6b7280', fontSize: 12 },
+
+  startHint: {
+    color: '#6b7280',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: -2,
+  },
+});
+

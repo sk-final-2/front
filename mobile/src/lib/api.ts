@@ -1,4 +1,3 @@
-// mobile/src/lib/api.ts
 import axios from 'axios';
 import Constants from 'expo-constants';
 import { getAccessToken, getRtid, saveLoginTokens, clearTokens } from './auth';
@@ -28,6 +27,8 @@ let waiters: Array<() => void> = [];
 async function callReissue() {
   const rtid = await getRtid();
   if (!rtid) throw new Error('no rtid');
+
+  // reissue는 인터셉터 타지 않게 axios(생 인스턴스) 사용
   const res = await axios.post(`${API_BASE}/api/auth/mobile/reissue`, { rtid }, {
     headers: { 'X-RTID': rtid },
     timeout: 10000,
@@ -66,19 +67,21 @@ api.interceptors.response.use(
 
 // ===== 실제 API =====
 
-// 모바일 로그인: { accessToken, rtid, profile }
+// ----- (1) 이메일/비번 모바일 로그인 -----
 export async function loginWithEmail(email: string, password: string) {
-  const res = await api.post(`${API_BASE}/api/auth/mobile/login`, { email, password });
+  const res = await api.post('/api/auth/mobile/login', { email, password }); // 상대경로로 통일
   const payload = unwrap<{ accessToken: string; rtid: string; profile: { email: string; name: string; role?: string } }>(res);
   await saveLoginTokens(payload.accessToken, payload.rtid);
   return payload.profile;
 }
 
+// ----- (2) /me -----
 export async function fetchMe() {
   const res = await api.get('/api/auth/me');
   return unwrap<{ email: string; name: string; role?: string }>(res);
 }
-// 회원가입 API
+
+// ----- (3) 로컬 회원가입(이메일/비번) -----
 export async function signup(payload: {
   email: string;
   password: string;
@@ -86,18 +89,51 @@ export async function signup(payload: {
   zipcode?: string;
   address1?: string;
   address2?: string;
-  gender: 'MALE' | 'FEMALE';
-  birth: string;
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  birth: string; // yyyy-MM-dd
 }) {
-  const { data } = await api.post('/api/auth/signup', payload);
-  return data as {
-    status: number;
-    code: string;
-    message: string;
-    data?: any;
-  };
+  const res = await api.post('/api/auth/signup', payload);
+  return unwrap(res);
 }
-// 응답 타입 (네 서버의 DTO에 맞춤)
+
+/** ===== OAuth(소셜) 플로우 추가분 ===== */
+
+// 모바일 OTT 교환 → 토큰 저장까지
+export async function mobileOttExchange(ott: string) {
+  const res = await api.get('/api/auth/mobile/ott-exchange', { params: { ott } });
+  const payload = unwrap<{ accessToken: string; rtid: string; profile: any }>(res);
+  await saveLoginTokens(payload.accessToken, payload.rtid);
+  return payload.profile; // 화면에서 프로필 바로 쓸 수 있게
+}
+export type GenderType = 'MALE' | 'FEMALE' | 'OTHER';
+export type SocialSignupBody = {
+  email: string;
+  name: string;
+  gender: GenderType;
+  birth: string; // yyyy-MM-dd
+  zipcode?: string;
+  address1?: string;
+  address2?: string;
+};
+
+
+
+export async function mobileKakaoSignup(body: SocialSignupBody) {
+  const res = await api.post('/api/auth/mobile/kakao-signup', body);
+  const payload = unwrap<{ accessToken: string; rtid: string; profile: any }>(res);
+  await saveLoginTokens(payload.accessToken, payload.rtid);
+  return payload.profile;
+}
+
+export async function mobileGoogleSignup(body: SocialSignupBody) {
+  const res = await api.post('/api/auth/mobile/google-signup', body);
+  const payload = unwrap<{ accessToken: string; rtid: string; profile: any }>(res);
+  await saveLoginTokens(payload.accessToken, payload.rtid);
+  return payload.profile;
+}
+
+/** ===== 인터뷰 ===== */
+
 export type AnswerAnalysis = {
   id: number;
   seq: number;
@@ -127,7 +163,7 @@ export type AvgScore = {
 export type Interview = {
   uuid: string;
   memberId: number;
-  createdAt: string; // ISO
+  createdAt: string;
   job: string;
   career: string;
   type: string;
@@ -135,20 +171,21 @@ export type Interview = {
   language: string;
   count: number;
   answerAnalyses: AnswerAnalysis[];
-  avgScore: AvgScore[]; // 보통 [0] 하나만 옴
+  avgScore: AvgScore[];
 };
 
-// 목록 조회 (경로명만 실제 서버에 맞게 바꿔)
+// 목록 조회 (컨트롤러에 맞춰 경로 유지)
 export async function fetchInterviewHistory() {
-  const res = await api.get('/api/interview-results'); // <-- 네 컨트롤러 @GetMapping 경로
+  const res = await api.get('/api/interview-results');
   return unwrap<Interview[]>(res);
 }
+
 // ---- 인터뷰 시작 타입 ----
 export type InterviewStartRequest = {
   job: string;
   count: number; // 동적 모드면 0
   ocrText: string;
-  career: string; // "신입" 또는 "경력 3년차" 같은 문자열
+  career: string; // "신입" 또는 "경력 3년차"
   interviewType: 'PERSONALITY' | 'TECHNICAL' | 'MIXED';
   level: '상' | '중' | '하';
   language: 'KOREAN' | 'ENGLISH';
@@ -182,7 +219,7 @@ export async function requestFirstQuestion(body: InterviewStartRequest) {
   return unwrap<FirstQuestionResponse>(res);
 }
 
-// ============ 인터뷰 답변 업로드 ============
+// ---- 답변 업로드 ----
 export type UploadAnswerResponse = {
   interviewId: string;
   newQuestion: string;
@@ -214,11 +251,50 @@ export async function uploadInterviewAnswer(params: {
 
 export async function endInterview(interviewId: string, lastSeq: number) {
   const res = await api.post('/api/interview/end', { interviewId, lastSeq });
-  return unwrap<string>(res); // data는 "string" 문구
+  return unwrap<string>(res);
 }
 
 // 면접 결과 조회
 export async function fetchInterviewResult(interviewId: string) {
   const res = await api.post('/api/interview/result', { interviewId });
-  return unwrap<any>(res); // 서버의 InterviewResponseDto 그대로
+  return unwrap<any>(res);
+}
+
+
+
+export type MyPageResponse = {
+  id: number;
+  email: string;
+  name: string;
+  postcode?: string | null;
+  address1?: string | null;
+  address2?: string | null;
+  gender: 'MALE' | 'FEMALE';
+  birth: string;
+  createdAt: string;
+  updatedAt?: string | null;
+};
+
+export async function fetchMyPage() {
+  const res = await api.get('/api/mypage');
+  return unwrap<MyPageResponse>(res);
+}
+
+export async function updateMyPage(body: {
+  password?: string;
+  postcode?: string;
+  address1?: string;
+  address2?: string;
+}) {
+  const res = await api.patch('/api/mypage', body);
+  return unwrap<MyPageResponse>(res);
+}
+
+export async function deleteMyAccount() {
+  const res = await api.delete('/api/auth/me');
+  await clearTokens();
+  delete (api.defaults.headers as any).Authorization;
+  delete (api.defaults.headers as any).common?.Authorization;
+  
+  return unwrap<string>(res); 
 }

@@ -1,11 +1,41 @@
 // mobile/app/(app)/history/index.tsx
-import { useEffect, useState } from 'react';
-import { View, Text, FlatList, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { useEffect, useState, useMemo } from 'react';
+import { View, Text, FlatList, Pressable, ActivityIndicator, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'; // ⬅️ 추가
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchInterviewHistory, type Interview } from '../../../src/lib/api';
 import { cacheInterviews } from '../../../src/lib/historyCache';
+import { Picker } from '@react-native-picker/picker';
+import FiltersModal, { DDOption, Period } from '../../../components/FiltersModal';
+import FadeSlideInText from '../../../components/FadeSlideInText';
+
+  type Filters = {
+    period: Period;
+    job: string;
+    type: string;
+    level: string;
+    language: string;
+  };
+
+  const PAGE_SIZE = 5; // 페이지당 개수
+
+  function inPeriod(d: Date, period: Period) {
+    const now = new Date();
+    if (period === 'all') return true;
+    if (period === '7d') {
+      const seven = new Date(now); seven.setDate(seven.getDate() - 7);
+      return d >= seven;
+    }
+    if (period === '30d') {
+      const thr = new Date(now); thr.setDate(thr.getDate() - 30);
+      return d >= thr;
+    }
+    if (period === 'year') {
+      return d.getFullYear() === now.getFullYear();
+    }
+    return true;
+  }
 
 // ------ 날짜 유틸 (history/index.tsx 상단에 넣기) ------
 function parseKoreanDateString(s: string): Date | null {
@@ -59,6 +89,9 @@ export default function HistoryList() {
   const [list, setList] = useState<Interview[] | null>(null);
   const [loading, setLoading] = useState(true);
 
+  //로고 애니메이션
+  const [animKey, setAnimKey] = useState(0);
+
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -71,6 +104,95 @@ export default function HistoryList() {
       }
     })();
   }, []);
+
+  const [filters, setFilters] = useState<Filters>({
+    period: 'all',
+    job: 'ALL',
+    type: 'ALL',
+    level: 'ALL',
+    language: 'ALL',
+  });
+  const [sortAsc, setSortAsc] = useState(false); // 날짜 정렬: false=최신순, true=오래된순
+  const [openFilters, setOpenFilters] = useState(false);
+  const [page, setPage] = useState(1);
+
+  // 드롭다운 옵션
+  const options = useMemo(() => {
+    const jobs = new Set<string>(), types = new Set<string>(), levels = new Set<string>(), langs = new Set<string>();
+    (list ?? []).forEach(it => {
+      if (it.job) jobs.add(it.job);
+      if (it.type) types.add(it.type);
+      if (it.level) levels.add(it.level);
+      if (it.language) langs.add(it.language);
+    });
+    const toArr = (s: Set<string>) => ['전체', ...Array.from(s).sort((a, b) => a.localeCompare(b, 'ko'))];
+    return {
+      job: toArr(jobs),
+      type: toArr(types),
+      level: toArr(levels),
+      language: toArr(langs),
+      period: [
+        { label: '전체', value: 'all' as Period },
+        { label: '최근 7일', value: '7d' as Period },
+        { label: '최근 30일', value: '30d' as Period },
+        { label: '올해', value: 'year' as Period },
+      ],
+    };
+  }, [list]);
+
+  // 옵션 -> 드롭다운 형식으로 변환
+  const periodOpts: DDOption<Period>[] = options.period.map(p => ({ label: p.label, value: p.value }));
+  const jobOpts: DDOption[] = (options.job).map(v => ({ label: v, value: v }));
+  const typeOpts: DDOption[] = (options.type).map(v => ({ label: v, value: v }));
+  const levelOpts: DDOption[] = (options.level).map(v => ({ label: v, value: v }));
+  const langOpts: DDOption[] = (options.language).map(v => ({ label: v, value: v }));
+  const sortOpts: DDOption<'desc' | 'asc'>[] = [
+    { label: '최신순', value: 'desc' },
+    { label: '오래된순', value: 'asc' },
+  ];
+
+    // 필터 적용 수(뱃지)
+  const activeCount = useMemo(() => {
+    let n = 0;
+    if (filters.period !== 'all') n++;
+    if (filters.job !== 'ALL') n++;
+    if (filters.type !== 'ALL') n++;
+    if (filters.level !== 'ALL') n++;
+    if (filters.language !== 'ALL') n++;
+    if (sortAsc) n++; // asc만 카운트 (기본 최신순 desc)
+    return n;
+  }, [filters, sortAsc]);
+
+  // 필터 + 정렬 결과
+  const filteredSorted = useMemo(() => {
+    const arr = (list ?? []).filter((it) => {
+      const d = toDate(it.createdAt);
+      if (!d) return false;
+      if (!inPeriod(d, filters.period)) return false;
+      if (filters.job !== 'ALL' && it.job !== filters.job) return false;
+      if (filters.type !== 'ALL' && it.type !== filters.type) return false;
+      if (filters.level !== 'ALL' && it.level !== filters.level) return false;
+      if (filters.language !== 'ALL' && it.language !== filters.language) return false;
+      return true;
+    });
+    arr.sort((a, b) => {
+      const da = toDate(a.createdAt)?.getTime() ?? 0;
+      const db = toDate(b.createdAt)?.getTime() ?? 0;
+      return sortAsc ? da - db : db - da;
+    });
+    return arr;
+  }, [list, filters, sortAsc]);
+
+  // 페이지네이션
+  const totalPages = Math.max(1, Math.ceil(filteredSorted.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageSlice = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredSorted.slice(start, start + PAGE_SIZE);
+  }, [filteredSorted, currentPage]);
+
+  // 필터/정렬 변경 시 페이지 초기화
+  useEffect(() => { setPage(1); }, [filters, sortAsc]);
 
   if (loading) {
     return (
@@ -96,42 +218,142 @@ export default function HistoryList() {
 
   return (
     <SafeAreaView style={[styles.safe, { paddingTop: insets.top + 3 }]} edges={['top']}>
-      <FlatList
-        contentInsetAdjustmentBehavior="automatic" // ⬅️ iOS 자동 보정
-        contentContainerStyle={{ padding: 16, gap: 12 }}
-        data={list}
-        keyExtractor={(it) => it.uuid}
-        renderItem={({ item }) => {
-          const avg = avgFrom(item);
-          return (
-            <Pressable
-              onPress={() => r.push({ pathname: '/(app)/history/[uuid]', params: { uuid: item.uuid } })}
-              style={styles.card}
-            >
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={styles.title}>{item.job || '직무 미지정'}</Text>
-                <Text style={styles.badge}>{item.type} · {item.level}</Text>
+      <Animated.FlatList
+      // ===== 데이터 / 렌더 =====
+      data={pageSlice}
+      keyExtractor={(it) => it.uuid}
+      renderItem={({ item }) => {
+        const avg = avgFrom(item);
+        return (
+          <Pressable
+            onPress={() => r.push({ pathname: '/(app)/history/[uuid]', params: { uuid: item.uuid } })}
+            style={styles.card}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={styles.title2}>{item.job || '직무 미지정'}</Text>
+              <Text style={styles.badge}>{item.type} · {item.level}</Text>
+            </View>
+
+            <Text style={styles.sub}>{formatDate(item.createdAt)} · {item.language} · {item.count}문항</Text>
+
+            {avg && (
+              <View style={styles.metrics}>
+                <MetricChip label="평균 종합" value={avg.score} />
+                <MetricChip label="표정" value={(avg as any).emotionScore * ((avg as any)._scale || 1)} />
+                <MetricChip label="시선" value={(avg as any).eyeScore * ((avg as any)._scale || 1)} />
               </View>
+            )}
 
-              <Text style={styles.sub}>{formatDate(item.createdAt)} · {item.language} · {item.count}문항</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+              <Text style={{ color: '#666' }}>자세히 보기</Text>
+              <Ionicons name="chevron-forward" />
+            </View>
+          </Pressable>
+        );
+      }}
 
-              {avg && (
-                <View style={styles.metrics}>
-                  <MetricChip label="평균 종합" value={avg.score} />
-                  <MetricChip label="표정" value={(avg as any).emotionScore * ((avg as any)._scale || 1)} />
-                  <MetricChip label="시선" value={(avg as any).eyeScore * ((avg as any)._scale || 1)} />
+      // ===== 상단 헤더 (브랜드 + 태그라인 + 필터 트리거) =====
+      ListHeaderComponent={
+        <View style={{ paddingHorizontal: 5, paddingTop: 0, paddingBottom: 8 }}>
+          {/* 브랜드 헤더 */}
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+            <Text style={[ss.brand, { fontFamily: 'RubikGlitch' }]}>Re:AI</Text>
+            <View style={{ marginLeft: 8, marginBottom: -2 }}>
+              <FadeSlideInText
+                triggerKey={animKey}
+                delay={150}
+                style={[ss.taglineSecondary, { fontFamily: 'RubikGlitch' }]}
+              >
+                Rehearse with AI
+              </FadeSlideInText>
+              <FadeSlideInText
+                triggerKey={animKey}
+                delay={350}
+                style={[ss.tagline, { fontFamily: 'RubikGlitch' }]}
+              >
+                Reinforce with AI
+              </FadeSlideInText>
+            </View>
+          </View>
+
+          {/* 필터 트리거 + 제목 */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
+            {/* 왼쪽 텍스트 */}
+            <Text style={styles.title}>🧾 면접 기록 관리</Text>
+
+            {/* 오른쪽 버튼 */}
+            <Pressable onPress={() => setOpenFilters(true)} style={styles.filterTrigger}>
+              <Ionicons name="funnel-outline" size={16} color="#111827" />
+              <Text style={styles.filterTriggerTxt}>필터 · 정렬</Text>
+              {activeCount > 0 && (
+                <View style={styles.countBadge}>
+                  <Text style={styles.countBadgeTxt}>{activeCount}</Text>
                 </View>
               )}
+            </Pressable>
+          </View>
+        </View>
+      }
 
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
-                <Text style={{ color: '#666' }}>자세히 보기</Text>
-                <Ionicons name="chevron-forward" />
+      // ===== 하단 푸터 (페이지네이션) =====
+      ListFooterComponent={
+        <View style={styles.paginationWrap}>
+          <View style={styles.paginationRow}>
+            {/* 이전 */}
+            <Pressable
+              style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]}
+              disabled={currentPage === 1}
+              onPress={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              <View style={styles.btnInner}>
+                <Ionicons name="arrow-back" size={16} color="#fff" style={styles.iconLeft} />
+                <Text style={styles.pageBtnText}>이전</Text>
               </View>
             </Pressable>
-          );
-        }}
-      />
-    </SafeAreaView>
+
+            <Text style={styles.pageIndicator}>{currentPage} / {totalPages}</Text>
+
+            {/* 다음 */}
+            <Pressable
+              style={[styles.pageBtn, currentPage === totalPages && styles.pageBtnDisabled]}
+              disabled={currentPage === totalPages}
+              onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              <View style={styles.btnInner}>
+                <Ionicons name="arrow-forward" size={16} color="#fff" style={styles.iconRight} />
+                <Text style={styles.pageBtnText}>다음</Text>
+              </View>
+            </Pressable>
+          </View>
+        </View>
+      }
+
+      // ===== 레이아웃 / 스크롤 옵션 =====
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 28, gap: 12 }}
+      showsVerticalScrollIndicator={false}
+
+      // ===== 스크롤 멈춤시 애니메이션 트리거 =====
+      onScrollEndDrag={() => setAnimKey((k) => k + 1)}
+      onMomentumScrollEnd={() => setAnimKey((k) => k + 1)}
+    />
+
+    {/* 필터/정렬 모달은 리스트 바깥에 유지 */}
+    <FiltersModal
+      visible={openFilters}
+      onClose={() => setOpenFilters(false)}
+      value={{ ...filters, sortAsc }}
+      options={{ period: periodOpts, job: jobOpts, type: typeOpts, level: levelOpts, language: langOpts }}
+      onApply={(v) => {
+        setFilters({ period: v.period, job: v.job, type: v.type, level: v.level, language: v.language });
+        setSortAsc(v.sortAsc);
+      }}
+      onReset={() => {
+        setFilters({ period: 'all', job: 'ALL', type: 'ALL', level: 'ALL', language: 'ALL' });
+        setSortAsc(false);
+      }}
+    />
+  </SafeAreaView>
   );
 }
 
@@ -144,7 +366,37 @@ function MetricChip({ label, value }: { label: string; value: number }) {
   );
 }
 
+function FilterButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.6}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      style={fb.btn}
+    >
+      <Text style={fb.txt} numberOfLines={1}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+const fb = StyleSheet.create({
+  btn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1, borderColor: '#e5e7eb',
+    backgroundColor: '#fff',
+    paddingHorizontal: 12, paddingVertical: 8,
+    borderRadius: 999,
+    maxWidth: '48%',
+    gap: 6,
+    elevation: 1,
+  },
+  txt: { color: '#111827', fontWeight: '600' },
+});
+
+
 const styles = StyleSheet.create({
+  title: { fontSize: 24, fontWeight: '800', color: '#111827' },
   safe: { flex: 1, backgroundColor: '#f7f7f7' }, // ⬅️ 추가
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
   card: {
@@ -154,11 +406,104 @@ const styles = StyleSheet.create({
     gap: 6,
     shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
   },
-  title: { fontSize: 16, fontWeight: '700' },
+  title2: { fontSize: 16, fontWeight: '700' },
   sub: { color: '#666' },
-  badge: { backgroundColor: '#eef2ff', color: '#4338ca', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, overflow: 'hidden' },
+  badge: { backgroundColor: '#eef2ff', color: '#3B82F6', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, overflow: 'hidden' },
   metrics: { flexDirection: 'row', gap: 8, marginTop: 6 },
   chip: { flexDirection: 'row', gap: 6, borderWidth: 1, borderColor: '#eee', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, alignItems: 'center' },
   chipLabel: { color: '#666' },
   chipValue: { fontWeight: '700' },
+
+  filtersWrap: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingRight: 0,
+    gap: 8,
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    alignItems: 'center',
+    zIndex: 10,
+    justifyContent: 'flex-end',
+  },
+
+  paginationWrap: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  paginationRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 20, // 세 요소 사이 간격
+  },
+  pageBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: '#111827',
+  },
+  pageBtnDisabled: { opacity: 0.4 },
+  pageBtnText: { color: '#fff', fontWeight: '700', textAlign: 'center', },
+  pageIndicator: { color: '#666', fontWeight: '700' },
+  
+  filterTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#fff',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    elevation: 1,
+  },
+  filterTriggerTxt: { fontWeight: '800', color: '#111827' },
+  countBadge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 999,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#111827',
+  },
+  countBadgeTxt: { color: '#fff', fontWeight: '800' },
+});
+
+const ss = StyleSheet.create({
+  header: {
+    paddingTop: 34,
+    paddingBottom: 0,
+    gap: 6,
+  },
+  brand: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111',
+  },
+  tagline: {
+    fontSize: 12,
+    color: '#5f5f5fff',
+  },
+  taglineSecondary: {
+    fontSize: 12,
+    color: '#3B82F6',
+  },
+
+  picker: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    backgroundColor: '#fff',
+  },
 });
