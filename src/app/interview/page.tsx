@@ -424,7 +424,7 @@ export default function InterviewPage() {
 
   return (
     <Suspense>
-      <div className="p-8 space-y-4">
+      <div className="bg-background p-8 space-y-4">
         {/* 질문 표시 */}
         {awaitingNext && !isFinished && !finishing ? (
           <div
