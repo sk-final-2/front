@@ -13,6 +13,18 @@ import { kakaoSignup } from "@/store/auth/authSlice";
 import { useSearchParams } from "next/navigation";
 import React from "react";
 import Image from "next/image";
+import { Calendar as CalendarIcon } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface DaumPostcodeData {
   zonecode: string;
@@ -62,6 +74,8 @@ export default function KakaoForm({
 
   const prevStateRef = useRef(authState);
 
+  const [open, setOpen] = useState(false);
+
   useEffect(() => {
     const name = searchParams.get("name") ?? "";
     const email = searchParams.get("email") ?? "";
@@ -95,7 +109,7 @@ export default function KakaoForm({
 
   useEffect(() => {
     if (prevStateRef.current === "loading" && authState === "successed") {
-      router.push("/");
+      setOpen(true);
     }
 
     if (prevStateRef.current === "loading" && authState === "failed") {
@@ -106,46 +120,156 @@ export default function KakaoForm({
   }, [authState, error, router]);
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn("flex flex-col gap-3", className)} {...props}>
       <Card className="overflow-hidden p-0 border-none shadow-xl">
         <CardContent className="grid p-0 md:grid-cols-2">
-          <form onSubmit={handleSubmit} className="p-6 md:p-8">
-            <div className="flex flex-col gap-6">
+          <div className="p-6 md:p-8">
+            <div className="flex flex-col gap-4">
               <div className="flex flex-col items-center text-center">
                 <h1 className="text-2xl font-bold">카카오 회원가입</h1>
                 <p className="text-muted-foreground text-balance">
                   Sign up with KAKAO
                 </p>
               </div>
-              <div className="grid gap-3">
+
+              {/* 이름 */}
+              <div className="grid gap-2">
                 <Label>이름</Label>
-                <Input value={userInfo.name} disabled />
+                <Input value={userInfo.name} className="bg-gray-100" disabled />
               </div>
-              <div className="grid gap-3">
+
+              {/* 이메일 */}
+              <div className="grid gap-2">
                 <Label>이메일</Label>
-                <Input value={userInfo.email} disabled />
+                <Input
+                  value={userInfo.email}
+                  className="bg-gray-100"
+                  disabled
+                />
               </div>
+
+              {/* 성별 */}
               <div className="grid gap-3">
                 <Label>성별</Label>
-                <RadioGroup className="flex items-center gap-12" defaultValue="comfortable">
+                <RadioGroup
+                  className="flex items-center gap-12"
+                  defaultValue="male"
+                  value={gender}
+                  onValueChange={setGender}
+                >
                   <div className="flex items-center gap-3">
-                    <RadioGroupItem value="default" id="r1" />
+                    <RadioGroupItem value="male" id="r1" />
                     <Label htmlFor="r1">남성</Label>
                   </div>
                   <div className="flex items-center gap-3">
-                    <RadioGroupItem value="comfortable" id="r2" />
+                    <RadioGroupItem value="female" id="r2" />
                     <Label htmlFor="r2">여성</Label>
                   </div>
                 </RadioGroup>
               </div>
+
+              {/* 생년월일 */}
+              <div className="grid gap-2">
+                <Label>생년월일</Label>
+                <div className="relative">
+                  <Input
+                    id="birth"
+                    type="date"
+                    value={birth}
+                    onChange={(e) => setBirth(e.target.value)}
+                    className={[
+                      "pr-10",
+                      // 기본 아이콘 숨김 (크롬)
+                      "[&::-webkit-calendar-picker-indicator]:opacity-0",
+                      "[&::-webkit-inner-spin-button]:hidden",
+                      "[&::-webkit-clear-button]:hidden",
+                    ].join(" ")}
+                  />
+                  {/* 아이콘 클릭 시 달력 열기 */}
+                  <button
+                    type="button"
+                    aria-label="달력 열기"
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                    onClick={() => {
+                      const el = document.getElementById(
+                        "birth",
+                      ) as HTMLInputElement | null;
+                      if (!el) return;
+                      if (typeof el.showPicker === "function") el.showPicker();
+                      else {
+                        // 폴백: 포커스 후 클릭 (사파리/파폭 등)
+                        el.focus();
+                        el.click();
+                      }
+                    }}
+                    onMouseDown={(e) => e.preventDefault()} // 포커스 깜빡임 방지
+                  >
+                    <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                  </button>
+                </div>
+              </div>
+
+              {/* 우편번호 */}
+              <div className="grid gap-2">
+                <Label>우편번호</Label>
+                <div className="flex gap-2">
+                  <Input value={zipcode} readOnly className="bg-gray-100" />
+                  <Button
+                    type="button"
+                    onClick={handleAddressSearch}
+                    className="bg-[#F6C61E] text-black text-sm px-4 py-2 rounded hover:bg-[#e5b500]"
+                  >
+                    주소찾기
+                  </Button>
+                </div>
+              </div>
+
+              {/* 주소 */}
+              <div className="grid gap-2">
+                <Label>주소</Label>
+                <Input value={address1} readOnly className="bg-gray-100" />
+              </div>
+
+              {/* 상세 주소 */}
+              <div className="grid gap-2">
+                <Label>상세 주소</Label>
+                <Input
+                  ref={addressRef}
+                  value={address2}
+                  onChange={(e) => setAddress2(e.target.value)}
+                />
+              </div>
+
               <Button
+                type="button"
                 onClick={handleSubmit}
                 className="w-full bg-[#F6C61E] text-black text-sm py-2 rounded hover:bg-[#e5b500]"
               >
-                회원가입 완료
+                회원가입하기
               </Button>
+
+              <AlertDialog open={open} onOpenChange={setOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>로그인 안내</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      회원가입이 완료되었습니다. 계속 이용하시려면 로그인을
+                      해주세요.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogAction
+                      onClick={() => {
+                        router.push("/");
+                      }}
+                    >
+                      OK
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
-          </form>
+          </div>
           <div className="w-full bg-[#F6C61E] flex flex-col items-center justify-center p-10">
             <Image
               src="/images/kakao.jpg" // public/images 폴더에 저장
