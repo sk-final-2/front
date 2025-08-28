@@ -45,7 +45,7 @@ export default function InterviewPage() {
 
   // 면접 결과 store
   const { answerAnalyses } = useAppSelector((state) => state.result);
-const [ttsAmp, setTtsAmp] = useState(0);
+  const [ttsAmp, setTtsAmp] = useState(0);
   // 다음 페이지 라우트 가능 ==========================
   const [goResult, setGoResult] = useState<boolean>(false);
   // 결과 기다리는 로딩
@@ -82,7 +82,7 @@ const [ttsAmp, setTtsAmp] = useState(0);
       // 크롬, 엣지 등 대부분 브라우저는 커스텀 메시지를 무시하고
       // 자체 기본 문구를 보여줍니다.
       event.preventDefault();
-      event.returnValue = ""; 
+      event.returnValue = "";
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
@@ -425,84 +425,86 @@ const [ttsAmp, setTtsAmp] = useState(0);
 
   return (
     <Suspense>
-      <div className="bg-background p-8 space-y-4">
-        {/* 질문 표시 */}
-        {awaitingNext && !isFinished && !finishing ? (
-          <div
-            className="h-14 rounded-md bg-gray-100 animate-pulse"
-            aria-busy="true"
+      <div className="bg-background min-h-dvh">
+        <section className="mx-auto w-full p-8 space-y-4">
+          {/* 질문 표시 */}
+          {awaitingNext && !isFinished && !finishing ? (
+            <div
+              className="h-14 rounded-md bg-gray-100 animate-pulse"
+              aria-busy="true"
+            />
+          ) : (
+            <QuestionDisplay seq={currentSeq} question={currentQuestion} />
+          )}
+
+          {/* 🔵 질문이 바뀌면 자동으로 읽고, 끝나면 녹화/타이머 시작 신호(questionStarted=true) */}
+          <TtsComponent
+            text={currentQuestion ?? ""}
+            autoPlay
+            onStart={() => {
+              console.log("TTS 시작");
+              setIsTtsPlaying(true);
+              setQuestionStarted(false); // TTS 중에는 녹화 안 함
+            }}
+            onEnd={() => {
+              console.log("TTS 종료 → 녹화 시작");
+              setIsTtsPlaying(false);
+              setQuestionStarted(true); // ← 이 시점에 RecordingControls가 시작
+              setTtsAmp(0);
+            }}
+            onError={() => {
+              console.warn("TTS 오류, 바로 녹화 시작으로 폴백");
+              setIsTtsPlaying(false);
+              setQuestionStarted(true);
+              setTtsAmp(0);
+            }}
+            onEnergy={(amp) => {
+              // 약간의 스무딩으로 튐 방지
+              setTtsAmp((prev) => Math.max(amp, prev * 0.7));
+            }}
           />
-        ) : (
-          <QuestionDisplay seq={currentSeq} question={currentQuestion} />
-        )}
 
-        {/* 🔵 질문이 바뀌면 자동으로 읽고, 끝나면 녹화/타이머 시작 신호(questionStarted=true) */}
-        <TtsComponent
-          text={currentQuestion ?? ""}
-          autoPlay
-          onStart={() => {
-            console.log("TTS 시작");
-            setIsTtsPlaying(true);
-            setQuestionStarted(false); // TTS 중에는 녹화 안 함
-          }}
-          onEnd={() => {
-            console.log("TTS 종료 → 녹화 시작");
-            setIsTtsPlaying(false);
-            setQuestionStarted(true); // ← 이 시점에 RecordingControls가 시작
-            setTtsAmp(0);
-          }}
-          onError={() => {
-            console.warn("TTS 오류, 바로 녹화 시작으로 폴백");
-            setIsTtsPlaying(false);
-            setQuestionStarted(true);
-            setTtsAmp(0);
-          }}
-          onEnergy={(amp) => {
-          // 약간의 스무딩으로 튐 방지
-          setTtsAmp(prev => Math.max(amp, prev * 0.7));
-          }}
-        />
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-[3fr_2fr] items-stretch">
+            {/* 왼쪽: 면접관 화면 */}
+            <InterviewerView talking={isTtsPlaying} amp={ttsAmp} />
+            {/* 오른쪽: 내 화면/컨트롤 */}
+            <div className="flex flex-col gap-2 items-center">
+              <UserVideo stream={stream} />
 
-        <div className="flex gap-4">
-          {/* 왼쪽: 면접관 화면 */}
-<div className="flex-[3]">
-  <InterviewerView talking={isTtsPlaying} amp={ttsAmp} />
-</div>
-
-          {/* 오른쪽: 내 화면/컨트롤 */}
-          <div className="flex-[2] flex flex-col gap-2 items-center">
-            <UserVideo stream={stream} />
-
-            {/* 🔇 TTS 재생 중이면 컨트롤 완전히 숨김 */}
-            {!isTtsPlaying && !finishing && !awaitingNext && currentQuestion ? (
-              <RecordingControls
-                stream={stream}
-                questionStarted={questionStarted}
-                onAutoSubmit={handleSubmit}
-                onManualSubmit={handleSubmit}
-              />
-            ) : null}
-
-             {/* '다음 질문 준비 중' 오버레이: 종료상태(isFinished)에서는 절대 보이지 않음 */}
-            {awaitingNext && !isFinished && !finishing && (
-              <Loading message="다음 질문을 준비 중이에요..." />
-            )}
-
-            {/* 미리보기 (UI 로그 없음) */}
-            {previewUrl && (
-              <div className="mt-4 w-full max-w-md">
-                <p className="text-sm text-gray-500 mb-1">
-                  🎞️ 녹화된 영상 미리보기
-                </p>
-                <video
-                  src={previewUrl}
-                  controls
-                  className="w-full aspect-video rounded border shadow"
+              {/* 🔇 TTS 재생 중이면 컨트롤 완전히 숨김 */}
+              {!isTtsPlaying &&
+              !finishing &&
+              !awaitingNext &&
+              currentQuestion ? (
+                <RecordingControls
+                  stream={stream}
+                  questionStarted={questionStarted}
+                  onAutoSubmit={handleSubmit}
+                  onManualSubmit={handleSubmit}
                 />
-              </div>
-            )}
+              ) : null}
+
+              {/* '다음 질문 준비 중' 오버레이: 종료상태(isFinished)에서는 절대 보이지 않음 */}
+              {awaitingNext && !isFinished && !finishing && (
+                <Loading message="다음 질문을 준비 중이에요..." />
+              )}
+
+              {/* 미리보기 (UI 로그 없음) */}
+              {previewUrl && (
+                <div className="mt-4 w-full max-w-md">
+                  <p className="text-sm text-gray-500 mb-1">
+                    🎞️ 녹화된 영상 미리보기
+                  </p>
+                  <video
+                    src={previewUrl}
+                    controls
+                    className="w-full aspect-video rounded border shadow"
+                  />
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </section>
       </div>
     </Suspense>
   );

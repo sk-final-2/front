@@ -14,11 +14,13 @@ export default function UserVideo({ stream }: UserVideoProps) {
   }, [stream]);
 
   return (
+    <div className="relative w-full bg-gray-200 rounded-xl overflow-hidden aspect-[16/9] md:aspect-[16/9]">
     <video
       ref={videoRef}
       autoPlay
       muted
-      className="w-full aspect-video bg-gray-200 rounded object-cover"
+      className="absolute inset-0 w-full h-full object-cover"
     />
+    </div>
   );
 }

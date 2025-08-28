@@ -6,7 +6,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 
 // 눈 노드명 하드코딩
-const EYE_LEFT_NAME  = "Object_3001"; // 왼쪽 눈
+const EYE_LEFT_NAME = "Object_3001"; // 왼쪽 눈
 const EYE_RIGHT_NAME = "Object_3003"; // 오른쪽 눈
 
 type Props = {
@@ -24,10 +24,14 @@ export default function MintBotView({ talking = false, amp = 0 }: Props) {
   // 렌더 루프에서 참조할 값들
   const specRef = useRef<number[]>(new Array(96).fill(0));
   const ampRef = useRef<number>(0);
-  useEffect(() => { ampRef.current = Math.max(0, Math.min(1, amp)); }, [amp]);
+  useEffect(() => {
+    ampRef.current = Math.max(0, Math.min(1, amp));
+  }, [amp]);
 
   const talkingRef = useRef<boolean>(false);
-  useEffect(() => { talkingRef.current = talking; }, [talking]);
+  useEffect(() => {
+    talkingRef.current = talking;
+  }, [talking]);
 
   // 깜빡임(무작위)
   const blinkRef = useRef<number>(1);
@@ -35,13 +39,15 @@ export default function MintBotView({ talking = false, amp = 0 }: Props) {
     let alive = true;
     (async () => {
       while (alive) {
-        await new Promise(r => setTimeout(r, 2200 + Math.random() * 1800));
+        await new Promise((r) => setTimeout(r, 2200 + Math.random() * 1800));
         blinkRef.current = 0.08;
-        await new Promise(r => setTimeout(r, 110));
+        await new Promise((r) => setTimeout(r, 110));
         blinkRef.current = 1;
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
   // 🔵 amp 기반 합성 스펙트럼 생성기 (오디오 없이도 동작)
@@ -50,14 +56,16 @@ export default function MintBotView({ talking = false, amp = 0 }: Props) {
     const decay = 0.86;
     specRef.current = new Array(bins).fill(0);
     const id = setInterval(() => {
-      const a = ampRef.current/3; // 0~1
+      const a = ampRef.current / 3; // 0~1
       const prev = specRef.current;
       const next = prev.map((v, i) => {
         const band = i / bins;
         const tilt = band < 0.25 ? 0.9 : band > 0.8 ? 1.1 : 1.0; // 저역 살짝↓, 고역 살짝↑
         const noise =
-          (Math.random() * 0.6 + Math.random() * 0.2 * Math.sin(Date.now() / 120 + i)) *
-          a * tilt;
+          (Math.random() * 0.6 +
+            Math.random() * 0.2 * Math.sin(Date.now() / 120 + i)) *
+          a *
+          tilt;
         const nv = v * decay + noise;
         return Math.max(0, Math.min(1, nv));
       });
@@ -75,13 +83,25 @@ export default function MintBotView({ talking = false, amp = 0 }: Props) {
     scene.background = new THREE.Color("#F3F4F6");
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-    renderer.setPixelRatio(window.devicePixelRatio || 1);
-    renderer.setSize(el.clientWidth, el.clientHeight);
+    // CSS는 우리가 고정: 캔버스를 절대채움으로
+    renderer.domElement.style.position = "absolute";
+    renderer.domElement.style.inset = "0";
+    renderer.domElement.style.width = "100%";
+    renderer.domElement.style.height = "100%";
+    // DPR은 리사이즈 때마다 갱신 (DevTools 토글/OS scale 대비)
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    // setSize는 updateStyle=false (CSS는 위에서 고정했으므로)
+    renderer.setSize(el.clientWidth || 1, el.clientHeight || 1, false);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     el.appendChild(renderer.domElement);
 
-    const camera = new THREE.PerspectiveCamera(40, el.clientWidth / el.clientHeight, 0.1, 100);
+    const camera = new THREE.PerspectiveCamera(
+      40,
+      Math.max(1, el.clientWidth) / Math.max(1, el.clientHeight),
+      0.1,
+      100,
+    );
     camera.position.set(0, 0.6, 6);
 
     // 라이트
@@ -105,10 +125,15 @@ export default function MintBotView({ talking = false, amp = 0 }: Props) {
     const overscan = 1.25;
     const buildBgQuad = () => {
       const d = 1;
-      const h = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * d * overscan;
+      const h =
+        2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * d * overscan;
       const w = h * camera.aspect;
       const geom = new THREE.PlaneGeometry(w, h);
-      const mat = new THREE.MeshBasicMaterial({ map: bgTex, depthTest: false, depthWrite: false });
+      const mat = new THREE.MeshBasicMaterial({
+        map: bgTex,
+        depthTest: false,
+        depthWrite: false,
+      });
       const mesh = new THREE.Mesh(geom, mat);
       mesh.renderOrder = -1000;
       mesh.position.set(0, 0, -d);
@@ -130,7 +155,9 @@ export default function MintBotView({ talking = false, amp = 0 }: Props) {
     const findByName = (root: THREE.Object3D, name?: string) => {
       if (!name) return null;
       let found: THREE.Object3D | null = null;
-      root.traverse(o => { if (!found && o.name === name) found = o; });
+      root.traverse((o) => {
+        if (!found && o.name === name) found = o;
+      });
       return found;
     };
 
@@ -155,12 +182,17 @@ export default function MintBotView({ talking = false, amp = 0 }: Props) {
       // 2) 실패 시 폴백(eye/눈 정규식 + X좌표로 좌/우 분리)
       if (!eyeL || !eyeR) {
         const candidates: THREE.Object3D[] = [];
-        model.traverse(o => { if (o.name && /eye|눈/i.test(o.name)) candidates.push(o); });
+        model.traverse((o) => {
+          if (o.name && /eye|눈/i.test(o.name)) candidates.push(o);
+        });
         if (candidates.length >= 2) {
-          const withX = candidates.map(o => {
-            const p = new THREE.Vector3(); o.getWorldPosition(p);
-            return { o, x: p.x };
-          }).sort((a, b) => a.x - b.x);
+          const withX = candidates
+            .map((o) => {
+              const p = new THREE.Vector3();
+              o.getWorldPosition(p);
+              return { o, x: p.x };
+            })
+            .sort((a, b) => a.x - b.x);
           eyeL = eyeL || withX[0].o;
           eyeR = eyeR || withX[withX.length - 1].o;
         }
@@ -173,26 +205,42 @@ export default function MintBotView({ talking = false, amp = 0 }: Props) {
       undefined,
       () => {
         // 폴백: 간단한 로봇 헤드 + 눈
-        const white = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25, metalness: 0.15 });
+        const white = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          roughness: 0.25,
+          metalness: 0.15,
+        });
         const headGroup = new THREE.Group();
-        const head = new THREE.Mesh(new THREE.SphereGeometry(1.4, 48, 48), white);
+        const head = new THREE.Mesh(
+          new THREE.SphereGeometry(1.4, 48, 48),
+          white,
+        );
         headGroup.add(head);
         const eyeGeom = new THREE.CircleGeometry(0.16, 32);
-        const eyeMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, emissive: 0x3b82f6, emissiveIntensity: 1.4 });
+        const eyeMat = new THREE.MeshStandardMaterial({
+          color: 0x3b82f6,
+          emissive: 0x3b82f6,
+          emissiveIntensity: 1.4,
+        });
         const eL = new THREE.Mesh(eyeGeom, eyeMat);
         const eR = new THREE.Mesh(eyeGeom, eyeMat);
         eL.position.set(-0.5, 0.2, 1.05);
         eR.position.set(0.5, 0.2, 1.05);
         headGroup.add(eL, eR);
         root.add(headGroup);
-        eyeL = eL; eyeR = eR;
-      }
+        eyeL = eL;
+        eyeR = eR;
+      },
     );
 
     // 리사이즈 + 캔버스 리사이즈
     const resizeAll = () => {
-      const w = el.clientWidth || 1, h = el.clientHeight || 1;
-      renderer.setSize(w, h);
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      // ⚠️ 레이아웃 전환 직후 0 값 방어
+      if (!w || !h) return;
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+      renderer.setSize(w, h, false);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
 
@@ -202,7 +250,8 @@ export default function MintBotView({ talking = false, amp = 0 }: Props) {
 
       // 풀스크린 쿼드도 갱신
       const d = 1;
-      const ph = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * d * overscan;
+      const ph =
+        2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * d * overscan;
       const pw = ph * camera.aspect;
       bgMesh.geometry.dispose();
       bgMesh.geometry = new THREE.PlaneGeometry(pw, ph);
@@ -210,11 +259,14 @@ export default function MintBotView({ talking = false, amp = 0 }: Props) {
     };
     const ro = new ResizeObserver(resizeAll);
     ro.observe(el);
+    // DPR 변화/스크롤바 변화 등 엘리먼트 크기와 별개 상황도 케어
+    window.addEventListener("resize", resizeAll);
     resizeAll();
 
     // 배경 그리기
     const drawBackground = (bins: number[]) => {
-      const w = bgCanvas.width, h = bgCanvas.height;
+      const w = bgCanvas.width,
+        h = bgCanvas.height;
       bgCtx.fillStyle = "#F3F4F6";
       bgCtx.fillRect(0, 0, w, h);
 
@@ -236,7 +288,11 @@ export default function MintBotView({ talking = false, amp = 0 }: Props) {
 
     function roundRect(
       ctx: CanvasRenderingContext2D,
-      x: number, y: number, w: number, h: number, rr: number
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+      rr: number,
     ) {
       const r = Math.min(rr, w / 2, h / 2);
       ctx.beginPath();
@@ -276,16 +332,22 @@ export default function MintBotView({ talking = false, amp = 0 }: Props) {
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
-      try { el.removeChild(renderer.domElement); } catch {}
+      window.removeEventListener("resize", resizeAll);
+      try {
+        el.removeChild(renderer.domElement);
+      } catch {}
       renderer.dispose();
-      try { bgMesh.geometry.dispose(); (bgMesh.material as THREE.Material).dispose(); } catch {}
+      try {
+        bgMesh.geometry.dispose();
+        (bgMesh.material as THREE.Material).dispose();
+      } catch {}
     };
   }, []);
 
   return (
     <div
       ref={wrapRef}
-      className="w-full aspect-video rounded-2xl overflow-hidden"
+      className="relative w-full aspect-video rounded-2xl overflow-hidden"
       style={{ background: "#F3F4F6" }}
     />
   );
