@@ -276,7 +276,7 @@ export default function GoogleForm({
               </AlertDialog>
             </div>
           </div>
-          <div className="w-full bg-[#FAFAFA] flex flex-col items-center justify-center p-10">
+          <div className="relative hidden md:flex w-full h-full bg-[#FAFAFA] flex flex-col items-center justify-center p-10">
             <Image
               src="/images/google.png" // public/images 폴더에 저장
               alt="Google 로고"
@@ -285,8 +285,8 @@ export default function GoogleForm({
               className="mb-6"
             />
             <div className="text-black text-center">
-              <h1 className="text-4xl font-extrabold mb-8">Google</h1>
-              <p className="text-sm font-semibold text-center">
+              <h1 className="text-4xl font-bold mb-8">Google</h1>
+              <p className="text-[#000000] text-balance">
                 구글 소셜 로그인이 처음이라면 <br />
                 간단한 회원가입이 필요합니다.
               </p>

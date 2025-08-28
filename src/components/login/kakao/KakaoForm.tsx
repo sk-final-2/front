@@ -276,7 +276,7 @@ export default function KakaoForm({
               </AlertDialog>
             </div>
           </div>
-          <div className="w-full bg-[#F6C61E] flex flex-col items-center justify-center p-10">
+          <div className="relative hidden md:flex w-full h-full bg-[#F6C61E] flex flex-col items-center justify-center p-10">
             <Image
               src="/images/kakao.png" // public/images 폴더에 저장
               alt="Kakao 캐릭터"
@@ -286,7 +286,7 @@ export default function KakaoForm({
             />
             <div className="text-black text-center">
               <h1 className="text-4xl font-extrabold mb-8">Kakao</h1>
-              <p className="text-sm font-semibold text-center">
+              <p className="text-[#000000] text-balance">
                 카카오 소셜 로그인이 처음이라면 <br />
                 간단한 회원가입이 필요합니다.
               </p>
