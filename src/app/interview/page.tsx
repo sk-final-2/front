@@ -38,13 +38,14 @@ export default function InterviewPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
 
+  const [ttsAudioEl, setTtsAudioEl] = useState<HTMLAudioElement | null>(null);
   // 인터뷰 store
   const { currentQuestion, interviewId, currentSeq, isFinished, totalCount } =
     useAppSelector((state) => state.interview);
 
   // 면접 결과 store
   const { answerAnalyses } = useAppSelector((state) => state.result);
-
+const [ttsAmp, setTtsAmp] = useState(0);
   // 다음 페이지 라우트 가능 ==========================
   const [goResult, setGoResult] = useState<boolean>(false);
   // 결과 기다리는 로딩
@@ -448,19 +449,25 @@ export default function InterviewPage() {
             console.log("TTS 종료 → 녹화 시작");
             setIsTtsPlaying(false);
             setQuestionStarted(true); // ← 이 시점에 RecordingControls가 시작
+            setTtsAmp(0);
           }}
           onError={() => {
             console.warn("TTS 오류, 바로 녹화 시작으로 폴백");
             setIsTtsPlaying(false);
             setQuestionStarted(true);
+            setTtsAmp(0);
+          }}
+          onEnergy={(amp) => {
+          // 약간의 스무딩으로 튐 방지
+          setTtsAmp(prev => Math.max(amp, prev * 0.7));
           }}
         />
 
         <div className="flex gap-4">
           {/* 왼쪽: 면접관 화면 */}
-          <div className="flex-[3]">
-            <InterviewerView />
-          </div>
+<div className="flex-[3]">
+  <InterviewerView talking={isTtsPlaying} amp={ttsAmp} />
+</div>
 
           {/* 오른쪽: 내 화면/컨트롤 */}
           <div className="flex-[2] flex flex-col gap-2 items-center">

@@ -4,15 +4,31 @@ import React, { useEffect, useRef, useState, useMemo } from "react";
 
 type Props = {
   text: string;
-  autoPlay?: boolean;                // text 바뀌면 자동 재생
-  lang?: string;                     // 기본 "ko-KR"
-  rate?: number;                     // 속도 (기본 1)
-  pitch?: number;                    // 음높이 (기본 1)
-  volume?: number;                   // 볼륨 (기본 1)
+  autoPlay?: boolean;
+  lang?: string;
+  rate?: number;
+  pitch?: number;
+  volume?: number;
   onStart?: () => void;
   onEnd?: () => void;
   onError?: (err: unknown) => void;
+
+  /** 🔵 추가: 토큰 경계마다 0~1 사이의 추정 에너지 전달 */
+  onEnergy?: (amp: number) => void;
 };
+
+function guessEnergy(token = "") {
+  const w = token.toLowerCase().trim();
+  if (!w) return 0.15;
+  if (/[!?,.]/.test(w)) return 0.35;
+  if (/(아|a)/.test(w)) return 0.9;
+  if (/(어|eo)/.test(w)) return 0.7;
+  if (/(오|우|o|u)/.test(w)) return 0.6;
+  if (/(이|i|ee)/.test(w)) return 0.45;
+  if (/(ㅋ|ㅌ|ch|k|t)/.test(w)) return 0.55;
+  if (/\b(m|b|p|ㅁ|ㅂ|ㅍ)\b/.test(w)) return 0.2;
+  return 0.5;
+}
 
 const TtsComponent: React.FC<Props> = ({
   text,
@@ -24,12 +40,12 @@ const TtsComponent: React.FC<Props> = ({
   onStart,
   onEnd,
   onError,
+  onEnergy,
 }) => {
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [ready, setReady] = useState(false);
 
-  // 매번 새로운 발화 객체 생성
   const buildUtterance = useMemo(() => {
     return () => {
       const u = new SpeechSynthesisUtterance(text);
@@ -38,30 +54,45 @@ const TtsComponent: React.FC<Props> = ({
       u.pitch = pitch;
       u.volume = volume;
 
-      // 한국어 보이스 우선
       const korean = voices.find((v) => v.lang === lang);
       if (korean) u.voice = korean;
 
       u.onstart = () => onStart?.();
-      u.onend = () => onEnd?.();
-      u.onerror = (e) => onError?.(e);
+      u.onend = () => {
+        onEnergy?.(0); // 종료 시 0으로 하강
+        onEnd?.();
+      };
+      u.onerror = (e) => onError?.(e as unknown);
+
+      // 🔵 핵심: 경계 콜백으로 에너지 추정
+      u.onboundary = (e: SpeechSynthesisEvent) => {
+        try {
+          // charLength가 없는 브라우저 대비: 주변 몇 글자 샘플
+          const len = (e as any).charLength ?? 6;
+          const start = e.charIndex ?? 0;
+          const token = text.slice(start, start + len);
+          const energy = guessEnergy(token);
+          onEnergy?.(energy);
+        } catch {
+          onEnergy?.(0.4);
+        }
+      };
 
       return u;
     };
-  }, [text, lang, rate, pitch, volume, voices, onStart, onEnd, onError]);
+  }, [text, lang, rate, pitch, volume, voices, onStart, onEnd, onError, onEnergy]);
 
   const play = () => {
     try {
       const synth = synthRef.current;
       if (!synth) return;
-      if (synth.speaking) synth.cancel(); // 기존 발화 중단
+      if (synth.speaking) synth.cancel();
       synth.speak(buildUtterance());
     } catch (e) {
       onError?.(e);
     }
   };
 
-  // 초기 voice 목록 로드
   useEffect(() => {
     if (typeof window === "undefined") return;
     const synth = window.speechSynthesis;
@@ -83,14 +114,12 @@ const TtsComponent: React.FC<Props> = ({
 
   // text 변경 → 자동재생
   useEffect(() => {
-    if (!ready) return;
-    if (!autoPlay) return;
-    if (!text) return;
+    if (!ready || !autoPlay || !text) return;
     play();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, ready, autoPlay]);
 
-  return null; // 완전히 UI 없는 컴포넌트
+  return null; // UI 없음
 };
 
 export default TtsComponent;
