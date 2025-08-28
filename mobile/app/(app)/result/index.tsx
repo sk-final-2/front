@@ -580,6 +580,10 @@ function QuestionVideo({
   initialTime?: number;
   onPlayer?: (p: any) => void;
 }) {
+
+  const [loading, setLoading] = useState(true);       // 로딩 상태
+  const [error, setError] = useState<string | null>(null);
+
   const player = useVideoPlayer(
     { uri, contentType: 'progressive', useCaching: true, headers },
     (p) => { p.loop = false; }
@@ -596,16 +600,74 @@ function QuestionVideo({
     }
   }, [initialTime]);
 
+  // 🔹 비디오 상태에 따라 로딩 on/off (가능하면 네이티브 이벤트 구독)
+  useEffect(() => {
+    setLoading(true);
+
+    // 가드: addEventListener가 없는 플랫폼 대비
+    const add = (ev: string, fn: any) => {
+      try { (player as any)?.addEventListener?.(ev, fn); } catch {}
+    };
+    const remove = (ev: string, fn: any) => {
+      try { (player as any)?.removeEventListener?.(ev, fn); } catch {}
+    };
+
+    const onWaiting = () => setLoading(true);
+    const onStalled = () => setLoading(true);
+    const onPlaying = () => setLoading(false);
+    const onLoaded = () => setLoading(false);
+    const onError = (e: any) => { setError('영상을 불러오는 중 문제가 발생했습니다.'); setLoading(false); };
+
+    add('waiting', onWaiting);
+    add('stalled', onStalled);
+    add('playing', onPlaying);
+    add('loadeddata', onLoaded);
+    add('error', onError);
+
+    // ⛑ 폴백: 3초가 지나도 이벤트가 안 오면 스피너 유지하되, 10초가 지나면 일단 끄고 메시지 안내
+    const softTimeout = setTimeout(() => setLoading(false), 10000);
+
+    return () => {
+      clearTimeout(softTimeout);
+      remove('waiting', onWaiting);
+      remove('stalled', onStalled);
+      remove('playing', onPlaying);
+      remove('loadeddata', onLoaded);
+      remove('error', onError);
+    };
+  }, [player]);
+
   return (
-    <VideoView
-      player={player}
-      style={{ width: '100%', height, backgroundColor: '#e5e7eb' }}
-      nativeControls
-      allowsFullscreen
-      allowsPictureInPicture
-      contentFit="contain"
-      onError={(e) => console.warn('video error', e)}
-    />
+    <View style={{ position: 'relative' }}>
+      <VideoView
+        player={player}
+        style={{ width: '100%', height, backgroundColor: '#e5e7eb' }}
+        nativeControls
+        allowsFullscreen
+        allowsPictureInPicture
+        contentFit="contain"
+        onError={(e) => {
+          console.warn('video error', e);
+          setError('영상을 불러오는 중 문제가 발생했어.');
+          setLoading(false);
+        }}
+      />
+
+      {/* 🔹 로딩 오버레이 */}
+      {loading && !error && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.loadingText}>영상 불러오는 중…</Text>
+        </View>
+      )}
+
+      {/* 🔹 에러 오버레이 (선택) */}
+      {error && (
+        <View style={styles.loadingOverlay}>
+          <Text style={[styles.loadingText, { fontWeight: '800' }]}>{error}</Text>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -864,6 +926,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     marginBottom: 4,
+  },
+
+  loadingOverlay: {
+    position: 'absolute',
+    left: 0, right: 0, top: 0, bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.6)',
+  },
+  loadingText: {
+    marginTop: 8,
+    color: '#6b7280',
+    fontSize: 12,
+    fontWeight: '700',
   },
 
 });
