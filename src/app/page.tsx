@@ -5,7 +5,7 @@ import FeaturesSection from "@/components/home/FeaturesSection";
 import HeroSection from "@/components/home/HeroSection";
 import MainScene from "@/components/home/MainScene";
 import RightSideBar from "@/components/home/RightSideBar";
-import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 export default function Home() {
   return (

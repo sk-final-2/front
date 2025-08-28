@@ -9,6 +9,8 @@ import { useAppDispatch } from "@/hooks/storeHook";
 import Image from "next/image";
 import { SidebarTrigger } from "../ui/sidebar";
 import { Button } from "../ui/button";
+import { useTheme } from "next-themes";
+import { Moon, Sun } from "lucide-react";
 
 export default function MainHeader() {
   const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
@@ -17,13 +19,9 @@ export default function MainHeader() {
   const dispatch = useAppDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // const handleNav = (path: string) => {
-  //   if (!isLoggedIn) {
-  //     router.push("/login"); // 로그인 안 했으면 무조건 로그인 페이지로
-  //   } else {
-  //     router.push(path);
-  //   }
-  // };
+  const { theme, setTheme, themes } = useTheme();
+
+  console.log(themes);
 
   const handleLogout = async () => {
     try {
@@ -50,7 +48,7 @@ export default function MainHeader() {
         width={60}
         height={20}
         onClick={() => router.push("/")}
-        className="cursor-pointer"
+        className="cursor-pointer bg-transparent"
       ></Image>
 
       <nav className="flex gap-4 items-center">
@@ -79,14 +77,6 @@ export default function MainHeader() {
                 </button>
               </div>
             )}
-
-            {/* 면접준비페이지 버튼 */}
-            {/* <button
-              className="hover:underline cursor-pointer"
-              onClick={() => handleNav("/ready")}
-            >
-              면접준비페이지
-            </button> */}
           </>
         ) : (
           <>
@@ -103,14 +93,23 @@ export default function MainHeader() {
                 </p>
               </div>
             </Button>
-            {/* <button
-              className="hover:underline cursor-pointer"
-              onClick={() => handleNav("/login")}
-            >
-              면접준비페이지
-            </button> */}
           </>
         )}
+
+        {/** Theme 버튼 'light', 'dark' */}
+        <Button
+          className="cursor-pointer"
+          variant="ghost"
+          size="icon"
+          onClick={() => setTheme(theme == "light" ? "dark" : "light")}
+        >
+          {theme == "light" ? (
+            <Sun className="absolute h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          ) : (
+            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          )}
+        </Button>
+
         <SidebarTrigger />
       </nav>
     </header>

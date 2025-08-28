@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import Image from "next/image";
 
 // 애니메이션 Variants 정의
 const sectionVariants = {
@@ -55,7 +56,20 @@ export default function HeroSection() {
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
     >
-      {/** 여기에 3D 백그라운드 들어감 */}
+      {/* 3D 백그라운드 이미지 - section 전체를 덮는 배경 */}
+      <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
+        <Image
+          src="/main_view.png"
+          alt="메인 배경"
+          fill
+          priority
+          className="w-full h-full object-cover opacity-40"
+          style={{
+            maskImage: "linear-gradient(to bottom, black 70%, transparent 100%)",
+            WebkitMaskImage: "linear-gradient(to bottom, black 70%, transparent 100%)",
+          }}
+        />
+      </div>
 
       <div className="relative z-10 flex flex-col items-center">
         <motion.h1
