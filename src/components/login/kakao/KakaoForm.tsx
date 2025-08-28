@@ -17,13 +17,11 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 interface DaumPostcodeData {
@@ -69,6 +67,7 @@ export default function KakaoForm({
 
   const router = useRouter();
 
+  // Redux 상태
   const authState = useAppSelector((state) => state.auth.state);
   const error = useAppSelector((state) => state.auth.error);
 
@@ -84,13 +83,20 @@ export default function KakaoForm({
   }, [searchParams]);
 
   const handleAddressSearch = () => {
-    new window.daum.Postcode({
-      oncomplete: function (data: DaumPostcodeData) {
-        setZipcode(data.zonecode);
-        setAddress1(data.roadAddress || data.jibunAddress);
-        addressRef.current?.focus();
-      },
-    }).open();
+    // 현재 환경이 브라우저인지, 그리고 daum 객체가 로드되었는지 확인합니다.
+    if (typeof window !== "undefined" && window.daum) {
+      new window.daum.Postcode({
+        oncomplete: function (data: DaumPostcodeData) {
+          setZipcode(data.zonecode);
+          setAddress1(data.roadAddress || data.jibunAddress);
+          addressRef.current?.focus(); // 상세 주소 필드로 포커스 이동
+        },
+      }).open();
+    } else {
+      // 스크립트가 로드되지 않았거나 서버 환경일 경우의 예외 처리
+      console.error("Daum Postcode script is not loaded.");
+      alert("주소 찾기 서비스를 일시적으로 사용할 수 없습니다.");
+    }
   };
 
   const handleSubmit = async () => {
@@ -152,7 +158,7 @@ export default function KakaoForm({
               <div className="grid gap-3">
                 <Label>성별</Label>
                 <RadioGroup
-                  className="flex items-center gap-12"
+                  className="flex items-center gap-12 ml-2"
                   defaultValue="male"
                   value={gender}
                   onValueChange={setGender}
@@ -272,7 +278,7 @@ export default function KakaoForm({
           </div>
           <div className="w-full bg-[#F6C61E] flex flex-col items-center justify-center p-10">
             <Image
-              src="/images/kakao.jpg" // public/images 폴더에 저장
+              src="/images/kakao.png" // public/images 폴더에 저장
               alt="Kakao 캐릭터"
               width={400}
               height={400}
