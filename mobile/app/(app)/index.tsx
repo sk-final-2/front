@@ -107,7 +107,10 @@ function ScoreSummary({ data }: { data: AvgScore }) {
     <View style={ss.container}>
       {/* 로봇 말풍선 */}
       <View style={ss.bubbleWrap}>
-        <Text style={ss.robot}>🤖</Text>
+        <Image
+          source={require('../../assets/images/flying_robot.png')}
+          style={ss.robot}
+        />
         <View style={ss.bubble}>
           <Text style={ss.bubbleText}>
             이번 면접, {LABELS[bestKey]} 안정성이 최고였네요! (평균 {Math.round(data.score)}점)
@@ -152,7 +155,11 @@ function ScoreSummary({ data }: { data: AvgScore }) {
 const ss = StyleSheet.create({
   container: { gap: 12, padding: 12, backgroundColor: '#fff', borderRadius: 16, elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8 },
   bubbleWrap: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  robot: { fontSize: 28 },
+  robot: {
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
+  },
   bubble: { flex: 1, backgroundColor: '#f3f4f6', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
   bubbleText: { color: '#111827', fontWeight: '600' },
 
@@ -198,6 +205,7 @@ export default function Home() {
   //애니메이션
   const [playKey, setPlayKey] = useState(0);
   const robotScale = React.useRef(new Animated.Value(1)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
 
   //평균 점수
   const [summaryScore, setSummaryScore] = useState<AvgScore | null>(null);
@@ -215,6 +223,23 @@ export default function Home() {
     // 2) 리스트 애니메이션 재생
     setPlayKey(k => k + 1);
   };
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(translateY, {
+          toValue: -10, // 위로 10px
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,   // 원위치
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [translateY]);
 
   useEffect(() => {
     const current = getProfile();
@@ -420,8 +445,8 @@ export default function Home() {
       <View style={styles.hero}>
         <Pressable onPress={replay} hitSlop={8}>
           <Animated.Image
-            source={require('../../assets/images/robot.png')}
-            style={[styles.robot, { transform: [{ scale: robotScale }] }]}
+            source={require('../../assets/images/main_robot.png')}
+            style={[styles.robot, { transform: [{ translateY }] }]}
             resizeMode="contain"
           />
         </Pressable>
@@ -608,7 +633,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 999,
-    backgroundColor: '#b3cffcff',
+    backgroundColor: '#9ef9b6ff',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
