@@ -71,7 +71,7 @@ export default function HeroSection() {
         />
       </div>
 
-      <div className="relative z-10 flex flex-col items-center">
+      <div className="relative z-5 flex flex-col items-center">
         <motion.h1
           className="text-4xl md:text-5xl font-extrabold tracking-tight"
           variants={itemVariants}

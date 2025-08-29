@@ -41,41 +41,51 @@ const cardVariants = {
 
 export default function FeaturesSection() {
   return (
-    <motion.section
-      className="w-full min-h-screen bg-background snap-center flex flex-col justify-center items-center px-6 py-12 md:px-10"
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, amount: 0.2 }}
-      variants={containerVariants}
-    >
-      <div className="text-center mb-12">
-        <h2 className="text-3xl md:text-4xl font-bold">
-          AI가 제공하는 개인 맞춤형 면접 코칭
-        </h2>
-        <p className="text-muted-foreground mt-2">
-          당신의 합격까지 함께합니다.
-        </p>
-      </div>
-
-      <motion.div
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-6xl"
+    <div>
+      <motion.section
+        className="w-full min-h-screen bg-background snap-center flex flex-col justify-center items-center px-6 py-12 md:px-10"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
         variants={containerVariants}
       >
-        {FEATURES.map((feature) => (
-          <motion.div key={feature.title} variants={cardVariants}>
-            <Card className="flex flex-col cursor-pointer hover:scale-105 transition text-center h-full p-6 bg-secondary transition-shadow hover:shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-xl font-semibold">
-                  {feature.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">{feature.content}</p>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </motion.div>
-    </motion.section>
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold">
+            AI가 제공하는 개인 맞춤형 면접 코칭
+          </h2>
+          <p className="text-muted-foreground mt-2">
+            당신의 합격까지 함께합니다.
+          </p>
+        </div>
+
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-6xl"
+          variants={containerVariants}
+        >
+          {FEATURES.map((feature) => (
+            <motion.div key={feature.title} variants={cardVariants}>
+              <Card className="flex flex-col cursor-pointer hover:scale-105 transition text-center h-full p-6 bg-secondary transition-shadow hover:shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold">
+                    {feature.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">{feature.content}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </motion.div>
+      </motion.section>
+
+      <motion.section
+        className="w-full min-h-screen bg-background snap-center flex flex-col justify-center items-center px-6 py-12 md:px-10"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+        variants={containerVariants}
+      >2</motion.section>
+    </div>
   );
 }
