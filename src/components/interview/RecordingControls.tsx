@@ -25,6 +25,20 @@ export default function RecordingControls({
   const chunksRef = useRef<BlobPart[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmitted = useRef(false); // ✅ 중복 제출 방지용 ref
+  const startedRef = useRef(false);
+
+  // ✅ 콜백 ref는 null로 초기화
+  const initCbRef = useRef<((totalSec: number) => void) | null>(null);
+  const tickCbRef = useRef<((leftSec: number) => void) | null>(null);
+
+  // 최신 콜백을 ref에 저장
+  useEffect(() => {
+    initCbRef.current = onTimeInit ?? null;
+  }, [onTimeInit]);
+
+  useEffect(() => {
+    tickCbRef.current = onTimeTick ?? null;
+  }, [onTimeTick]);
 
   // 🔴 녹화 시작
   const startRecording = () => {
@@ -74,34 +88,41 @@ export default function RecordingControls({
 
   // 🕒 질문 시작 시 타이머 + 녹화 시작
   useEffect(() => {
-  if (questionStarted && stream) {
+    if (!questionStarted || !stream) return;
+    if (startedRef.current) return;
+    startedRef.current = true;
+
     startRecording();
-    const TOTAL = 60;                   // 기존 60 유지
+    const TOTAL = 60;
     setTimeLeft(TOTAL);
     setCanSubmit(false);
     hasSubmitted.current = false;
 
-    // ✅ 시간바 초기화/첫 틱 알림
-    onTimeInit?.(TOTAL);
-    onTimeTick?.(TOTAL);
+    // ✅ 렌더 단계가 아닌 이펙트에서만 부모 상태 갱신
+    initCbRef.current?.(TOTAL);
+    tickCbRef.current?.(TOTAL);
 
-    timerRef.current = setInterval(() => {
+    const id = setInterval(() => {
       setTimeLeft((prev) => {
         const next = Math.max(0, prev - 1);
-        onTimeTick?.(next);            // ✅ 매초 알림
+        tickCbRef.current?.(next);
         if (prev <= 1) {
-          clearInterval(timerRef.current!);
+          clearInterval(id);
           handleAutoSubmit();
           return 0;
         }
         if (prev === 55) setCanSubmit(true);
         return next;
       });
-      return;
     }, 1000);
-  }
-  return () => clearInterval(timerRef.current!);
-}, [questionStarted, stream]);
+    timerRef.current = id;
+
+    return () => {
+      clearInterval(id);
+      startedRef.current = false;
+    };
+    // ⛔ onTimeInit/onTimeTick은 deps에서 제외 (ref로 대체)
+  }, [questionStarted, stream]);
 
   // 자동 제출
   const handleAutoSubmit = async () => {
@@ -122,16 +143,18 @@ export default function RecordingControls({
   };
 
   return (
-    <div className="flex flex-row items-center gap-2 mt-4">
-      <div className="text-xl font-semibold">{timeLeft}초</div>
+    <div className="h-10 flex items-center justify-end gap-3">
+      <div className="text-lg font-semibold min-w-[64px] text-right leading-none">
+        {timeLeft}초
+      </div>
       <button
-        className={`px-6 py-2 rounded-lg transition-all
+        className={`h-10 px-4 rounded-lg transition-all
         ${
           canSubmit
-            ? `cursor-pointer bg-primary text-primary-foreground 
-                border-b-[4px] border-primary shadow-sm
-                hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px]
-                active:border-b-[2px] active:brightness-90 active:translate-y-[2px]`
+            ? `cursor-pointer bg-primary/80 text-white
+                border-b-[3px] border-primary/80 shadow-sm
+                hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[5px]
+                active:border-b-[2px] active:brightness-95 active:translate-y-[2px]`
             : `bg-muted text-muted-foreground cursor-not-allowed`
         }`}
         onClick={handleManualSubmit}

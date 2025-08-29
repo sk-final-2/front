@@ -44,7 +44,7 @@ export default function VideoSwapStage({
     <section
       className={[
         // ⬇️ 배경을 확실히 흰색으로, 외부에서 사이즈/높이 제어 가능
-        "relative w-full rounded-2xl overflow-hidden bg-white",
+        "relative w-full rounded-2xl overflow-hidden bg-white shadow-sm",
         className ?? "",
       ].join(" ")}
       aria-label="Interview stage"

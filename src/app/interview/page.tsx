@@ -94,6 +94,9 @@ export default function InterviewPage() {
     "30~60초 내 한 토픽만 또렷하게.",
   ];
 
+  const showControls =
+  !isTtsPlaying && !finishing && !awaitingNext && !!currentQuestion;
+
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       // 크롬, 엣지 등 대부분 브라우저는 커스텀 메시지를 무시하고
@@ -443,7 +446,7 @@ export default function InterviewPage() {
   return (
   <Suspense>
     {/* ⬅︎ 전체 화면 배경을 푸른색, 한 화면 고정 */}
-    <div className="min-h-[100svh] bg-sky-50 overflow-hidden">
+    <div className="min-h-[100svh] bg-primary/10 overflow-hidden">
       {/* ⬅︎ 가운데 고정(좌우 여백), 한 화면 그리드: [질문 | 패널(나머지 전부)] */}
       <section className="mx-auto w-full max-w-screen-lg min-h-[100svh] grid grid-rows-[auto,1fr] gap-4 p-6">
 
@@ -468,7 +471,7 @@ export default function InterviewPage() {
         <InterviewPanel tone="solid">
           {/* 1) 화면 전환 스테이지: 남는 높이 중 52~54svh만 사용 → 스크롤 없음 */}
           <VideoSwapStage
-            className="h-[52svh] md:h-[54svh] w-full rounded-2xl border bg-white"
+            className="h-[52svh] md:h-[54svh] w-full rounded-2xl bg-white"
             userStream={stream}
             talking={isTtsPlaying}
             amp={ttsAmp}
@@ -477,12 +480,12 @@ export default function InterviewPage() {
           />
 
           {/* 2) 시간바 */}
-          <TimeBar totalSec={timeTotal} leftSec={timeLeft} />
+          <TimeBar totalSec={timeTotal} leftSec={timeLeft} visible={showControls} reserveSpace fadeMs={300} />
 
           {/* 3) 면접팁 + 레코딩컨트롤 */}
           <TipsAndControls
             tips={interviewTips}
-            showControls={!isTtsPlaying && !finishing && !awaitingNext && !!currentQuestion}
+            showControls={showControls}
             stream={stream}
             questionStarted={questionStarted}
             onAutoSubmit={handleSubmit}
@@ -490,6 +493,10 @@ export default function InterviewPage() {
             onTimeInit={(total) => { setTimeTotal(total); setTimeLeft(total); }}
             onTimeTick={(left) => setTimeLeft(left)}
           />
+          
+              {awaitingNext && !isFinished && !finishing && (
+                <Loading message="다음 질문을 준비 중이에요..." />
+              )}
         </InterviewPanel>
       </section>
     </div>
