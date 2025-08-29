@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import { ReduxProvider } from "@/store/provider";
 import { cookies } from "next/headers";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const notoSansKr = Noto_Sans_KR({
   subsets: ["latin"],
@@ -31,7 +32,16 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${notoSansKr.className} antialiased`}>
-        <ReduxProvider accessToken={accessToken}>{children}</ReduxProvider>
+        <ReduxProvider accessToken={accessToken}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+          </ThemeProvider>
+        </ReduxProvider>
       </body>
     </html>
   );
