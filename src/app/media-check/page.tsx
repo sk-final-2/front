@@ -150,115 +150,120 @@ export default function MediaCheckPage() {
     <div className="bg-gray-100 min-h-screen p-6">
       <h1 className="text-2xl font-bold">장비 확인 및 테스트</h1>
 
-      {/* 선택 UI */}
-      <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-gray-600">카메라</span>
-          <select
-            className="rounded border p-2"
-            value={selectedVideoDeviceId ?? ""}
-            onChange={(e) => {
-              dispatch(setSelectedVideoDeviceId(e.target.value || null));
-              console.log(
-                "[DEBUG MEDIA] selectedVideoDeviceId ->",
-                e.target.value,
-              );
-            }}
-          >
-            {videos.map((v) => (
-              <option key={v.deviceId} value={v.deviceId}>
-                {v.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-gray-600">마이크</span>
-          <select
-            className="rounded border p-2"
-            value={selectedAudioDeviceId ?? ""}
-            onChange={(e) => {
-              dispatch(setSelectedAudioDeviceId(e.target.value || null));
-              console.log(
-                "[DEBUG MEDIA] selectedAudioDeviceId ->",
-                e.target.value,
-              );
-            }}
-          >
-            {audios.map((a) => (
-              <option key={a.deviceId} value={a.deviceId}>
-                {a.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="flex items-end gap-2">
-          <input
-            type="number"
-            placeholder="width"
-            className="w-24 rounded border p-2"
-            value={preferredVideo?.width ?? 1280}
-            onChange={(e) => {
-              const next = {
-                ...preferredVideo,
-                width: Number(e.target.value) || undefined,
-              };
-              dispatch(setPreferredVideo(next));
-              console.log("[DEBUG MEDIA] preferredVideo ->", next); // ⬅ 로그
-            }}
-          />
-          <input
-            type="number"
-            placeholder="height"
-            className="w-24 rounded border p-2"
-            value={preferredVideo?.height ?? 720}
-            onChange={(e) => {
-              const next = {
-                ...preferredVideo,
-                height: Number(e.target.value) || undefined,
-              };
-              dispatch(setPreferredVideo(next));
-              console.log("[DEBUG MEDIA] preferredVideo ->", next); // ⬅ 로그
-            }}
-          />
-
-          <input
-            type="number"
-            placeholder="fps"
-            className="w-20 rounded border p-2"
-            value={preferredVideo?.frameRate ?? 30}
-            onChange={(e) => {
-              const next = {
-                ...preferredVideo,
-                frameRate: Number(e.target.value) || undefined,
-              };
-              dispatch(setPreferredVideo(next));
-              console.log("[DEBUG MEDIA] preferredVideo ->", next); // ⬅ 로그
-            }}
-          />
-        </div>
-      </div>
-
       {/* 미리보기 + 마이크 테스트 */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
+      <div className="mt-6 flex flex-col md:flex-row gap-6">
+        <div className="w-full md:flex-[3]">
           <UserVideo stream={stream} />
         </div>
         <div>
-          <AudioRecoder />
+          {/* 선택 UI */}
+          <div className="flex flex-[2] flex-col gap-5">
+            <label className="flex flex-col gap-2">
+              <span className="text-sm text-gray-600">카메라</span>
+              <select
+                className="rounded border p-2"
+                value={selectedVideoDeviceId ?? ""}
+                onChange={(e) => {
+                  dispatch(setSelectedVideoDeviceId(e.target.value || null));
+                  console.log(
+                    "[DEBUG MEDIA] selectedVideoDeviceId ->",
+                    e.target.value,
+                  );
+                }}
+              >
+                {videos.map((v) => (
+                  <option key={v.deviceId} value={v.deviceId}>
+                    {v.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex flex-col gap-2">
+              <span className="text-sm text-gray-600">마이크</span>
+              <select
+                className="rounded border p-2"
+                value={selectedAudioDeviceId ?? ""}
+                onChange={(e) => {
+                  dispatch(setSelectedAudioDeviceId(e.target.value || null));
+                  console.log(
+                    "[DEBUG MEDIA] selectedAudioDeviceId ->",
+                    e.target.value,
+                  );
+                }}
+              >
+                {audios.map((a) => (
+                  <option key={a.deviceId} value={a.deviceId}>
+                    {a.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex flex-col gap-2">
+              <span className="text-sm text-gray-600">width</span>
+              <input
+                type="number"
+                placeholder="width"
+                className="rounded border p-2"
+                value={preferredVideo?.width ?? 1280}
+                onChange={(e) => {
+                  const next = {
+                    ...preferredVideo,
+                    width: Number(e.target.value) || undefined,
+                  };
+                  dispatch(setPreferredVideo(next));
+                  console.log("[DEBUG MEDIA] preferredVideo ->", next); // ⬅ 로그
+                }}
+              />
+            </label>
+
+            <label className="flex flex-col gap-2">
+              <span className="text-sm text-gray-600">height</span>
+              <input
+                type="number"
+                placeholder="height"
+                className="rounded border p-2"
+                value={preferredVideo?.height ?? 720}
+                onChange={(e) => {
+                  const next = {
+                    ...preferredVideo,
+                    height: Number(e.target.value) || undefined,
+                  };
+                  dispatch(setPreferredVideo(next));
+                  console.log("[DEBUG MEDIA] preferredVideo ->", next); // ⬅ 로그
+                }}
+              />
+            </label>
+
+            <label className="flex flex-col gap-2">
+              <span className="text-sm text-gray-600">fps</span>
+              <input
+                type="number"
+                placeholder="fps"
+                className="rounded border p-2"
+                value={preferredVideo?.frameRate ?? 30}
+                onChange={(e) => {
+                  const next = {
+                    ...preferredVideo,
+                    frameRate: Number(e.target.value) || undefined,
+                  };
+                  dispatch(setPreferredVideo(next));
+                  console.log("[DEBUG MEDIA] preferredVideo ->", next); // ⬅ 로그
+                }}
+              />
+            </label>
+            <AudioRecoder />
+          </div>
         </div>
       </div>
-
       {error && <p className="mt-3 text-red-600">{error}</p>}
-
       <button
-        onClick={goInterview}
-        className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700"
-      >
-        면접 진행하기
-      </button>
+          onClick={goInterview}
+          className="w-full mt-6 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700"
+        >
+          면접 진행하기
+        </button>
     </div>
   );
 }
