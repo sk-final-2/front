@@ -56,7 +56,7 @@ export default function HeroSection() {
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
     >
-      {/* 3D 백그라운드 이미지 - section 전체를 덮는 배경 */}
+      {/* 백그라운드 이미지 배경 */}
       <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
         <Image
           src="/main_view.png"
@@ -94,7 +94,7 @@ export default function HeroSection() {
               <Button
                 size="lg"
                 onClick={handleButtonClick}
-                className="mt-10 cursor-pointer text-xl font-bold px-10 py-6 transform hover:border-ring 
+                className="mt-10 cursor-pointer text-xl text-white font-bold px-10 py-6 transform hover:border-ring 
                       rounded-full
                       border-0
                       bg-primary

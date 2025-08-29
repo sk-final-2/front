@@ -1,9 +1,14 @@
 "use client";
 
+import { cn } from "@/lib/utils";
+import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useRef, useState } from "react";
-import TextInput from "@/components/atoms/TextInput";
 import apiClient from "@/lib/axios";
 import { useRouter } from "next/navigation";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import BirthCalendar from "./Calender";
 
 const formatTime = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
@@ -33,6 +38,12 @@ declare global {
     };
   }
 }
+
+/** 성별 데이터 */
+const genderData = [
+  { gender: "MALE", desc: "남자" },
+  { gender: "FEMALE", desc: "여자" },
+];
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -80,19 +91,17 @@ export default function RegisterForm() {
 
   // 타이머 useEffect
   useEffect(() => {
-    // isTimerActive가 true이고, timerSeconds가 0보다 클 때만 인터벌 실행
     if (isTimerActive && timerSeconds > 0) {
       const timer = setInterval(() => {
         setTimerSeconds((prev) => prev - 1);
       }, 1000);
-
-      // 컴포넌트 언마운트 또는 timerSeconds가 0이 되면 인터벌 정리
       return () => clearInterval(timer);
     }
-    // 타이머가 0초가 되면 타이머 비활성화
-    else if (timerSeconds === 0) {
+    // 타이머가 0초가 되면 타이머와 인증 입력창을 모두 비활성화
+    else if (timerSeconds <= 0) {
+      // 조건을 더 명확하게 변경
       setIsTimerActive(false);
-
+      setEmailSent(false); // 이 코드를 추가하여 인증 입력창을 숨깁니다.
       alert("인증 시간이 만료되었습니다. 인증 코드를 다시 받아주세요.");
     }
   }, [isTimerActive, timerSeconds]);
@@ -136,7 +145,7 @@ export default function RegisterForm() {
     }));
   };
 
-  // 주소 핸들러
+  /** 주소 핸들러 */
   const handleAddressSearch = () => {
     new window.daum.Postcode({
       oncomplete: function (data: DaumPostcodeData) {
@@ -152,7 +161,7 @@ export default function RegisterForm() {
         }
       },
     }).open();
-  };
+  }; /** 주소 핸들러 */
 
   // 에러 메시지 상태
   const [errors, setErrors] = useState({
@@ -168,7 +177,15 @@ export default function RegisterForm() {
   /** 폼 제출 핸들러 */
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const newErrors = { ...errors };
+    const newErrors = {
+      name: "",
+      email: "",
+      password: "",
+      password_check: "",
+      verification: "",
+      birth: "",
+      address: "",
+    };
 
     // 필드 검증
     if (!formData.name) newErrors.name = "이름을 입력해주세요.";
@@ -190,6 +207,8 @@ export default function RegisterForm() {
       return;
     }
 
+    setErrors(newErrors);
+
     // 서버에 전송할 데이터에서 password_check 제외
     const { password_check, ...submitData } = formData;
 
@@ -210,7 +229,7 @@ export default function RegisterForm() {
         verification: "회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.",
       }));
     }
-  };
+  }; /** 폼 제출 핸들러 */
 
   /** 이메일 인증 코드 보내기 */
   const sendEmailAuthCode = async () => {
@@ -225,11 +244,6 @@ export default function RegisterForm() {
     }
 
     setEmailLoading(true);
-
-    // ====================================================
-    // 임시 허락 코드
-    setIsVerified(true);
-    // ====================================================
 
     try {
       const res = await apiClient.post("/api/email/send", {
@@ -252,7 +266,7 @@ export default function RegisterForm() {
     } finally {
       setEmailLoading(false);
     }
-  };
+  }; /** 이메일 인증 코드 보내기 */
 
   /** 인증 코드 확인 */
   const checkEmailAuthCode = async () => {
@@ -279,7 +293,7 @@ export default function RegisterForm() {
         verification: "인증 중 오류가 발생했습니다.",
       }));
     }
-  };
+  }; /** 인증 코드 확인 */
 
   /** 에러 초기화 함수 */
   const clearErrors = (item: string) => {
@@ -289,256 +303,284 @@ export default function RegisterForm() {
     }));
   };
 
+  /** 성별 핸들러 */
+  const changeGender = (gender: string) => {
+    setGender(gender);
+    setFormData((prev) => ({
+      ...prev,
+      gender: gender,
+    }));
+  };
+
+  /** 생년월일 onChanger */
+  const onChangeBirth = (birth: string) => {
+    setBirth(birth);
+    setFormData((prev) => ({
+      ...prev,
+      birth: birth,
+    }));
+  };
+
   return (
-    <div className="border-t-2 border-gray-600 min-w-[35rem] h-auto mt-10">
-      <form onSubmit={handleSubmit}>
-        {/** 이름 입력 */}
-        <TextInput
-          label="이름"
-          id="name"
-          name="name"
-          type="text"
-          error={errors.name}
-          value={formData.name}
-          placeholder="이름 입력"
-          onChange={handleChange}
-          onFocus={() => clearErrors("name")}
-        />
+    <div className={cn("flex flex-col gap-6")}>
+      <Card className="overflow-hidden p-0 border-none shadow-xl">
+        <CardContent className="p-0">
+          <form onSubmit={handleSubmit} className="p-6 md:p-8">
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col items-center text-center">
+                <h1 className="text-2xl font-bold">회원가입</h1>
+              </div>
 
-        {/** 성별 선택 */}
-        <div className="mb-4 flex flex-row justify-between mt-6 items-center w-full h-auto gap-4">
-          <label className="block text-sm font-semibold mb-1">성별</label>
-          <div className="flex gap-10">
-            <label className="flex items-center gap-2 ml-4">
-              <input
-                type="radio"
-                name="gender"
-                value="MALE"
-                checked={gender === "MALE"}
-                onChange={(e) => {
-                  setGender(e.target.value);
-                  setFormData((prev) => ({
-                    ...prev,
-                    gender: e.target.value,
-                  }));
-                }}
-              />
-              남성
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="gender"
-                value="FEMALE"
-                checked={gender === "FEMALE"}
-                onChange={(e) => {
-                  setGender(e.target.value);
-                  setFormData((prev) => ({
-                    ...prev,
-                    gender: e.target.value,
-                  }));
-                }}
-              />
-              여성
-            </label>
-          </div>
-        </div>
+              <div className="flex flex-row gap-3 w-full">
+                {/** 이름 */}
+                <div className="grid gap-3 flex-1">
+                  <Label htmlFor="name">이름</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="이름 입력"
+                    value={formData.name}
+                    onChange={handleChange}
+                    onFocus={() => clearErrors("name")}
+                    required
+                    name="name"
+                  />
+                </div>
 
-        {/** 생년월일 */}
-        <div className="mb-4 flex flex-row justify-between mt-6 items-center w-full h-auto gap-4">
-          <label className="flex-1 block text-sm font-semibold mb-1">
-            생년월일
-          </label>
-          <input
-            type="date"
-            value={birth}
-            onChange={(e) => {
-              setBirth(e.target.value);
-              setFormData((prev) => ({
-                ...prev,
-                birth: e.target.value,
-              }));
-            }}
-            className="flex-1 border px-3 py-2 rounded"
-          />
-        </div>
+                {/** 생년월일 */}
+                <BirthCalendar onChangeBirth={onChangeBirth} />
+              </div>
 
-        {/* 우편번호 */}
-        <div className="mt-10">
-          <label className="block text-sm font-semibold mb-1">우편번호</label>
-          <div className="flex gap-2">
-            <input
-              value={zipcode}
-              readOnly
-              className="flex-1 border px-3 py-2 rounded bg-gray-100"
-            />
-            <button
-              type="button"
-              onClick={handleAddressSearch}
-              className="bg-[#F6C61E] text-black text-sm font-semibold px-4 py-2 rounded hover:bg-[#e5b500]"
-            >
-              주소찾기
-            </button>
-          </div>
-        </div>
-
-        {/* 주소 */}
-        <div className="mt-4">
-          <label className="block text-sm font-semibold mb-1">주소</label>
-          <input
-            value={address1}
-            readOnly
-            className="w-full border px-3 py-2 rounded bg-gray-100"
-          />
-        </div>
-
-        {/* 상세 주소 */}
-        <div className="mt-4 mb-5">
-          <label className="block text-sm font-semibold mb-1">상세 주소</label>
-          <input
-            ref={addressRef}
-            value={address2}
-            onChange={(e) => {
-              setAddress2(e.target.value);
-              setFormData((prev) => ({
-                ...prev,
-                address2: e.target.value,
-              }));
-            }}
-            className="w-full border px-3 py-2 rounded"
-          />
-        </div>
-
-        {/** 이메일 입력 */}
-        <div className="flex flex-row">
-          <TextInput
-            label="이메일"
-            id="email"
-            name="email"
-            type="email"
-            error={errors.email}
-            value={formData.email}
-            placeholder="example@example.com"
-            disabled={isTimerActive || isVerified}
-            onChange={handleChange}
-            onFocus={() => clearErrors("email")}
-            button={
-              <button
-                type="button"
-                className="text-sm bg-gray-200 border-gray-600 hover:bg-gray-700 hover:text-white rounded-md border-[1px] px-4 flex-shrink-0 cursor-pointer flex items-center justify-center
-                  disabled:opacity-60 disabled:border-gray-200"
-                onClick={sendEmailAuthCode}
-                disabled={emailLoading || isVerified || isTimerActive}
-              >
-                {emailLoading ? (
-                  <>
-                    <svg
-                      className="animate-spin h-4 w-4 mr-2 text-gray-800"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
+              {/** 성별 선택 */}
+              <div className="grid gap-3">
+                <Label htmlFor="gender">성별 선택</Label>
+                <div id="gender" className="grid grid-cols-2 gap-4">
+                  {genderData.map((item) => (
+                    <Card
+                      key={item.gender}
+                      onClick={() => changeGender(item.gender)}
+                      className={`h-12 flex justify-center items-center cursor-pointer ${
+                        gender == item.gender ? "border-ring border-2" : ""
+                      }`}
                     >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                      ></path>
-                    </svg>
-                    로딩중...
-                  </>
-                ) : isVerified ? (
-                  "인증 완료"
-                ) : emailSent || timerSeconds < 180 ? (
-                  "재전송"
-                ) : (
-                  "인증 코드 발송"
-                )}
-              </button>
-            }
-          />
-        </div>
+                      {item.desc}
+                    </Card>
+                  ))}
+                </div>
+              </div>
 
-        {/** 이메일 인증 로직 */}
-        {emailSent && (
-          <>
-            <div className="flex flex-row items-end">
-              <TextInput
-                label="인증번호"
-                id="verificationCode"
-                name="verificationCode"
-                type="text"
-                error={errors.verification}
-                placeholder="인증번호 입력"
-                value={verificationCode}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setVerificationCode(e.target.value)
-                }
-                onFocus={() => clearErrors("verification")}
-                button={
-                  <button
-                    type="button"
-                    className="bg-blue-500 cursor-pointer text-white text-sm py-2 px-4 rounded-md mt-2 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    onClick={checkEmailAuthCode}
+              {/** 우편번호 */}
+              <div className="grid gap-3">
+                <Label htmlFor="post">우편번호</Label>
+                <div className="flex gap-2">
+                  <Input id="post" value={zipcode} readOnly />
+                  <Button
+                    className="cursor-pointer"
+                    onClick={handleAddressSearch}
                   >
-                    인증하기
-                  </button>
-                }
-              />
-            </div>
-            <div className="w-full flex justify-end">
-              {/** 타이머 */}
-              {isTimerActive && (
-                <span className="mr-4 pb-3 font-semibold text-red-500">
-                  {formatTime(timerSeconds)}
-                </span>
+                    주소 찾기
+                  </Button>
+                </div>
+              </div>
+
+              {/** 주소 */}
+              <div className="grid gap-3">
+                <Label htmlFor="address1">주소</Label>
+                <Input id="address1" value={address1} readOnly />
+              </div>
+
+              {/** 상세 주소 */}
+              <div className="grid gap-3">
+                <Label htmlFor="address2">상세 주소</Label>
+                <Input
+                  id="address2"
+                  ref={addressRef}
+                  value={address2}
+                  onChange={(e) => {
+                    setAddress2(e.target.value);
+                    setFormData((prev) => ({
+                      ...prev,
+                      address2: e.target.value,
+                    }));
+                  }}
+                />
+              </div>
+
+              {/** 이메일 입력 */}
+              <div className="grid gap-3">
+                <Label htmlFor="email">이메일</Label>
+                <div className="flex flex-col">
+                  <div className="flex flex-row gap-2 items-center">
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="m@example.com"
+                      value={formData.email}
+                      disabled={isTimerActive || isVerified}
+                      onChange={handleChange}
+                      onFocus={() => clearErrors("email")}
+                    />
+                    <Button
+                      className="cursor-pointer"
+                      onClick={sendEmailAuthCode}
+                      disabled={emailLoading || isVerified || isTimerActive}
+                    >
+                      {emailLoading ? (
+                        <>
+                          <svg
+                            className="animate-spin h-4 w-4 mr-2 text-gray-800"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                            ></path>
+                          </svg>
+                          로딩중...
+                        </>
+                      ) : isVerified ? (
+                        "인증 완료"
+                      ) : emailSent || timerSeconds < 180 ? (
+                        "재전송"
+                      ) : (
+                        "인증 코드 발송"
+                      )}
+                    </Button>
+                  </div>
+                  <div className="flex flex-row justify-between">
+                    {errors.email && (
+                      <p className="text-red-500 text-xs italic mt-1">
+                        {errors.email}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/** 이메일 인증 로직 */}
+              {emailSent && (
+                <div className="grid gap-3 w-100">
+                  <div className="flex flex-row items-center gap-3">
+                    {/* Input과 타이머를 감싸는 상대적 위치 컨테이너 */}
+                    <div className="relative flex-grow">
+                      <Input
+                        id="verificationCode"
+                        name="verificationCode"
+                        type="text"
+                        placeholder="인증번호 입력"
+                        className="pr-16"
+                        value={verificationCode}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setVerificationCode(e.target.value)
+                        }
+                        onFocus={() => clearErrors("verification")}
+                      />
+                      {/* 타이머 */}
+                      {isTimerActive && (
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                          <span className="font-semibold text-red-500">
+                            {formatTime(timerSeconds)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      className="cursor-pointer"
+                      onClick={checkEmailAuthCode}
+                    >
+                      인증하기
+                    </Button>
+                  </div>
+                  <div className="flex flex-row justify-between">
+                    {errors.verification && (
+                      <p className="text-red-500 text-xs italic mt-1">
+                        {errors.verification}
+                      </p>
+                    )}
+                  </div>
+                </div>
               )}
+
+              {/** 비밀번호 입력 */}
+              <div className="grid gap-3">
+                <Label htmlFor="password">
+                  비밀번호 (특수문자 [@, #, %, $ 등] 포함 8글자 이상)
+                </Label>
+                <div className="flex flex-col">
+                  <div className="flex flex-row gap-2 items-center">
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      value={formData.password}
+                      placeholder="비밀번호"
+                      onChange={handleChange}
+                      onFocus={() => clearErrors("password")}
+                    />
+                  </div>
+                  <div className="flex flex-row justify-between">
+                    {errors.password && (
+                      <p className="text-red-500 text-xs italic mt-1">
+                        {errors.password}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/** 비밀번호 확인 */}
+              <div className="grid gap-3">
+                <Label htmlFor="password_check">비밀번호 확인</Label>
+                <div className="flex flex-col">
+                  <div className="flex flex-row gap-2 items-center">
+                    <Input
+                      id="password_check"
+                      name="password_check"
+                      type="password"
+                      placeholder="비밀번호 확인"
+                      value={formData.password_check}
+                      onChange={handleChange}
+                      onFocus={() => clearErrors("password_check")}
+                    />
+                  </div>
+                  <div className="flex flex-row justify-between">
+                    {errors.password_check && (
+                      <p className="text-red-500 text-xs italic mt-1">
+                        {errors.password_check}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/** 제출 버튼 */}
+              <Button
+                type="submit"
+                className="cursor-pointer"
+                disabled={!isSubmittable}
+              >
+                회원가입
+              </Button>
             </div>
-          </>
-        )}
-
-        {/** 비밀번호 입력 */}
-        <TextInput
-          label="비밀번호"
-          id="password"
-          name="password"
-          type="password"
-          error={errors.password}
-          value={formData.password}
-          placeholder="비밀번호"
-          onChange={handleChange}
-          onFocus={() => clearErrors("password")}
-        />
-
-        {/** 비밀번호 확인 */}
-        <TextInput
-          label="비밀번호 확인"
-          id="password_check"
-          name="password_check"
-          type="password"
-          error={errors.password_check}
-          value={formData.password_check}
-          placeholder="비밀번호 확인"
-          onChange={handleChange}
-          onFocus={() => clearErrors("password_check")}
-        />
-
-        {/** 제출 버튼 */}
-        <button
-          type="submit"
-          disabled={!isSubmittable}
-          className=" w-full mt-8 h-10 rounded-xl border-2 border-gray-900 bg-gray-400 text-white font-bold hover:bg-gray-700 cursor-pointer disabled:opacity-50"
-        >
-          회원가입
-        </button>
-      </form>
+          </form>
+        </CardContent>
+      </Card>
+      <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
+        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
+        and <a href="#">Privacy Policy</a>.
+      </div>
     </div>
   );
 }

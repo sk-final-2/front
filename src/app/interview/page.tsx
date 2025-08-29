@@ -67,7 +67,7 @@ export default function InterviewPage() {
 
   const lastKeyRef = useRef<string>("");
 
-  //tts 나오는 동안 recordingcontrols 숨기고 나타내고
+  // tts 나오는 동안 recordingcontrols 숨기고 나타내고
   const [isTtsPlaying, setIsTtsPlaying] = useState(false);
 
   // 클라이언트 여부
