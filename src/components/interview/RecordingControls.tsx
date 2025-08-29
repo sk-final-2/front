@@ -7,6 +7,8 @@ interface Props {
   onAutoSubmit: (video: Blob) => void;
   onManualSubmit: (video: Blob) => void;
   stream: MediaStream | null;
+  onTimeInit?: (totalSec: number) => void; // ✅ 추가
+  onTimeTick?: (leftSec: number) => void; // ✅ 추가
 }
 
 export default function RecordingControls({
@@ -14,6 +16,8 @@ export default function RecordingControls({
   onAutoSubmit,
   onManualSubmit,
   stream,
+  onTimeInit,
+  onTimeTick,
 }: Props) {
   const [timeLeft, setTimeLeft] = useState(60);
   const [canSubmit, setCanSubmit] = useState(false);
@@ -70,31 +74,34 @@ export default function RecordingControls({
 
   // 🕒 질문 시작 시 타이머 + 녹화 시작
   useEffect(() => {
-    if (questionStarted && stream) {
-      startRecording();
-      setTimeLeft(60);
-      setCanSubmit(false);
-      hasSubmitted.current = false; // ✅ 새로운 질문 시작할 때 초기화
+  if (questionStarted && stream) {
+    startRecording();
+    const TOTAL = 60;                   // 기존 60 유지
+    setTimeLeft(TOTAL);
+    setCanSubmit(false);
+    hasSubmitted.current = false;
 
-      timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current!);
-            handleAutoSubmit();
-            return 0;
-          }
-          if (prev === 55) {
-            setCanSubmit(true);
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
+    // ✅ 시간바 초기화/첫 틱 알림
+    onTimeInit?.(TOTAL);
+    onTimeTick?.(TOTAL);
 
-    return () => {
-      clearInterval(timerRef.current!);
-    };
-  }, [questionStarted, stream]);
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        const next = Math.max(0, prev - 1);
+        onTimeTick?.(next);            // ✅ 매초 알림
+        if (prev <= 1) {
+          clearInterval(timerRef.current!);
+          handleAutoSubmit();
+          return 0;
+        }
+        if (prev === 55) setCanSubmit(true);
+        return next;
+      });
+      return;
+    }, 1000);
+  }
+  return () => clearInterval(timerRef.current!);
+}, [questionStarted, stream]);
 
   // 자동 제출
   const handleAutoSubmit = async () => {
@@ -116,7 +123,7 @@ export default function RecordingControls({
 
   return (
     <div className="flex flex-row items-center gap-2 mt-4">
-      <div className="text-xl font-semibold">⏱️ {timeLeft}초</div>
+      <div className="text-xl font-semibold">{timeLeft}초</div>
       <button
         className={`px-6 py-2 rounded-lg transition-all
         ${

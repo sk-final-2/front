@@ -23,6 +23,10 @@ import { Client } from "@stomp/stompjs";
 import { getInterviewResult } from "@/store/interview/resultSlice";
 import { startConnecting } from "@/store/socket/socketSlice";
 import Loading from "@/components/loading/Loading";
+import VideoSwapStage from "@/components/interview/VideoSwapStage";
+import InterviewPanel from "@/components/interview/InterviewPanel";
+import TimeBar from "@/components/interview/TimeBar";
+import TipsAndControls from "@/components/interview/TipsAndControls";
 
 // 🔵 추가: TTS
 import TtsComponent from "@/components/tts/TtsComponent";
@@ -76,6 +80,19 @@ export default function InterviewPage() {
   const [awaitingNext, setAwaitingNext] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const prevSeqRef = useRef<number | null>(null);
+
+  // 시간바 상태
+  const [timeTotal, setTimeTotal] = useState<number>(60);
+  const [timeLeft, setTimeLeft] = useState<number>(60);
+
+  // 팁 목록
+  const interviewTips = [
+    "답변은 결론 먼저, 근거는 2~3가지로.",
+    "숫자와 성과를 한 줄로 요약해요.",
+    "질문을 되묻기보다 핵심부터 답변.",
+    "STAR 구조(상황-과제-행동-결과)로 말하기.",
+    "30~60초 내 한 토픽만 또렷하게.",
+  ];
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -424,88 +441,59 @@ export default function InterviewPage() {
   }
 
   return (
-    <Suspense>
-      <div className="bg-background min-h-dvh">
-        <section className="mx-auto w-full p-8 space-y-4">
-          {/* 질문 표시 */}
-          {awaitingNext && !isFinished && !finishing ? (
-            <div
-              className="h-14 rounded-md bg-gray-100 animate-pulse"
-              aria-busy="true"
-            />
-          ) : (
-            <QuestionDisplay seq={currentSeq} question={currentQuestion} />
-          )}
+  <Suspense>
+    {/* ⬅︎ 전체 화면 배경을 푸른색, 한 화면 고정 */}
+    <div className="min-h-[100svh] bg-sky-50 overflow-hidden">
+      {/* ⬅︎ 가운데 고정(좌우 여백), 한 화면 그리드: [질문 | 패널(나머지 전부)] */}
+      <section className="mx-auto w-full max-w-screen-lg min-h-[100svh] grid grid-rows-[auto,1fr] gap-4 p-6">
 
-          {/* 🔵 질문이 바뀌면 자동으로 읽고, 끝나면 녹화/타이머 시작 신호(questionStarted=true) */}
-          <TtsComponent
-            text={currentQuestion ?? ""}
-            autoPlay
-            onStart={() => {
-              console.log("TTS 시작");
-              setIsTtsPlaying(true);
-              setQuestionStarted(false); // TTS 중에는 녹화 안 함
-            }}
-            onEnd={() => {
-              console.log("TTS 종료 → 녹화 시작");
-              setIsTtsPlaying(false);
-              setQuestionStarted(true); // ← 이 시점에 RecordingControls가 시작
-              setTtsAmp(0);
-            }}
-            onError={() => {
-              console.warn("TTS 오류, 바로 녹화 시작으로 폴백");
-              setIsTtsPlaying(false);
-              setQuestionStarted(true);
-              setTtsAmp(0);
-            }}
-            onEnergy={(amp) => {
-              // 약간의 스무딩으로 튐 방지
-              setTtsAmp((prev) => Math.max(amp, prev * 0.7));
-            }}
+        {/* 질문 표시 */}
+        {awaitingNext && !isFinished && !finishing ? (
+          <div className="h-14 rounded-md bg-gray-100 animate-pulse" aria-busy="true" />
+        ) : (
+          <QuestionDisplay seq={currentSeq} question={currentQuestion} />
+        )}
+
+        {/* TTS */}
+        <TtsComponent
+          text={currentQuestion ?? ""}
+          autoPlay
+          onStart={() => { setIsTtsPlaying(true); setQuestionStarted(false); }}
+          onEnd={() => { setIsTtsPlaying(false); setQuestionStarted(true); setTtsAmp(0); }}
+          onError={() => { setIsTtsPlaying(false); setQuestionStarted(true); setTtsAmp(0); }}
+          onEnergy={(amp) => setTtsAmp((prev) => Math.max(amp, prev * 0.7))}
+        />
+
+        {/* ▼ 질문 제외 전체를 감싸는 패널 (흰색) */}
+        <InterviewPanel tone="solid">
+          {/* 1) 화면 전환 스테이지: 남는 높이 중 52~54svh만 사용 → 스크롤 없음 */}
+          <VideoSwapStage
+            className="h-[52svh] md:h-[54svh] w-full rounded-2xl border bg-white"
+            userStream={stream}
+            talking={isTtsPlaying}
+            amp={ttsAmp}
+            pipPositionClassName="top-3 right-3"
+            isTtsPlaying={isTtsPlaying}
           />
 
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-[3fr_2fr] items-stretch">
-            {/* 왼쪽: 면접관 화면 */}
-            <InterviewerView talking={isTtsPlaying} amp={ttsAmp} />
-            {/* 오른쪽: 내 화면/컨트롤 */}
-            <div className="flex flex-col gap-2 items-center">
-              <UserVideo stream={stream} />
+          {/* 2) 시간바 */}
+          <TimeBar totalSec={timeTotal} leftSec={timeLeft} />
 
-              {/* 🔇 TTS 재생 중이면 컨트롤 완전히 숨김 */}
-              {!isTtsPlaying &&
-              !finishing &&
-              !awaitingNext &&
-              currentQuestion ? (
-                <RecordingControls
-                  stream={stream}
-                  questionStarted={questionStarted}
-                  onAutoSubmit={handleSubmit}
-                  onManualSubmit={handleSubmit}
-                />
-              ) : null}
+          {/* 3) 면접팁 + 레코딩컨트롤 */}
+          <TipsAndControls
+            tips={interviewTips}
+            showControls={!isTtsPlaying && !finishing && !awaitingNext && !!currentQuestion}
+            stream={stream}
+            questionStarted={questionStarted}
+            onAutoSubmit={handleSubmit}
+            onManualSubmit={handleSubmit}
+            onTimeInit={(total) => { setTimeTotal(total); setTimeLeft(total); }}
+            onTimeTick={(left) => setTimeLeft(left)}
+          />
+        </InterviewPanel>
+      </section>
+    </div>
+  </Suspense>
+);
 
-              {/* '다음 질문 준비 중' 오버레이: 종료상태(isFinished)에서는 절대 보이지 않음 */}
-              {awaitingNext && !isFinished && !finishing && (
-                <Loading message="다음 질문을 준비 중이에요..." />
-              )}
-
-              {/* 미리보기 (UI 로그 없음) */}
-              {previewUrl && (
-                <div className="mt-4 w-full max-w-md">
-                  <p className="text-sm text-gray-500 mb-1">
-                    🎞️ 녹화된 영상 미리보기
-                  </p>
-                  <video
-                    src={previewUrl}
-                    controls
-                    className="w-full aspect-video rounded border shadow"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-      </div>
-    </Suspense>
-  );
 }
