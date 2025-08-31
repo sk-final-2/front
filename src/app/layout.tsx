@@ -5,6 +5,7 @@ import "./globals.css";
 import { ReduxProvider } from "@/store/provider";
 import { cookies } from "next/headers";
 import { ThemeProvider } from "@/components/theme-provider";
+import GlobalLoadingIndicator from "@/components/loading/GlobalLoadingIndicator";
 
 const notoSansKr = Noto_Sans_KR({
   subsets: ["latin"],
@@ -39,6 +40,7 @@ export default async function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+            <GlobalLoadingIndicator />
             {children}
           </ThemeProvider>
         </ReduxProvider>

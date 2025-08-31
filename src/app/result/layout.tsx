@@ -1,4 +1,4 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import React from "react";
 
 export default function ResultLayout({
@@ -8,7 +8,6 @@ export default function ResultLayout({
 }) {
   return (
     <SidebarProvider>
-      {/* <QuestionListSidebar /> */}
       <main className="w-screen">{children}</main>
     </SidebarProvider>
   );

@@ -1,10 +1,11 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
-import interviewSlice from "./interview/interviewSlice";
-import interviewResultSlice from "./interview/resultSlice";
+import interviewSlice from "@/store/interview/interviewSlice";
+import interviewResultSlice from "@/store/interview/resultSlice";
 import authSlice from "@/store/auth/authSlice";
-import mediaSlice from "./media/mediaSlice";
-import socketSlice from "./socket/socketSlice";
-import { listenerMiddleware } from "./socket/socketMiddleware";
+import mediaSlice from "@/store/media/mediaSlice";
+import socketSlice from "@/store/socket/socketSlice";
+import loadingSlice from "@/store/loading/loadingSlice";
+import { listenerMiddleware } from "@/store/socket/socketMiddleware";
 
 const rootReducer = combineReducers({
   auth: authSlice,
@@ -12,6 +13,7 @@ const rootReducer = combineReducers({
   media: mediaSlice,
   result: interviewResultSlice,
   socket: socketSlice,
+  loading: loadingSlice,
 });
 
 export const makeStore = () =>

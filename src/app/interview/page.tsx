@@ -16,16 +16,15 @@ import RecordingControls from "@/components/interview/RecordingControls";
 import QuestionDisplay from "@/components/interview/QuestionDisplay";
 import UserVideo from "@/components/interview/UserVideo";
 import InterviewerView from "@/components/interview/InterviewerView";
-import { useRouter } from "next/navigation";
 import api from "@/lib/axiosInstance";
-import SockJS from "sockjs-client";
-import { Client } from "@stomp/stompjs";
 import { getInterviewResult } from "@/store/interview/resultSlice";
 import { startConnecting } from "@/store/socket/socketSlice";
 import Loading from "@/components/loading/Loading";
 
 // 🔵 추가: TTS
 import TtsComponent from "@/components/tts/TtsComponent";
+import { startLoading, stopLoading } from "@/store/loading/loadingSlice";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
 /** 에러 메시지 안전 변환 */
 function toErrorMessage(err: unknown): string {
@@ -36,21 +35,23 @@ function toErrorMessage(err: unknown): string {
 
 export default function InterviewPage() {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useLoadingRouter();
 
-  const [ttsAudioEl, setTtsAudioEl] = useState<HTMLAudioElement | null>(null);
+  // 페이지 이동 완료 시 로딩 종료
+  useEffect(() => {
+    dispatch(stopLoading());
+  }, [dispatch]);
+
+  // const [ttsAudioEl, setTtsAudioEl] = useState<HTMLAudioElement | null>(null);
   // 인터뷰 store
   const { currentQuestion, interviewId, currentSeq, isFinished, totalCount } =
     useAppSelector((state) => state.interview);
 
-  // 면접 결과 store
-  const { answerAnalyses } = useAppSelector((state) => state.result);
   const [ttsAmp, setTtsAmp] = useState(0);
-  // 다음 페이지 라우트 가능 ==========================
-  const [goResult, setGoResult] = useState<boolean>(false);
+
   // 결과 기다리는 로딩
   const [loading, setLoading] = useState<boolean>(false);
-  // ===============================================
+
   // 소켓 상태 store
   const { isConnecting, isConnected, analysisComplete } = useAppSelector(
     (state) => state.socket,
@@ -101,7 +102,10 @@ export default function InterviewPage() {
   useEffect(() => {
     if (analysisComplete) {
       console.log("✅ 답변 분석 완료됨!! : ", interviewId);
-      dispatch(getInterviewResult({ interviewId }));
+      dispatch(getInterviewResult({ interviewId })); // 면접 결과 받아오기
+
+      // 로딩 처리
+      dispatch(startLoading());
       router.replace("/result");
     }
   }, [analysisComplete, dispatch, router]);

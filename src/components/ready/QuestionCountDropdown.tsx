@@ -27,10 +27,13 @@ const QuestionCountDropdown = ({
   };
 
   return (
-    <div ref={dropdownRef} className="relative w-48 font-sans transition duration-200 ">
+    <div
+      ref={dropdownRef}
+      className="relative w-48 font-sans transition duration-200 "
+    >
       <label
         id="question-count-label"
-        className="block mb-2 text-sm font-medium text-gray-700"
+        className="block mb-2 text-sm font-medium text-foreground"
       >
         질문 수 선택
       </label>
@@ -40,7 +43,7 @@ const QuestionCountDropdown = ({
         aria-labelledby="question-count-label"
         aria-expanded={isOpen}
         onClick={() => setIsOpen(!isOpen)}
-        className="relative w-full px-4 py-2 text-left bg-white border border-gray-300 rounded-md shadow-sm cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+        className="relative w-full px-4 py-2 text-left bg-background border border-gray-300 rounded-md shadow-sm cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
       >
         <span className="block truncate">{selectedCount}개</span>
         <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
@@ -68,7 +71,7 @@ const QuestionCountDropdown = ({
         <ul
           role="listbox"
           aria-labelledby="question-count-label"
-          className="absolute z-10 w-full mt-1 overflow-auto text-base bg-white border border-gray-300 rounded-md shadow-lg max-h-60 focus:outline-none"
+          className="absolute z-10 w-full mt-1 overflow-auto text-base text-foreground bg-background border border-gray-300 rounded-md shadow-lg max-h-60 focus:outline-none"
         >
           {options.map((count) => (
             <li
@@ -76,9 +79,9 @@ const QuestionCountDropdown = ({
               role="option"
               aria-selected={selectedCount === count}
               onClick={() => handleOptionClick(count)}
-              className={`px-4 py-2 text-sm text-gray-900 cursor-pointer hover:bg-blue-50 ${
+              className={`px-4 py-2 text-sm text-foreground cursor-pointer hover:bg-primary ${
                 selectedCount === count
-                  ? "bg-blue-100 font-semibold"
+                  ? "bg-primary text-primary-foreground font-semibold"
                   : "font-normal"
               }`}
             >

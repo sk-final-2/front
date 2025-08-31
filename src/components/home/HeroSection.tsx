@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/hooks/storeHook";
 import {
   AlertDialog,
@@ -14,6 +13,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import Image from "next/image";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
 // 애니메이션 Variants 정의
 const sectionVariants = {
@@ -36,7 +36,7 @@ const itemVariants = {
 };
 
 export default function HeroSection() {
-  const router = useRouter();
+  const router = useLoadingRouter();
 
   // 로그인 상태 store
   const { isLoggedIn } = useAppSelector((state) => state.auth);
@@ -65,8 +65,10 @@ export default function HeroSection() {
           priority
           className="w-full h-full object-cover opacity-40"
           style={{
-            maskImage: "linear-gradient(to bottom, black 70%, transparent 100%)",
-            WebkitMaskImage: "linear-gradient(to bottom, black 70%, transparent 100%)",
+            maskImage:
+              "linear-gradient(to bottom, black 70%, transparent 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, black 70%, transparent 100%)",
           }}
         />
       </div>

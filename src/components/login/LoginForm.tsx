@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
-import { useRouter } from "next/navigation";
 import { loginUser } from "@/store/auth/authSlice";
-import Link from "next/link";
+import { stopLoading } from "@/store/loading/loadingSlice";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
 const isValidEmail = (email: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -19,7 +19,12 @@ export default function LoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useLoadingRouter();
+
+  // 페이지 이동 완료 시 로딩 종료
+  useEffect(() => {
+    dispatch(stopLoading());
+  }, [dispatch]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -221,9 +226,14 @@ export default function LoginForm({
               </div>
               <div className="text-center text-sm">
                 계정이 없으신가요?{" "}
-                <Link href="/register" className="underline underline-offset-4">
+                <a
+                  className="underline underline-offset-4"
+                  onClick={() => {
+                    router.push("/register");
+                  }}
+                >
                   Sign up
-                </Link>
+                </a>
               </div>
             </div>
           </form>

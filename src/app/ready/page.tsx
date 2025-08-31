@@ -1,5 +1,6 @@
 "use client";
 
+import Loading from "@/components/loading/Loading";
 import DifficultyLevelComponent from "@/components/ready/DifficultyLevelComponent";
 import DocumentUploadForm from "@/components/ready/DocumentUploadForm";
 import InterviewTypeSelector from "@/components/ready/InterviewTypeSelector";
@@ -7,13 +8,15 @@ import JobSelectorForm from "@/components/ready/JobSelectorForm";
 import LanguageSelectComponent from "@/components/ready/LanguageSelectComponent";
 import QuestionCountDropdown from "@/components/ready/QuestionCountDropdown";
 import ReadyStepBar from "@/components/ready/readyStepBar";
+import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import {
   firstQuestionBody,
   getFirstQuestion,
 } from "@/store/interview/interviewSlice";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { stopLoading } from "@/store/loading/loadingSlice";
+import { Suspense, useEffect, useState } from "react";
 
 // 면접 형식 타입
 export type InterviewType = "PERSONALITY" | "TECHNICAL" | "MIXED";
@@ -32,8 +35,12 @@ const ReadyPage = () => {
   const { currentQuestion, status, error, interviewId, currentSeq } =
     useAppSelector((state) => state.interview);
 
-  // 리다이렉션 라우터
-  const router = useRouter();
+  useEffect(() => {
+    dispatch(stopLoading());
+  }, [dispatch]);
+
+  // 라우터 커스텀 훅
+  const router = useLoadingRouter();
 
   // 단계 상태
   const [step, setStep] = useState(1);
@@ -212,8 +219,8 @@ const ReadyPage = () => {
               <div
                 className={`flex items-center justify-center flex-1 rounded-xl border-2 border-solid cursor-pointer transition duration-200 ${
                   interviewMode === "STATIC"
-                    ? "bg-blue-500 text-white"
-                    : "bg-white"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-background"
                 }`}
                 key={"STATIC"}
                 onClick={() => {
@@ -226,8 +233,8 @@ const ReadyPage = () => {
               <div
                 className={`flex items-center justify-center flex-1 rounded-xl border-2 border-solid cursor-pointer transition duration-200 ${
                   interviewMode === "DYNAMIC"
-                    ? "bg-blue-500 text-white"
-                    : "bg-white"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-background"
                 }`}
                 key={"DYNAMIC"}
                 onClick={() => {
@@ -281,47 +288,49 @@ const ReadyPage = () => {
   };
 
   return (
-    <div className="w-screen flex flex-col items-center h-screen overflow-y-auto">
-      {/** 준비 단계 바 */}
-      <ReadyStepBar step={step} handleChangeStep={handleChangeStep} />
+    <Suspense fallback={<Loading message="페이지 불러오는 중..." />}>
+      <div className="w-screen bg-background flex flex-col items-center h-screen overflow-y-auto">
+        {/** 준비 단계 바 */}
+        <ReadyStepBar step={step} handleChangeStep={handleChangeStep} />
 
-      {/** 폼 컨테이너 */}
-      <div className="container min-w-xl flex flex-grow flex-col justify-center items-center gap-5">
-        {renderStepComponent()}
-      </div>
+        {/** 폼 컨테이너 */}
+        <div className="container min-w-xl flex flex-grow flex-col justify-center items-center gap-5">
+          {renderStepComponent()}
+        </div>
 
-      {/** 이전, 다음 버튼 */}
-      <div className="flex w-full max-w-lg justify-between py-10 px-4">
-        {step !== 1 ? (
-          <button
-            className="flex items-center bg-white border-[1px] border-black text-gray-600 gap-1 px-4 py-2 cursor-pointer font-semibold tracking-widest rounded-md hover:bg-gray-100 duration-300 hover:gap-2 hover:-translate-x-2"
-            onClick={prevStepHandler}
-          >
-            이전
-          </button>
-        ) : (
-          <div />
-        )}
+        {/** 이전, 다음 버튼 */}
+        <div className="flex w-full max-w-lg justify-between py-10 px-4">
+          {step !== 1 ? (
+            <Button
+              className="flex items-center gap-1 px-4 py-2 cursor-pointer font-semibold tracking-widest rounded-md duration-300 hover:gap-2"
+              onClick={prevStepHandler}
+            >
+              이전
+            </Button>
+          ) : (
+            <div />
+          )}
 
-        {step !== 5 ? (
-          <button
-            className="flex items-center bg-blue-500 text-white gap-1 px-4 py-2 cursor-pointer font-semibold tracking-widest rounded-md hover:bg-blue-400 duration-300 hover:gap-2 hover:translate-x-2"
-            onClick={nextStepHandler}
-          >
-            다음
-          </button>
-        ) : (
-          <button
-            className="flex items-center bg-green-500 text-white gap-1 px-4 py-2 cursor-pointer font-semibold tracking-widest rounded-md hover:bg-green-600 duration-300
+          {step !== 5 ? (
+            <Button
+              className="flex items-center gap-1 px-4 py-2 cursor-pointer font-semibold tracking-widest rounded-md duration-300 hover:gap-2"
+              onClick={nextStepHandler}
+            >
+              다음
+            </Button>
+          ) : (
+            <button
+              className="flex items-center bg-green-500 text-white gap-1 px-4 py-2 cursor-pointer font-semibold tracking-widest rounded-md hover:bg-green-600 duration-300
             disabled:bg-gray-400"
-            onClick={goToInterviewPage}
-            disabled={loading}
-          >
-            {loading ? "파일 업로드 중..." : "카메라&마이크 테스트"}
-          </button>
-        )}
+              onClick={goToInterviewPage}
+              disabled={loading}
+            >
+              {loading ? "파일 업로드 중..." : "카메라&마이크 테스트"}
+            </button>
+          )}
+        </div>
       </div>
-    </div>
+    </Suspense>
   );
 };
 

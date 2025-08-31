@@ -1,4 +1,5 @@
 import { InterviewType } from "@/app/ready/page";
+import { Card } from "@/components/ui/card";
 
 interface InterviewTypeSelectorProps {
   selectedType: string;
@@ -12,13 +13,6 @@ const typeMap: Record<InterviewType, string> = {
   MIXED: "혼합 면접",
 };
 
-// 각 면접 타입 색상 맵
-const colorMap: Record<InterviewType, string> = {
-  PERSONALITY: "bg-[#D1E7DD] border-[#A8D8B9] border-[3px]",
-  TECHNICAL: "bg-[#B3CDE0] border-[#AEC6CF] border-[3px]",
-  MIXED: "bg-[#D3D3D3] border-[#C3B1E1] border-[3px]",
-};
-
 const InterviewTypeSelector = ({
   selectedType,
   handleTypeChange,
@@ -28,15 +22,15 @@ const InterviewTypeSelector = ({
   return (
     <div className="flex lg:flex-row flex-col gap-10 w-4/6 h-full mt-4">
       {keys.map((key) => (
-        <div
+        <Card
           key={key}
           onClick={() => handleTypeChange(key)}
           className={`flex items-center justify-center flex-1 border-[1px] border-solid rounded-xl shadow-lg
             cursor-pointer transition-color duration-500 hover:scale-105 h-full
-            ${selectedType === key ? `${colorMap[key]}` : "bg-white"}`}
+            ${selectedType === key ? `bg-primary text-primary-foreground` : ""}`}
         >
           <span className="text-2xl font-bold">{typeMap[key]}</span>
-        </div>
+        </Card>
       ))}
     </div>
   );

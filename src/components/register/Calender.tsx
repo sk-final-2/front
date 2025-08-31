@@ -28,7 +28,7 @@ export default function BirthCalendar({
   const [date, setDate] = React.useState<Date | undefined>(undefined);
 
   return (
-    <div className="flex flex-col gap-3 flex-1">
+    <div className="flex flex-col gap-3 flex-1 w-full">
       <Label htmlFor="date" className="px-1">
         생년월일
       </Label>
@@ -37,7 +37,7 @@ export default function BirthCalendar({
           <Button
             variant="outline"
             id="date"
-            className="w-48 justify-between font-normal"
+            className="w-full justify-between font-normal"
           >
             {date ? formatDate(date) : "생년월일 선택"}
             <ChevronDownIcon />

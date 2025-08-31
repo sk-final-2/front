@@ -14,10 +14,11 @@ import {
 } from "@/lib/mediaDevices";
 import UserVideo from "@/components/interview/UserVideo";
 import AudioRecoder from "@/components/media-check/AudioRecoder";
-import { useRouter } from "next/navigation";
+import { stopLoading } from "@/store/loading/loadingSlice";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
 export default function MediaCheckPage() {
-  const router = useRouter();
+  const router = useLoadingRouter();
   const dispatch = useAppDispatch();
   const { selectedVideoDeviceId, selectedAudioDeviceId, preferredVideo } =
     useAppSelector((s) => s.media);
@@ -26,6 +27,10 @@ export default function MediaCheckPage() {
   const [audios, setAudios] = useState<DeviceOption[]>([]);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    dispatch(stopLoading());
+  }, [dispatch]);
 
   // 장치 목록 로드
   useEffect(() => {

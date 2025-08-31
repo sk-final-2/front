@@ -9,7 +9,6 @@ import TotalEvaluationComponent from "@/components/result/TotalEvaluationCompone
 import TotalGraphComponent from "@/components/result/TotalGraphComponent";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
-import { getInterviewResult } from "@/store/interview/resultSlice";
 import Link from "next/link";
 import { Suspense, useEffect, useState, useMemo } from "react";
 
@@ -47,13 +46,6 @@ const ResultPage = () => {
     setCurrentSeq(seq);
   };
 
-  if (status === "failed" ) {
-    {
-      /** TODO: 나중에 오류 페이지 만들어서 띄워줄 것! */
-    }
-    return <>{error}</>;
-  }
-
   // ✅ 번호 리스트 생성 로직
   const seqList = useMemo(() => {
     // 정적: count가 양수면 1..count
@@ -73,19 +65,16 @@ const ResultPage = () => {
   useEffect(() => {
     if (seqList.length === 0) return;
     if (!seqList.includes(currentSeq)) {
-      setCurrentSeq(seqs => (seqList.includes(seqs) ? seqs : seqList[0]));
+      setCurrentSeq((seqs) => (seqList.includes(seqs) ? seqs : seqList[0]));
     }
   }, [seqList, currentSeq]);
 
-  // 현재 seq에 해당하는 분석 찾기 (동적에서도 안전)
-  const currentAnalysis = useMemo(() => {
-    if (!answerAnalyses || answerAnalyses.length === 0) return undefined;
-    // 우선 seq로 찾고, 없으면 인덱스 폴백
-    return (
-      answerAnalyses.find((a) => a?.seq === currentSeq) ||
-      answerAnalyses[seqList.indexOf(currentSeq)]
-    );
-  }, [answerAnalyses, currentSeq, seqList]);
+  if (status === "failed") {
+    {
+      /** TODO: 나중에 오류 페이지 만들어서 띄워줄 것! */
+    }
+    return <>{error}</>;
+  }
 
   return (
     <div className="flex-col justify-center overflow-y-scroll overflow-x-hidden">

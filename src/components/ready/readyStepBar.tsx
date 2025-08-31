@@ -37,8 +37,8 @@ const ReadyStepBar = ({ step, handleChangeStep }: ReadyStepBarProps) => {
                 className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-700
                                     ${
                                       isActive || isCompleted
-                                        ? "bg-blue-500 text-white scale-115"
-                                        : "bg-gray-300 text-gray-600"
+                                        ? "bg-primary text-primary-foreground scale-115"
+                                        : "bg-muted text-muted-foreground"
                                     }`}
               >
                 <span>{stepNumber}</span>

@@ -1,6 +1,7 @@
 "use client";
 
 import { careerData, jobData } from "@/data/jobs";
+import { Card } from "@/components/ui/card";
 
 interface JobSelectorFormProps {
   selectedCategory: string;
@@ -35,16 +36,16 @@ const JobSelectorForm = ({
 
   return (
     <div>
-      <div className="w-full min-w-md max-w-lg space-y-6 rounded-lg bg-white p-8 shadow-lg">
+      <Card className="w-full min-w-md max-w-lg rounded-lg p-8 shadow-lg">
         {/** 직무 선택 드롭다운 */}
-        <h2 className="text-center text-2xl font-bold text-gray-800">
+        <h2 className="m-0 text-center text-2xl font-bold text-foreground">
           직무 & 경력 선택
         </h2>
 
-        <div className="space-y-2">
+        <div className="m-0">
           <label
             htmlFor="job-category"
-            className="block font-semibold text-gray-700"
+            className="block font-semibold text-foreground"
           >
             직군 선택
           </label>
@@ -52,7 +53,7 @@ const JobSelectorForm = ({
             id="job-category"
             value={selectedCategory}
             onChange={handleCategoryChange}
-            className="w-full rounded-md border border-gray-300 p-3 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+            className="w-full bg-background rounded-md border border-gray-300 p-3 text-foreground focus:border-primary focus:ring-ring"
           >
             <option value="">-- 직군을 선택하세요 --</option>
             {Object.keys(jobData).map((category) => (
@@ -64,10 +65,10 @@ const JobSelectorForm = ({
         </div>
 
         {/** 세부 직무 드롭다운 */}
-        <div className="space-y-2">
+        <div className="m-0">
           <label
             htmlFor="job-detail"
-            className="block font-semibold text-gray-700"
+            className="block font-semibold text-foreground"
           >
             세부 직무 선택
           </label>
@@ -77,7 +78,7 @@ const JobSelectorForm = ({
             onChange={handleJobChange}
             // 직무가 선택되지 않았다면 비활성화 상태로 만듭니다.
             disabled={!selectedCategory}
-            className="w-full rounded-md border border-gray-300 p-3 text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+            className="w-full bg-background rounded-md border border-gray-300 p-3 text-foreground focus:border-primary focus:ring-ring disabled:cursor-not-allowed disabled:bg-muted"
           >
             <option value="">-- 세부 직무를 선택하세요 --</option>
             {subCategories.map((job) => (
@@ -89,15 +90,18 @@ const JobSelectorForm = ({
         </div>
 
         {/** 경력 드롭다운 */}
-        <div>
-          <label htmlFor="career" className="block font-semibold text-gray-700">
+        <div className="m-0">
+          <label
+            htmlFor="career"
+            className="block font-semibold text-foreground"
+          >
             경력 선택
           </label>
           <select
             id="career"
             value={career}
             onChange={handleCareerChange}
-            className="w-full rounded-md border border-gray-300 p-3 text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+            className="w-full bg-background rounded-md border border-gray-300 p-3 text-foreground focus:border-primary focus:ring-ring disabled:cursor-not-allowed disabled:bg-gray-100"
           >
             <option value="">-- 경력을 선택하세요 --</option>
             {careerData.map((career) => (
@@ -109,16 +113,16 @@ const JobSelectorForm = ({
         </div>
 
         {/* 최종 선택 결과 표시 */}
-        {selectedJob && career && (
-          <div className="mt-6 rounded-md bg-blue-50 p-4 text-center">
-            <p className="font-semibold text-black">
+        {/* {selectedJob && career && (
+          <div className="m-0 rounded-md bg-background p-4 text-center">
+            <p className="font-semibold text-foreground">
               선택하신 직무는{" "}
               <span className="text-blue-700 font-bold">{selectedJob}</span>{" "}
               <span className="text-green-700 font-bold">{career}</span> 입니다.
             </p>
           </div>
-        )}
-      </div>
+        )} */}
+      </Card>
     </div>
   );
 };

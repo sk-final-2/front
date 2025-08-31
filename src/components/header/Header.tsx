@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { logout, logoutUser } from "@/store/auth/authSlice";
+import { logoutUser } from "@/store/auth/authSlice";
 import { useAppDispatch } from "@/hooks/storeHook";
 import Image from "next/image";
 import { SidebarTrigger } from "../ui/sidebar";
@@ -41,13 +41,13 @@ export default function MainHeader() {
   };
 
   return (
-    <header className="p-4 flex justify-between items-center fixed left-0 right-0 z-10 bg-background shadow-lg">
+    <header className="p-4 flex justify-between items-center fixed left-0 right-0 z-9 bg-background shadow-lg">
       <Image
         src="/REAI.png"
         alt="icon"
         width={60}
         height={20}
-        onClick={() => router.push("/")}
+        onClick={() => router.replace("/")}
         className="cursor-pointer bg-transparent"
       ></Image>
 

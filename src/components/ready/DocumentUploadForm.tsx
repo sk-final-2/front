@@ -49,7 +49,7 @@ const DocumentUploadForm = ({
           });
           const res = await client.post("/api/interview/ocr", formData);
           if (res.status === 200) {
-            console.log(res)
+            console.log(res);
             handleFileText(res.data.data.ocrOutput);
             setFileName(file.name);
             onUploadComplete(file);
@@ -76,7 +76,7 @@ const DocumentUploadForm = ({
 
   if (loading) {
     return (
-      <div className="flex min-w-md flex-1 items-center justify-center rounded-lg border-zinc-300 bg-white px-6 py-10">
+      <div className="flex min-w-md flex-1 items-center justify-center rounded-lg border-zinc-300 bg-background px-6 py-10">
         <div className="flex flex-col items-center justify-center gap-5">
           <div className="flex flex-row gap-3">
             <div className="h-4 w-4 animate-bounce rounded-full bg-blue-700 [animation-delay:.3s]"></div>
@@ -98,15 +98,15 @@ const DocumentUploadForm = ({
         <div className="min-w-md">
           <label
             htmlFor="file-upload"
-            className="group flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 bg-white px-6 py-10 transition-colors hover:border-blue-500 hover:bg-blue-50"
+            className="group flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 bg-background px-6 py-10 transition-colors hover:border-ring hover:bg-secondary"
           >
             <div className="space-y-4 text-center">
-              <FiUpload className="mx-auto h-10 w-10 text-zinc-400 transition-colors group-hover:text-blue-500" />
+              <FiUpload className="mx-auto h-10 w-10 text-foreground transition-colors group-hover:text-primary" />
               <div className="space-y-1">
-                <p className="font-semibold text-zinc-700">
+                <p className="font-semibold text-foreground">
                   파일을 드래그하거나 클릭하여 업로드하세요
                 </p>
-                <p className="text-sm text-zinc-500 ">
+                <p className="text-sm text-foreground ">
                   PDF, DOCS, TXT up to 10MB
                 </p>
               </div>
@@ -122,7 +122,7 @@ const DocumentUploadForm = ({
           />
 
           {fileName && (
-            <div className="mt-4 rounded-md bg-zinc-100 p-3 text-sm font-medium text-zinc-700">
+            <div className="mt-4 rounded-md bg-zinc-100 p-3 text-sm font-medium text-foreground">
               <p>선택된 파일: {fileName}</p>
             </div>
           )}
@@ -131,23 +131,23 @@ const DocumentUploadForm = ({
         <>
           {/** 파일 업로드 후 */}
           <div className="min-w-md">
-            <div className="flex flex-col gap-5 justify-center items-center w-full h-[15rem] bg-gray-50 border-2 border-gray-600 rounded-2xl">
+            <div className="flex flex-col gap-5 justify-center items-center w-full h-[15rem] bg-background border-2 border-gray-600 rounded-2xl">
               <div>
                 현재 업로드된 파일 :{" "}
-                <span className="text-lg font-bold text-blue-500">
+                <span className="text-lg font-bold text-primary">
                   {fileName}
                 </span>
               </div>
               <label
                 htmlFor="file-upload"
-                className="group w-5/6 flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 bg-white px-6 py-10 transition-colors hover:border-blue-500 hover:bg-blue-50"
+                className="group w-5/6 flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 bg-background px-6 py-10 transition-colors hover:border-blue-500 hover:bg-secondary"
               >
                 <div className="space-y-4 text-center">
                   <div className="space-y-1">
-                    <p className="font-semibold text-zinc-700">
+                    <p className="font-semibold text-foreground">
                       다른 파일 업로드하기
                     </p>
-                    <p className="text-sm text-zinc-500 ">
+                    <p className="text-sm text-foreground ">
                       PDF, DOCS, TXT up to 10MB
                     </p>
                   </div>

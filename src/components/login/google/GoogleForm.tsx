@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useEffect, useState, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
-import { useRouter } from "next/navigation";
 import { googleSignup } from "@/store/auth/authSlice";
 import { useSearchParams } from "next/navigation";
 import React from "react";
@@ -23,6 +22,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+import { stopLoading } from "@/store/loading/loadingSlice";
 
 interface DaumPostcodeData {
   zonecode: string;
@@ -50,6 +51,12 @@ export default function GoogleForm({
   ...props
 }: React.ComponentProps<"div">) {
   const dispatch = useAppDispatch();
+    const router = useLoadingRouter();
+  
+    // 페이지 이동 완료 시 로딩 종료
+    useEffect(() => {
+      dispatch(stopLoading());
+    }, [dispatch]);
 
   const searchParams = useSearchParams();
   const [userInfo, setUserInfo] = useState({
@@ -64,8 +71,6 @@ export default function GoogleForm({
   const [address2, setAddress2] = useState("");
 
   const addressRef = useRef<HTMLInputElement>(null);
-
-  const router = useRouter();
 
   // Redux 상태
   const authState = useAppSelector((state) => state.auth.state);
@@ -266,7 +271,7 @@ export default function GoogleForm({
                   <AlertDialogFooter>
                     <AlertDialogAction
                       onClick={() => {
-                        router.push("/");
+                        router.replace("/login");
                       }}
                     >
                       OK

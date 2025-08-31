@@ -4,11 +4,13 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useRef, useState } from "react";
 import apiClient from "@/lib/axios";
-import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import BirthCalendar from "./Calender";
+import { useAppDispatch } from "@/hooks/storeHook";
+import { stopLoading } from "@/store/loading/loadingSlice";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
 const formatTime = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
@@ -46,7 +48,13 @@ const genderData = [
 ];
 
 export default function RegisterForm() {
-  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const router = useLoadingRouter();
+
+  // 페이지 이동 완료 시 로딩 종료
+  useEffect(() => {
+    dispatch(stopLoading());
+  }, [dispatch]);
 
   // 폼 데이터 상태
   const [formData, setFormData] = useState({
