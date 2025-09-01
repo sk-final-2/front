@@ -8,7 +8,14 @@
  * - DeviceSettings 컴포넌트 및 관련 로직(토글/일시정지) 전부 제거
  */
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 // ⬇️ 변경: getNextQuestion 대신 래퍼 thunk 사용
 import { submitAnswerAndMaybeEnd } from "@/store/interview/interviewSlice";
@@ -97,7 +104,7 @@ export default function InterviewPage() {
   }, []);
 
   const showControls =
-  !isTtsPlaying && !finishing && !awaitingNext && !!currentQuestion;
+    !isTtsPlaying && !finishing && !awaitingNext && !!currentQuestion;
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -446,63 +453,87 @@ export default function InterviewPage() {
   }
 
   return (
-  <Suspense>
-    {/* ⬅︎ 전체 화면 배경을 푸른색, 한 화면 고정 */}
-    <div className="min-h-[100svh] bg-primary/10 overflow-hidden">
-      {/* ⬅︎ 가운데 고정(좌우 여백), 한 화면 그리드: [질문 | 패널(나머지 전부)] */}
-      <section className="mx-auto w-full max-w-screen-lg min-h-[100svh] grid grid-rows-[auto,1fr] gap-4 p-6">
+    <Suspense>
+      {/* ⬅︎ 전체 화면 배경을 푸른색, 한 화면 고정 */}
+      <div className="min-h-[100svh] bg-primary/10 overflow-hidden">
+        {/* ⬅︎ 가운데 고정(좌우 여백), 한 화면 그리드: [질문 | 패널(나머지 전부)] */}
+        <section className="mx-auto w-full max-w-screen-lg min-h-[100svh] grid grid-rows-[auto,1fr] gap-4 p-6">
+          {/* 질문 표시 */}
+          {awaitingNext && !isFinished && !finishing ? (
+            <div
+              className="h-14 rounded-md bg-gray-100 animate-pulse"
+              aria-busy="true"
+            />
+          ) : (
+            <QuestionDisplay seq={currentSeq} question={currentQuestion} />
+          )}
 
-        {/* 질문 표시 */}
-        {awaitingNext && !isFinished && !finishing ? (
-          <div className="h-14 rounded-md bg-gray-100 animate-pulse" aria-busy="true" />
-        ) : (
-          <QuestionDisplay seq={currentSeq} question={currentQuestion} />
-        )}
-
-        {/* TTS */}
-        <TtsComponent
-          text={currentQuestion ?? ""}
-          autoPlay
-          onStart={() => { setIsTtsPlaying(true); setQuestionStarted(false); }}
-          onEnd={() => { setIsTtsPlaying(false); setQuestionStarted(true); setTtsAmp(0); }}
-          onError={() => { setIsTtsPlaying(false); setQuestionStarted(true); setTtsAmp(0); }}
-          onEnergy={(amp) => setTtsAmp((prev) => Math.max(amp, prev * 0.7))}
-        />
-
-        {/* ▼ 질문 제외 전체를 감싸는 패널 (흰색) */}
-        <InterviewPanel tone="solid">
-          {/* 1) 화면 전환 스테이지: 남는 높이 중 52~54svh만 사용 → 스크롤 없음 */}
-          <VideoSwapStage
-            className="h-[52svh] md:h-[54svh] w-full rounded-2xl bg-white"
-            userStream={stream}
-            talking={isTtsPlaying}
-            amp={ttsAmp}
-            pipPositionClassName="top-3 right-3"
-            isTtsPlaying={isTtsPlaying}
+          {/* TTS */}
+          <TtsComponent
+            text={currentQuestion ?? ""}
+            autoPlay
+            onStart={() => {
+              setIsTtsPlaying(true);
+              setQuestionStarted(false);
+            }}
+            onEnd={() => {
+              setIsTtsPlaying(false);
+              setQuestionStarted(true);
+              setTtsAmp(0);
+            }}
+            onError={() => {
+              setIsTtsPlaying(false);
+              setQuestionStarted(true);
+              setTtsAmp(0);
+            }}
+            onEnergy={(amp) => setTtsAmp((prev) => Math.max(amp, prev * 0.7))}
           />
 
-          {/* 2) 시간바 */}
-          <TimeBar totalSec={timeTotal} leftSec={timeLeft} visible={showControls} reserveSpace fadeMs={300} />
+          {/* ▼ 질문 제외 전체를 감싸는 패널 (흰색) */}
+          <InterviewPanel tone="solid">
+            {/* 1) 화면 전환 스테이지: 남는 높이 중 52~54svh만 사용 → 스크롤 없음 */}
+            <div className="w-full mx-auto max-w-[calc(52svh*16/9)] md:max-w-[calc(54svh*16/9)]">
+              <VideoSwapStage
+                // 높이 강제 클래스 제거하고, 16:9는 내부에서 유지
+                className="w-full"
+                userStream={stream}
+                talking={isTtsPlaying}
+                amp={ttsAmp}
+                pipPositionClassName="top-3 right-3"
+                isTtsPlaying={isTtsPlaying}
+              />
+            </div>
 
-          {/* 3) 면접팁 + 레코딩컨트롤 */}
-          <TipsAndControls
-            tips={interviewTips}
-            showControls={showControls}
-            stream={stream}
-            questionStarted={questionStarted}
-            onAutoSubmit={handleSubmit}
-            onManualSubmit={handleSubmit}
-            onTimeInit={(total) => { setTimeTotal(total); setTimeLeft(total); }}
-            onTimeTick={(left) => setTimeLeft(left)}
-          />
-          
-              {awaitingNext && !isFinished && !finishing && (
-                <Loading message="다음 질문을 준비 중이에요..." />
-              )}
-        </InterviewPanel>
-      </section>
-    </div>
-  </Suspense>
-);
+            {/* 2) 시간바 */}
+            <TimeBar
+              totalSec={timeTotal}
+              leftSec={timeLeft}
+              visible={showControls}
+              reserveSpace
+              fadeMs={300}
+            />
 
+            {/* 3) 면접팁 + 레코딩컨트롤 */}
+            <TipsAndControls
+              tips={interviewTips}
+              showControls={showControls}
+              stream={stream}
+              questionStarted={questionStarted}
+              onAutoSubmit={handleSubmit}
+              onManualSubmit={handleSubmit}
+              onTimeInit={(total) => {
+                setTimeTotal(total);
+                setTimeLeft(total);
+              }}
+              onTimeTick={(left) => setTimeLeft(left)}
+            />
+
+            {awaitingNext && !isFinished && !finishing && (
+              <Loading message="다음 질문을 준비 중이에요..." />
+            )}
+          </InterviewPanel>
+        </section>
+      </div>
+    </Suspense>
+  );
 }

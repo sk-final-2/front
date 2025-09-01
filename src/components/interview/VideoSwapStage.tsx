@@ -30,14 +30,12 @@ export default function VideoSwapStage({
   isTtsPlaying = false,
   className,
 }: Props) {
-  // 어떤 화면이 메인인지
   const [main, setMain] = useState<"user" | "bot">("bot");
   const swap = useCallback(
     () => setMain((m) => (m === "user" ? "bot" : "user")),
     [],
   );
 
-  // 반응형 PiP 너비 (w-28 → md:w-44 → xl:w-56)
   const pipSizeClass = useMemo(
     () => "w-28 sm:w-32 md:w-44 xl:w-56 aspect-video",
     [],
@@ -46,8 +44,8 @@ export default function VideoSwapStage({
   return (
     <section
       className={[
-        // ⬇️ 배경을 확실히 흰색으로, 외부에서 사이즈/높이 제어 가능
-        "relative w-full rounded-2xl overflow-hidden bg-white shadow-sm",
+        // ✅ 항상 16:9
+        "relative w-full aspect-video rounded-2xl overflow-hidden bg-white shadow-sm",
         className ?? "",
       ].join(" ")}
       aria-label="Interview stage"
@@ -61,14 +59,14 @@ export default function VideoSwapStage({
       >
         <div className="absolute inset-0">
           {main === "user" ? (
-            // ✅ 메인 전환 시: 원본 비율 그대로(레터/필러박스 허용)
-            <UserVideo stream={userStream} mode="main" />
+            <UserVideo stream={userStream} className="h-full" fit="contain" />
           ) : (
             <InterviewerView talking={talking} amp={amp} />
           )}
         </div>
       </button>
 
+      {/* PiP */}
       <button
         type="button"
         onClick={swap}
@@ -84,16 +82,18 @@ export default function VideoSwapStage({
           {main === "user" ? (
             <InterviewerView talking={talking} amp={amp} />
           ) : (
-            // ✅ PiP는 기존처럼 16:9 박스 안에서 cover
-            <UserVideo stream={userStream} mode="pip" />
+            <UserVideo
+              stream={userStream}
+              className="aspect-video"
+              fit="cover"
+            />
           )}
         </div>
       </button>
 
-      {/* 하단 가이드 배지 (접근성 + 안내) */}
+      {/* 하단 가이드 */}
       <div className="absolute left-3 bottom-3 px-2.5 py-1.5 rounded-md bg-black/45 text-white text-[11px] sm:text-xs">
-        화면을 클릭하면 전환돼요
-        {isTtsPlaying ? " (질문 읽는 중)" : ""}
+        화면을 클릭하면 전환돼요{isTtsPlaying ? " (질문 읽는 중)" : ""}
       </div>
     </section>
   );
