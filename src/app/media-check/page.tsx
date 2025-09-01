@@ -5,7 +5,6 @@ import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 import {
   setSelectedAudioDeviceId,
   setSelectedVideoDeviceId,
-  setPreferredVideo,
 } from "@/store/media/mediaSlice";
 import {
   ensurePermission,
@@ -19,7 +18,8 @@ import { useRouter } from "next/navigation";
 export default function MediaCheckPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { selectedVideoDeviceId, selectedAudioDeviceId, preferredVideo } =
+
+  const { selectedVideoDeviceId, selectedAudioDeviceId } =
     useAppSelector((s) => s.media);
 
   const [videos, setVideos] = useState<DeviceOption[]>([]);
@@ -27,120 +27,69 @@ export default function MediaCheckPage() {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // 장치 목록 로드
+  // 1) 장치 목록: 최초 1회만
   useEffect(() => {
     let mounted = true;
-
     (async () => {
       try {
-        await ensurePermission(); // 권한 유도(허용 상태면 no-op)
+        await ensurePermission();
         const { videos, audios } = await listDevices();
-
-        console.log("[DEBUG MEDIA] available videos:", videos);
-        console.log("[DEBUG MEDIA] available audios:", audios);
-
         if (!mounted) return;
+
         setVideos(videos);
         setAudios(audios);
 
-        // 기본 선택 자동 지정 (처음 진입 시)
         if (!selectedVideoDeviceId && videos[0]) {
           dispatch(setSelectedVideoDeviceId(videos[0].deviceId));
         }
         if (!selectedAudioDeviceId && audios[0]) {
           dispatch(setSelectedAudioDeviceId(audios[0].deviceId));
         }
-      } catch (e) {
-        console.error(e);
-        if (mounted)
-          setError("장치 목록을 불러오지 못했습니다. 권한을 확인해주세요.");
+      } catch {
+        if (mounted) setError("장치 목록을 불러오지 못했습니다. 권한을 확인해주세요.");
       }
     })();
+    return () => { mounted = false; };
+    // 👇 레이스 방지 위해 의존성 비움(최초 1회)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    return () => {
-      mounted = false;
-    };
-  }, [dispatch, selectedVideoDeviceId, selectedAudioDeviceId]);
-
-  // 선택값/해상도에 맞춰 미리보기 스트림 열기
+  // 2) 스트림 열기: 장치 선택이 확정된 뒤에만
   useEffect(() => {
+    if (!selectedVideoDeviceId) return;
+
     let cancelled = false;
     let local: MediaStream | null = null;
 
     (async () => {
       try {
-        const videoConstraints: MediaTrackConstraints = selectedVideoDeviceId
-          ? {
-              deviceId: { exact: selectedVideoDeviceId },
-              width: preferredVideo?.width ?? { ideal: 1280 },
-              height: preferredVideo?.height ?? { ideal: 720 },
-              frameRate: preferredVideo?.frameRate ?? { ideal: 30 },
-            }
-          : {
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
-              frameRate: { ideal: 30 },
-            };
+        const video: MediaTrackConstraints = {
+          deviceId: { exact: selectedVideoDeviceId },
+        };
+        const audio: MediaTrackConstraints = selectedAudioDeviceId
+          ? { deviceId: { exact: selectedAudioDeviceId }, echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+          : { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
 
-        const audioConstraints: MediaTrackConstraints = selectedAudioDeviceId
-          ? {
-              deviceId: { exact: selectedAudioDeviceId },
-              echoCancellation: true,
-              noiseSuppression: true,
-              autoGainControl: true,
-            }
-          : {
-              echoCancellation: true,
-              noiseSuppression: true,
-              autoGainControl: true,
-            };
+        local = await navigator.mediaDevices.getUserMedia({ video, audio });
+        if (cancelled) { local.getTracks().forEach(t => t.stop()); return; }
 
-        // ⬇⬇⬇ 호출 “직전” constraints 로그
-        console.log("[DEBUG MEDIA] preview constraints", {
-          video: videoConstraints,
-          audio: audioConstraints,
-        }); // ⬅ 로그
-
-        local = await navigator.mediaDevices.getUserMedia({
-          video: videoConstraints,
-          audio: audioConstraints,
+        setStream(prev => {
+          prev?.getTracks().forEach(t => t.stop());
+          return local!;
         });
-
-        // ⬇⬇⬇ 성공 “직후” opened track 로그
-        const v = local.getVideoTracks()[0];
-        const a = local.getAudioTracks()[0];
-        console.log("[DEBUG MEDIA] preview videoTrack.label:", v?.label); // ⬅ 로그
-        console.log("[DEBUG MEDIA] preview audioTrack.label:", a?.label); // ⬅ 로그
-        console.log(
-          "[DEBUG MEDIA] preview videoTrack.settings:",
-          v?.getSettings?.(),
-        ); // ⬅ 로그
-        console.log(
-          "[DEBUG MEDIA] preview audioTrack.settings:",
-          a?.getSettings?.(),
-        ); // ⬅ 로그
-
-        if (cancelled) {
-          local.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        setStream(local);
         setError(null);
       } catch (e) {
         console.error(e);
-        setError("선택한 장치로 미리보기를 시작할 수 없습니다.");
+        setError("카메라/마이크를 시작할 수 없습니다. 권한과 연결을 확인해주세요.");
       }
     })();
 
     return () => {
       cancelled = true;
-      setStream((prev) => {
-        prev?.getTracks().forEach((t) => t.stop());
-        return null;
-      });
-      local?.getTracks().forEach((t) => t.stop());
+      setStream(prev => { prev?.getTracks().forEach(t => t.stop()); return null; });
+      local?.getTracks().forEach(t => t.stop());
     };
-  }, [selectedVideoDeviceId, selectedAudioDeviceId, preferredVideo]);
+  }, [selectedVideoDeviceId, selectedAudioDeviceId]);
 
   const goInterview = useCallback(() => {
     router.replace("/interview");
@@ -150,114 +99,70 @@ export default function MediaCheckPage() {
     <div className="bg-white min-h-screen p-6">
       <h1 className="text-2xl font-bold">장비 확인 및 테스트</h1>
 
+      {/* 안내 문구: 해상도/비율은 신경쓰지 말라는 정책 */}
+      <p className="mt-2 text-sm text-gray-600">
+        이 페이지에서는 화면 비율 및 해상도를 신경 쓰지 않으셔도 됩니다. 카메라가 잘 보이는지와 마이크가 녹음되는지만 확인해 주세요.
+        (면접 화면에서 비율과 해상도는 자동으로 최적화됩니다)
+      </p>
+
       {/* 미리보기 + 마이크 테스트 */}
-      <div className="mt-6 flex flex-col md:flex-row gap-6">
+      <div className="mt-6 flex flex-col md:flex-row gap-6 items-start">
+        {/* 카메라 프리뷰: 크롭/확대 없이 안정 표시 */}
         <div className="w-full md:flex-[3]">
-          <UserVideo stream={stream} />
-        </div>
-        <div>
-          {/* 선택 UI */}
-          <div className="flex flex-[2] flex-col gap-5">
-            <label className="flex flex-col gap-2">
-              <span className="text-sm text-gray-600">카메라</span>
-              <select
-                className="rounded border p-2"
-                value={selectedVideoDeviceId ?? ""}
-                onChange={(e) => {
-                  dispatch(setSelectedVideoDeviceId(e.target.value || null));
-                  console.log(
-                    "[DEBUG MEDIA] selectedVideoDeviceId ->",
-                    e.target.value,
-                  );
-                }}
-              >
-                {videos.map((v) => (
-                  <option key={v.deviceId} value={v.deviceId}>
-                    {v.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+          {stream ? (
+            <UserVideo stream={stream} className="aspect-video" fit="cover" />
+          ) : (
+            <div
+              className="w-full rounded-xl bg-gray-100 animate-pulse"
+              style={{ aspectRatio: "16 / 9", minHeight: 120 }}
+              aria-busy="true"
+            />
+          )}
 
-            <label className="flex flex-col gap-2">
-              <span className="text-sm text-gray-600">마이크</span>
-              <select
-                className="rounded border p-2"
-                value={selectedAudioDeviceId ?? ""}
-                onChange={(e) => {
-                  dispatch(setSelectedAudioDeviceId(e.target.value || null));
-                  console.log(
-                    "[DEBUG MEDIA] selectedAudioDeviceId ->",
-                    e.target.value,
-                  );
-                }}
-              >
-                {audios.map((a) => (
-                  <option key={a.deviceId} value={a.deviceId}>
-                    {a.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="flex flex-col gap-2">
-              <span className="text-sm text-gray-600">width</span>
-              <input
-                type="number"
-                placeholder="width"
-                className="rounded border p-2"
-                value={preferredVideo?.width ?? 1280}
-                onChange={(e) => {
-                  const next = {
-                    ...preferredVideo,
-                    width: Number(e.target.value) || undefined,
-                  };
-                  dispatch(setPreferredVideo(next));
-                  console.log("[DEBUG MEDIA] preferredVideo ->", next); // ⬅ 로그
-                }}
-              />
-            </label>
-
-            <label className="flex flex-col gap-2">
-              <span className="text-sm text-gray-600">height</span>
-              <input
-                type="number"
-                placeholder="height"
-                className="rounded border p-2"
-                value={preferredVideo?.height ?? 720}
-                onChange={(e) => {
-                  const next = {
-                    ...preferredVideo,
-                    height: Number(e.target.value) || undefined,
-                  };
-                  dispatch(setPreferredVideo(next));
-                  console.log("[DEBUG MEDIA] preferredVideo ->", next); // ⬅ 로그
-                }}
-              />
-            </label>
-
-            <label className="flex flex-col gap-2">
-              <span className="text-sm text-gray-600">fps</span>
-              <input
-                type="number"
-                placeholder="fps"
-                className="rounded border p-2"
-                value={preferredVideo?.frameRate ?? 30}
-                onChange={(e) => {
-                  const next = {
-                    ...preferredVideo,
-                    frameRate: Number(e.target.value) || undefined,
-                  };
-                  dispatch(setPreferredVideo(next));
-                  console.log("[DEBUG MEDIA] preferredVideo ->", next); // ⬅ 로그
-                }}
-              />
-            </label>
-            <AudioRecoder />
+          {/* 간단 상태 배지 */}
+          <div className="mt-2 text-xs">
+            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded ${stream ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>
+              <span className={`inline-block w-2 h-2 rounded-full ${stream ? "bg-emerald-500" : "bg-gray-400"}`} />
+              카메라 {stream ? "정상 출력 중" : "대기 중"}
+            </span>
           </div>
         </div>
+
+        {/* 우측: 장치 선택 + 마이크 테스트 */}
+        <div className="flex flex-col gap-5 md:flex-[2]">
+          <label className="flex flex-col gap-2">
+            <span className="text-sm text-gray-600">카메라</span>
+            <select
+              className="rounded border p-2"
+              value={selectedVideoDeviceId ?? ""}
+              onChange={(e) => dispatch(setSelectedVideoDeviceId(e.target.value || null))}
+            >
+              {videos.map((v) => (
+                <option key={v.deviceId} value={v.deviceId}>{v.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-2">
+            <span className="text-sm text-gray-600">마이크</span>
+            <select
+              className="rounded border p-2"
+              value={selectedAudioDeviceId ?? ""}
+              onChange={(e) => dispatch(setSelectedAudioDeviceId(e.target.value || null))}
+            >
+              {audios.map((a) => (
+                <option key={a.deviceId} value={a.deviceId}>{a.label}</option>
+              ))}
+            </select>
+          </label>
+
+          {/* 마이크 테스트 컴포넌트 그대로 사용 */}
+          <AudioRecoder />
+        </div>
       </div>
+
       {error && <p className="mt-3 text-red-600">{error}</p>}
+
       <div className="mt-6 flex justify-end">
         <button
           onClick={goInterview}
