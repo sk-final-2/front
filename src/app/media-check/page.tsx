@@ -147,7 +147,7 @@ export default function MediaCheckPage() {
   }, [router]);
 
   return (
-    <div className="bg-gray-100 min-h-screen p-6">
+    <div className="bg-white min-h-screen p-6">
       <h1 className="text-2xl font-bold">장비 확인 및 테스트</h1>
 
       {/* 미리보기 + 마이크 테스트 */}
@@ -258,12 +258,14 @@ export default function MediaCheckPage() {
         </div>
       </div>
       {error && <p className="mt-3 text-red-600">{error}</p>}
-      <button
+      <div className="mt-6 flex justify-end">
+        <button
           onClick={goInterview}
-          className="w-full mt-6 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700"
+          className="px-6 py-3 bg-primary/80 text-white rounded-xl hover:bg-blue-700"
         >
           면접 진행하기
         </button>
+      </div>
     </div>
   );
 }

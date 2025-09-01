@@ -165,7 +165,7 @@ const AudioRecoder = () => {
     <div className="flex flex-row gap-5">
       <button
         onClick={handleToggleRecording}
-        className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition shadow-sm"
+        className="p-3 rounded-full bg-white hover:bg-gray-100 transition shadow-sm"
         aria-label={isRecording ? "녹음 정지" : "마이크 테스트"}
         title={isRecording ? "정지" : "테스트"}
       >
