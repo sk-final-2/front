@@ -32,12 +32,15 @@ export default function VideoSwapStage({
 }: Props) {
   // 어떤 화면이 메인인지
   const [main, setMain] = useState<"user" | "bot">("bot");
-  const swap = useCallback(() => setMain((m) => (m === "user" ? "bot" : "user")), []);
+  const swap = useCallback(
+    () => setMain((m) => (m === "user" ? "bot" : "user")),
+    [],
+  );
 
   // 반응형 PiP 너비 (w-28 → md:w-44 → xl:w-56)
   const pipSizeClass = useMemo(
     () => "w-28 sm:w-32 md:w-44 xl:w-56 aspect-video",
-    []
+    [],
   );
 
   return (
@@ -58,14 +61,14 @@ export default function VideoSwapStage({
       >
         <div className="absolute inset-0">
           {main === "user" ? (
-            <UserVideo stream={userStream} />
+            // ✅ 메인 전환 시: 원본 비율 그대로(레터/필러박스 허용)
+            <UserVideo stream={userStream} mode="main" />
           ) : (
             <InterviewerView talking={talking} amp={amp} />
           )}
         </div>
       </button>
 
-      {/* PiP 미리보기 */}
       <button
         type="button"
         onClick={swap}
@@ -81,7 +84,8 @@ export default function VideoSwapStage({
           {main === "user" ? (
             <InterviewerView talking={talking} amp={amp} />
           ) : (
-            <UserVideo stream={userStream} />
+            // ✅ PiP는 기존처럼 16:9 박스 안에서 cover
+            <UserVideo stream={userStream} mode="pip" />
           )}
         </div>
       </button>
