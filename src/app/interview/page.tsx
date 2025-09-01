@@ -8,7 +8,7 @@
  * - DeviceSettings 컴포넌트 및 관련 로직(토글/일시정지) 전부 제거
  */
 
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 // ⬇️ 변경: getNextQuestion 대신 래퍼 thunk 사용
 import { submitAnswerAndMaybeEnd } from "@/store/interview/interviewSlice";
@@ -86,13 +86,15 @@ export default function InterviewPage() {
   const [timeLeft, setTimeLeft] = useState<number>(60);
 
   // 팁 목록
-  const interviewTips = [
-    "답변은 결론 먼저, 근거는 2~3가지로.",
-    "숫자와 성과를 한 줄로 요약해요.",
-    "질문을 되묻기보다 핵심부터 답변.",
-    "STAR 구조(상황-과제-행동-결과)로 말하기.",
-    "30~60초 내 한 토픽만 또렷하게.",
-  ];
+  const interviewTips = useMemo(() => {
+    return [
+      "답변은 결론 먼저, 근거는 2~3가지로.",
+      "숫자와 성과를 한 줄로 요약해요.",
+      "질문을 되묻기보다 핵심부터 답변.",
+      "STAR 구조(상황-과제-행동-결과)로 말하기.",
+      "30~60초 내 한 토픽만 또렷하게.",
+    ];
+  }, []);
 
   const showControls =
   !isTtsPlaying && !finishing && !awaitingNext && !!currentQuestion;
