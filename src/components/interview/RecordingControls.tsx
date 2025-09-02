@@ -7,6 +7,8 @@ interface Props {
   onAutoSubmit: (video: Blob) => void;
   onManualSubmit: (video: Blob) => void;
   stream: MediaStream | null;
+  onTimeInit?: (totalSec: number) => void; // ✅ 추가
+  onTimeTick?: (leftSec: number) => void; // ✅ 추가
 }
 
 export default function RecordingControls({
@@ -14,6 +16,8 @@ export default function RecordingControls({
   onAutoSubmit,
   onManualSubmit,
   stream,
+  onTimeInit,
+  onTimeTick,
 }: Props) {
   const [timeLeft, setTimeLeft] = useState(60);
   const [canSubmit, setCanSubmit] = useState(false);
@@ -21,6 +25,20 @@ export default function RecordingControls({
   const chunksRef = useRef<BlobPart[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmitted = useRef(false); // ✅ 중복 제출 방지용 ref
+  const startedRef = useRef(false);
+
+  // ✅ 콜백 ref는 null로 초기화
+  const initCbRef = useRef<((totalSec: number) => void) | null>(null);
+  const tickCbRef = useRef<((leftSec: number) => void) | null>(null);
+
+  // 최신 콜백을 ref에 저장
+  useEffect(() => {
+    initCbRef.current = onTimeInit ?? null;
+  }, [onTimeInit]);
+
+  useEffect(() => {
+    tickCbRef.current = onTimeTick ?? null;
+  }, [onTimeTick]);
 
   // 🔴 녹화 시작
   const startRecording = () => {
@@ -70,29 +88,48 @@ export default function RecordingControls({
 
   // 🕒 질문 시작 시 타이머 + 녹화 시작
   useEffect(() => {
-    if (questionStarted && stream) {
-      startRecording();
-      setTimeLeft(60);
-      setCanSubmit(false);
-      hasSubmitted.current = false; // ✅ 새로운 질문 시작할 때 초기화
+    if (!questionStarted || !stream) return;
+    if (startedRef.current) return;
+    startedRef.current = true;
 
-      timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current!);
-            handleAutoSubmit();
-            return 0;
-          }
-          if (prev === 55) {
-            setCanSubmit(true);
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
+    startRecording();
+
+    const TOTAL = 60;
+    setTimeLeft(TOTAL);
+    setCanSubmit(false);
+    hasSubmitted.current = false;
+
+    // 부모 알림도 이펙트/타이머 등 "렌더 이후"에서만 호출
+    initCbRef.current?.(TOTAL);
+    tickCbRef.current?.(TOTAL);
+
+    let left = TOTAL;
+
+    const id = setInterval(() => {
+      // 1) next 계산
+      const next = Math.max(0, left - 1);
+
+      // 2) 상태 업데이트 (업데이터 함수 사용 X)
+      setTimeLeft(next);
+
+      // 3) 사이드이펙트는 상태 업데이트 바깥에서
+      tickCbRef.current?.(next);
+
+      if (left === 55) setCanSubmit(true);
+
+      if (left <= 1) {
+        clearInterval(id);
+        handleAutoSubmit();
+      }
+
+      left = next;
+    }, 1000);
+
+    timerRef.current = id;
 
     return () => {
-      clearInterval(timerRef.current!);
+      clearInterval(id);
+      startedRef.current = false;
     };
   }, [questionStarted, stream]);
 
@@ -115,16 +152,18 @@ export default function RecordingControls({
   };
 
   return (
-    <div className="flex flex-row items-center gap-2 mt-4">
-      <div className="text-xl font-semibold">⏱️ {timeLeft}초</div>
+    <div className="h-10 flex items-center justify-end gap-3">
+      <div className="text-lg font-semibold min-w-[64px] text-right leading-none">
+        {timeLeft}초
+      </div>
       <button
-        className={`px-6 py-2 rounded-lg transition-all
+        className={`h-10 px-4 rounded-lg transition-all
         ${
           canSubmit
-            ? `cursor-pointer bg-primary text-primary-foreground 
-                border-b-[4px] border-primary shadow-sm
-                hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px]
-                active:border-b-[2px] active:brightness-90 active:translate-y-[2px]`
+            ? `cursor-pointer bg-primary/80 text-white
+                border-b-[3px] border-primary/80 shadow-sm
+                hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[5px]
+                active:border-b-[2px] active:brightness-95 active:translate-y-[2px]`
             : `bg-muted text-muted-foreground cursor-not-allowed`
         }`}
         onClick={handleManualSubmit}

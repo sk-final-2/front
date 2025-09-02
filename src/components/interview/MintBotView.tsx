@@ -114,6 +114,20 @@ export default function MintBotView({ talking = false, amp = 0 }: Props) {
     const root = new THREE.Group();
     scene.add(root);
 
+    /* ✅ 추가: 모델을 화면 안에 'Contain' 하도록 카메라를 자동 프레이밍 */
+    const fitCameraToObject = (object: THREE.Object3D, fitOffset = 1.2) => {
+      const box = new THREE.Box3().setFromObject(object);
+      const sphere = box.getBoundingSphere(new THREE.Sphere());
+      const fov = THREE.MathUtils.degToRad(camera.fov);
+      const dist = (sphere.radius * fitOffset) / Math.sin(fov / 2);
+
+      camera.position.set(sphere.center.x, sphere.center.y, dist);
+      camera.near = Math.max(0.01, dist / 100);
+      camera.far = dist * 100;
+      camera.updateProjectionMatrix();
+      camera.lookAt(sphere.center);
+    };
+
     // --- 배경 스펙트럼 (카메라 고정 풀스크린 메쉬 + CanvasTexture) ---
     const bgCanvas = document.createElement("canvas");
     const bgCtx = bgCanvas.getContext("2d", { alpha: false })!;
@@ -162,19 +176,9 @@ export default function MintBotView({ talking = false, amp = 0 }: Props) {
     };
 
     const afterLoad = (model: THREE.Object3D) => {
-      // 화면 맞춤
-      const box = new THREE.Box3().setFromObject(model);
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      const maxDim = Math.max(size.x, size.y, size.z) || 1;
-      const scale = 3.0 / maxDim;
-      model.scale.setScalar(scale);
-      const center = new THREE.Vector3();
-      box.getCenter(center);
-      model.position.sub(center.multiplyScalar(scale));
-      model.position.y -= 0.8;
+      // ✅ 화면에 꽉 차되 잘리지 않도록 카메라 프레이밍
       root.add(model);
-
+      fitCameraToObject(model);
       // 1) 이름 우선 매핑
       eyeL = findByName(model, EYE_LEFT_NAME);
       eyeR = findByName(model, EYE_RIGHT_NAME);
@@ -243,6 +247,11 @@ export default function MintBotView({ talking = false, amp = 0 }: Props) {
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
+
+      /* ✅ 추가: 사이즈/비율 바뀔 때도 자동 재프레이밍 */
+      if (root.children.length > 0) {
+        fitCameraToObject(root.children[0]);
+      }
 
       const dpr = window.devicePixelRatio || 1;
       bgCanvas.width = Math.max(2, Math.floor(w * dpr * overscan));
