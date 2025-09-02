@@ -13,8 +13,6 @@ import {
   disconnect,
   setAnalysisComplete,
 } from "./socketSlice";
-import api from "@/lib/axiosInstance";
-import { useAppSelector } from "@/hooks/storeHook";
 
 // Listener 미들웨어 인스턴스 생성
 export const listenerMiddleware = createListenerMiddleware();
@@ -84,9 +82,9 @@ startAppListening({
       console.log("stompClient", stompClient);
 
       stompClient.activate();
-    } catch (error: any) {
+    } catch (error) {
       console.error("소켓 설정 오류:", error);
-      listenerApi.dispatch(connectionError(error.toString()));
+      listenerApi.dispatch(connectionError("소켓 설정 오류"));
     }
   },
 });

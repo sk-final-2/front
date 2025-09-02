@@ -17,6 +17,15 @@ import {
 } from "@/store/interview/interviewSlice";
 import { stopLoading } from "@/store/loading/loadingSlice";
 import { Suspense, useEffect, useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // 면접 형식 타입
 export type InterviewType = "PERSONALITY" | "TECHNICAL" | "MIXED";
@@ -34,13 +43,14 @@ const ReadyPage = () => {
   const dispatch = useAppDispatch();
   const { currentQuestion, status, error, interviewId, currentSeq } =
     useAppSelector((state) => state.interview);
-
-  useEffect(() => {
-    dispatch(stopLoading());
-  }, [dispatch]);
+  // 로그인 상태 store
+  const { isLoggedIn } = useAppSelector((state) => state.auth);
 
   // 라우터 커스텀 훅
   const router = useLoadingRouter();
+
+  // 알림창 표시
+  const [showLoginAlert, setShowLoginAlert] = useState(false);
 
   // 단계 상태
   const [step, setStep] = useState(1);
@@ -144,6 +154,19 @@ const ReadyPage = () => {
     if (step > 1) {
       setStep((prev) => prev - 1);
     }
+  };
+
+  // 페이지 렌더링 시 로딩 종료 & 로그인 상태 처리
+  useEffect(() => {
+    dispatch(stopLoading());
+    if (!isLoggedIn) {
+      setShowLoginAlert(true);
+    }
+  }, [dispatch, isLoggedIn]);
+
+  const handleLoginRedirect = () => {
+    setShowLoginAlert(false);
+    router.replace("/login");
   };
 
   // 페이지 이동을 처리하는 useEffect
@@ -330,6 +353,26 @@ const ReadyPage = () => {
           )}
         </div>
       </div>
+
+      <AlertDialog open={showLoginAlert} onOpenChange={setShowLoginAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>로그인이 필요합니다</AlertDialogTitle>
+            <AlertDialogDescription>
+              이 페이지에 접근하려면 로그인이 필요합니다. 로그인 페이지로
+              이동하시겠습니까?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              className="cursor-pointer"
+              onClick={handleLoginRedirect}
+            >
+              확인
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Suspense>
   );
 };

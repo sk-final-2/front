@@ -14,7 +14,7 @@ export default function GlobalLoadingIndicator() {
 
   return (
     <div
-      className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-background/70 backdrop-blur-sm rounded-md"
+      className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-background/70 backdrop-blur-sm rounded-md"
       aria-live="polite"
     >
       <div className="h-8 w-8 animate-spin rounded-full border-2 border-ring border-t-transparent" />
