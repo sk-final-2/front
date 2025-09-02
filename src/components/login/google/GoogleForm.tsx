@@ -146,17 +146,13 @@ export default function GoogleForm({
               {/* 이름 */}
               <div className="grid gap-2">
                 <Label>이름</Label>
-                <Input value={userInfo.name} className="bg-gray-100" disabled />
+                <Input value={userInfo.name} disabled />
               </div>
 
               {/* 이메일 */}
               <div className="grid gap-2">
                 <Label>이메일</Label>
-                <Input
-                  value={userInfo.email}
-                  className="bg-gray-100"
-                  disabled
-                />
+                <Input value={userInfo.email} disabled />
               </div>
 
               {/* 성별 */}
@@ -224,7 +220,7 @@ export default function GoogleForm({
               <div className="grid gap-2">
                 <Label>우편번호</Label>
                 <div className="flex gap-2">
-                  <Input value={zipcode} readOnly className="bg-gray-100" />
+                  <Input value={zipcode} readOnly />
                   <Button
                     type="button"
                     onClick={handleAddressSearch}
@@ -238,7 +234,7 @@ export default function GoogleForm({
               {/* 주소 */}
               <div className="grid gap-2">
                 <Label>주소</Label>
-                <Input value={address1} readOnly className="bg-gray-100" />
+                <Input value={address1} readOnly />
               </div>
 
               {/* 상세 주소 */}
