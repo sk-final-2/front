@@ -17,6 +17,8 @@ type Props = {
   onEnergy?: (amp: number) => void;
 };
 
+type SSBoundaryEvent = SpeechSynthesisEvent & { charLength?: number };
+
 function guessEnergy(token = "") {
   const w = token.toLowerCase().trim();
   if (!w) return 0.15;
@@ -68,7 +70,7 @@ const TtsComponent: React.FC<Props> = ({
       u.onboundary = (e: SpeechSynthesisEvent) => {
         try {
           // charLength가 없는 브라우저 대비: 주변 몇 글자 샘플
-          const len = (e as any).charLength ?? 6;
+          const len = (e as SSBoundaryEvent).charLength ?? 6;
           const start = e.charIndex ?? 0;
           const token = text.slice(start, start + len);
           const energy = guessEnergy(token);
