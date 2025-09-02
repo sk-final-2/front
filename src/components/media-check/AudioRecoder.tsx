@@ -165,14 +165,14 @@ const AudioRecoder = () => {
     <div className="flex flex-row flex-wrap items-center gap-5 w-full min-w-0">
       <button
         onClick={handleToggleRecording}
-        className="p-3 rounded-full bg-white hover:bg-gray-100 transition shadow-sm"
+        className="p-3 rounded-full bg-secondary hover:bg-muted-foreground/40 transition shadow-sm"
         aria-label={isRecording ? "녹음 정지" : "마이크 테스트"}
         title={isRecording ? "정지" : "테스트"}
       >
         {isRecording ? (
-          <StopCircle className="w-7 h-7 text-red-500" />
+          <StopCircle className="w-7 h-7 text-destructive" />
         ) : (
-          <Mic className="w-7 h-7 text-green-600" />
+          <Mic className="w-7 h-7 text-chart-1" />
         )}
         <span className="sr-only">{isRecording ? "정지" : "테스트"}</span>
       </button>
@@ -181,7 +181,7 @@ const AudioRecoder = () => {
 
       {audioURL && !isRecording && (
         <div className="flex items-center gap-2 w-full min-w-0">
-          <span className="text-sm text-gray-700 whitespace-nowrap leading-none shrink-0">
+          <span className="text-sm text-card-foreground whitespace-nowrap leading-none shrink-0">
             녹음된 음성:
           </span>
           <audio src={audioURL} controls className="block w-full max-w-full align-middle" />
