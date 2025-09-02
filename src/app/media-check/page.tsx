@@ -96,19 +96,23 @@ export default function MediaCheckPage() {
   }, [router]);
 
   return (
-    <div className="bg-white min-h-screen p-6">
-      <h1 className="text-2xl font-bold">장비 확인 및 테스트</h1>
-
+    <div className="bg-primary/10 min-h-screen p-6">
+      <div className="mx-auto w-full max-w-screen-lg p-6 space-y-4">
+      <section className="relative rounded-xl border border-border bg-card shadow-sm p-4 md:p-5">
+        <h1 className="text-2xl font-bold">장비 확인 및 테스트</h1>
+      
       {/* 안내 문구: 해상도/비율은 신경쓰지 말라는 정책 */}
       <p className="mt-2 text-sm text-gray-600">
         이 페이지에서는 화면 비율 및 해상도를 신경 쓰지 않으셔도 됩니다. 카메라가 잘 보이는지와 마이크가 녹음되는지만 확인해 주세요.
         (면접 화면에서 비율과 해상도는 자동으로 최적화됩니다)
       </p>
+      </section>
 
       {/* 미리보기 + 마이크 테스트 */}
-      <div className="mt-6 flex flex-col md:flex-row gap-6 items-start">
+      <section className="rounded-2xl shadow-sm p-3 sm:p-4 md:p-6 space-y-3 md:space-y-4 bg-white">
+      <div className="mt-6 flex flex-col md:flex-row gap-6 items-start md:items-stretch min-w-0">
         {/* 카메라 프리뷰: 크롭/확대 없이 안정 표시 */}
-        <div className="w-full md:flex-[3]">
+        <div className="w-full md:flex-[3] min-w-0">
           {stream ? (
             <UserVideo stream={stream} className="aspect-video" fit="cover" />
           ) : (
@@ -129,11 +133,11 @@ export default function MediaCheckPage() {
         </div>
 
         {/* 우측: 장치 선택 + 마이크 테스트 */}
-        <div className="flex flex-col gap-5 md:flex-[2]">
+        <div className="flex flex-col gap-5 md:flex-[2] w-full min-w-0">
           <label className="flex flex-col gap-2">
             <span className="text-sm text-gray-600">카메라</span>
             <select
-              className="rounded border p-2"
+              className="w-full max-w-full rounded border p-2"
               value={selectedVideoDeviceId ?? ""}
               onChange={(e) => dispatch(setSelectedVideoDeviceId(e.target.value || null))}
             >
@@ -146,7 +150,7 @@ export default function MediaCheckPage() {
           <label className="flex flex-col gap-2">
             <span className="text-sm text-gray-600">마이크</span>
             <select
-              className="rounded border p-2"
+              className="w-full max-w-full rounded border p-2"
               value={selectedAudioDeviceId ?? ""}
               onChange={(e) => dispatch(setSelectedAudioDeviceId(e.target.value || null))}
             >
@@ -170,6 +174,8 @@ export default function MediaCheckPage() {
         >
           면접 진행하기
         </button>
+      </div>
+      </section>
       </div>
     </div>
   );

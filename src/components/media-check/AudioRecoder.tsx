@@ -162,7 +162,7 @@ const AudioRecoder = () => {
   };
 
   return (
-    <div className="flex flex-row gap-5">
+    <div className="flex flex-row flex-wrap items-center gap-5 w-full min-w-0">
       <button
         onClick={handleToggleRecording}
         className="p-3 rounded-full bg-white hover:bg-gray-100 transition shadow-sm"
@@ -180,11 +180,11 @@ const AudioRecoder = () => {
       {isRecording && <VolumeMeter volume={volume} />}
 
       {audioURL && !isRecording && (
-        <div className="mt-4 flex items-center gap-1">
-          <span className="text-sm text-gray-700 whitespace-nowrap leading-none">
+        <div className="flex items-center gap-2 w-full min-w-0">
+          <span className="text-sm text-gray-700 whitespace-nowrap leading-none shrink-0">
             녹음된 음성:
           </span>
-          <audio src={audioURL} controls className="flex-1 align-middle" />
+          <audio src={audioURL} controls className="block w-full max-w-full align-middle" />
         </div>
       )}
     </div>
