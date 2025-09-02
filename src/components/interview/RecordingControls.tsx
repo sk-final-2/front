@@ -93,35 +93,44 @@ export default function RecordingControls({
     startedRef.current = true;
 
     startRecording();
+
     const TOTAL = 60;
     setTimeLeft(TOTAL);
     setCanSubmit(false);
     hasSubmitted.current = false;
 
-    // ✅ 렌더 단계가 아닌 이펙트에서만 부모 상태 갱신
+    // 부모 알림도 이펙트/타이머 등 "렌더 이후"에서만 호출
     initCbRef.current?.(TOTAL);
     tickCbRef.current?.(TOTAL);
 
+    let left = TOTAL;
+
     const id = setInterval(() => {
-      setTimeLeft((prev) => {
-        const next = Math.max(0, prev - 1);
-        tickCbRef.current?.(next);
-        if (prev <= 1) {
-          clearInterval(id);
-          handleAutoSubmit();
-          return 0;
-        }
-        if (prev === 55) setCanSubmit(true);
-        return next;
-      });
+      // 1) next 계산
+      const next = Math.max(0, left - 1);
+
+      // 2) 상태 업데이트 (업데이터 함수 사용 X)
+      setTimeLeft(next);
+
+      // 3) 사이드이펙트는 상태 업데이트 바깥에서
+      tickCbRef.current?.(next);
+
+      if (left === 55) setCanSubmit(true);
+
+      if (left <= 1) {
+        clearInterval(id);
+        handleAutoSubmit();
+      }
+
+      left = next;
     }, 1000);
+
     timerRef.current = id;
 
     return () => {
       clearInterval(id);
       startedRef.current = false;
     };
-    // ⛔ onTimeInit/onTimeTick은 deps에서 제외 (ref로 대체)
   }, [questionStarted, stream]);
 
   // 자동 제출
