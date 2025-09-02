@@ -71,7 +71,7 @@ export default function VideoSwapStage({
         type="button"
         onClick={swap}
         className={[
-          "absolute z-10 rounded-xl overflow-hidden border border-border shadow-lg",
+          "absolute z-10 rounded-xl overflow-hidden",
           "transition-transform hover:scale-[1.02] active:scale-[0.98] bg-card/80 backdrop-blur",
           pipSizeClass,
           pipPositionClassName,

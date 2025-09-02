@@ -164,7 +164,7 @@ export default function RecordingControls({
                 border-b-[3px] border-primary/80 shadow-sm
                 hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[5px]
                 active:border-b-[2px] active:brightness-95 active:translate-y-[2px]`
-            : `bg-muted text-muted-foreground cursor-not-allowed`
+            : `bg-accent text-accent-foreground cursor-not-allowed`
         }`}
         onClick={handleManualSubmit}
         disabled={!canSubmit}
