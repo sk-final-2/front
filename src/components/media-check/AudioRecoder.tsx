@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import VolumeMeter from "./VolumeMeter";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 import { setSelectedAudioDeviceId } from "@/store/media/mediaSlice";
+import { Mic, StopCircle } from "lucide-react";
 
 const AudioRecoder = () => {
   /** 녹음 상태 */
@@ -64,7 +65,8 @@ const AudioRecoder = () => {
     if (isRecording && mediaStream) {
       audioContextRef.current = new window.AudioContext();
       analyserRef.current = audioContextRef.current.createAnalyser();
-      sourceRef.current = audioContextRef.current.createMediaStreamSource(mediaStream);
+      sourceRef.current =
+        audioContextRef.current.createMediaStreamSource(mediaStream);
       sourceRef.current.connect(analyserRef.current);
 
       const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
@@ -82,9 +84,13 @@ const AudioRecoder = () => {
     }
 
     return () => {
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (animationFrameRef.current)
+        cancelAnimationFrame(animationFrameRef.current);
       if (sourceRef.current) sourceRef.current.disconnect();
-      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      if (
+        audioContextRef.current &&
+        audioContextRef.current.state !== "closed"
+      ) {
         audioContextRef.current.close();
       }
       setVolume(0);
@@ -98,7 +104,9 @@ const AudioRecoder = () => {
       if (mediaRecorderRef.current) {
         mediaRecorderRef.current.stop();
         mediaRecorderRef.current.onstop = () => {
-          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          const audioBlob = new Blob(audioChunksRef.current, {
+            type: "audio/webm",
+          });
           const audioUrl = URL.createObjectURL(audioBlob);
           setAudioURL(audioUrl);
           audioChunksRef.current = [];
@@ -142,7 +150,10 @@ const AudioRecoder = () => {
 
         const a = stream.getAudioTracks()[0];
         console.log("[DEBUG MEDIA] AUDIO TEST track.label:", a?.label);
-        console.log("[DEBUG MEDIA] AUDIO TEST track.settings:", a?.getSettings?.());
+        console.log(
+          "[DEBUG MEDIA] AUDIO TEST track.settings:",
+          a?.getSettings?.(),
+        );
       } catch (error) {
         console.error("마이크 접근 실패:", error);
         alert("마이크 권한/연결을 확인해주세요.");
@@ -151,17 +162,29 @@ const AudioRecoder = () => {
   };
 
   return (
-    <div>
-      <button onClick={handleToggleRecording}>
-        {isRecording ? "정지" : "테스트"}
+    <div className="flex flex-row flex-wrap items-center gap-5 w-full min-w-0">
+      <button
+        onClick={handleToggleRecording}
+        className="p-3 rounded-full bg-white hover:bg-gray-100 transition shadow-sm"
+        aria-label={isRecording ? "녹음 정지" : "마이크 테스트"}
+        title={isRecording ? "정지" : "테스트"}
+      >
+        {isRecording ? (
+          <StopCircle className="w-7 h-7 text-red-500" />
+        ) : (
+          <Mic className="w-7 h-7 text-green-600" />
+        )}
+        <span className="sr-only">{isRecording ? "정지" : "테스트"}</span>
       </button>
 
       {isRecording && <VolumeMeter volume={volume} />}
 
       {audioURL && !isRecording && (
-        <div style={{ marginTop: "1rem" }}>
-          <h3>녹음된 음성:</h3>
-          <audio src={audioURL} controls />
+        <div className="flex items-center gap-2 w-full min-w-0">
+          <span className="text-sm text-gray-700 whitespace-nowrap leading-none shrink-0">
+            녹음된 음성:
+          </span>
+          <audio src={audioURL} controls className="block w-full max-w-full align-middle" />
         </div>
       )}
     </div>
