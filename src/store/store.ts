@@ -1,3 +1,4 @@
+import userDetailsSlice from "./user-details/userDetailsSlice";
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import interviewSlice from "@/store/interview/interviewSlice";
 import interviewResultSlice from "@/store/interview/resultSlice";
@@ -14,6 +15,7 @@ const rootReducer = combineReducers({
   result: interviewResultSlice,
   socket: socketSlice,
   loading: loadingSlice,
+  user_details: userDetailsSlice,
 });
 
 export const makeStore = () =>

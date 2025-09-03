@@ -8,7 +8,7 @@ import QuestionListComponent from "@/components/result/QuestionListComponent";
 import TotalEvaluationComponent from "@/components/result/TotalEvaluationComponent";
 import TotalGraphComponent from "@/components/result/TotalGraphComponent";
 import { Button } from "@/components/ui/button";
-import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
+import { useAppSelector } from "@/hooks/storeHook";
 import Link from "next/link";
 import { Suspense, useEffect, useState, useMemo } from "react";
 
@@ -25,8 +25,6 @@ const ResultPage = () => {
   const {
     status,
     error,
-    uuid,
-    memberId,
     createdAt,
     job,
     career,

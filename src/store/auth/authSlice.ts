@@ -10,7 +10,6 @@ import {
   fetchUserInfo,
 } from "@/api/authAPI";
 import axios from "axios";
-import axiosInstance from "@/lib/axiosInstance";
 
 // ✅ provider → loginType 매핑 함수
 type LoginType = "default" | "google" | "kakao";

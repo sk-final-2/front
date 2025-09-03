@@ -82,7 +82,18 @@ const TtsComponent: React.FC<Props> = ({
 
       return u;
     };
-  }, [text, lang, rate, pitch, volume, voices, onStart, onEnd, onError, onEnergy]);
+  }, [
+    text,
+    lang,
+    rate,
+    pitch,
+    volume,
+    voices,
+    onStart,
+    onEnd,
+    onError,
+    onEnergy,
+  ]);
 
   const play = () => {
     try {

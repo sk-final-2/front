@@ -6,43 +6,44 @@ License: CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
 Source: https://sketchfab.com/3d-models/kawaii-cute-flying-robot-e8e85bce90644fa486ac21e033c71d92
 Title: Kawaii & Cute Flying Robot
 */
-"use client"
+"use client";
 
-import * as THREE from 'three'
-import React, { useRef } from 'react' // useRef를 import 합니다.
-import { useGLTF } from '@react-three/drei'
-import { GLTF } from 'three-stdlib'
-import { useFrame } from '@react-three/fiber' // useFrame 훅을 import 합니다.
+import * as THREE from "three";
+import React, { JSX, useRef } from "react"; // useRef를 import 합니다.
+import { useGLTF } from "@react-three/drei";
+import { GLTF } from "three-stdlib";
+import { useFrame } from "@react-three/fiber"; // useFrame 훅을 import 합니다.
 
 type GLTFResult = GLTF & {
   nodes: {
     // nodes 타입 정의는 기존과 동일합니다.
-    Object_3: THREE.Mesh
-    Object_4: THREE.Mesh
-    Object_5: THREE.Mesh
-    Object_6: THREE.Mesh
-    Object_7: THREE.Mesh
-    Object_8: THREE.Mesh
-    Object_9: THREE.Mesh
-    Object_10: THREE.Mesh
-    Object_11: THREE.Mesh
-    Object_12: THREE.Mesh
+    Object_3: THREE.Mesh;
+    Object_4: THREE.Mesh;
+    Object_5: THREE.Mesh;
+    Object_6: THREE.Mesh;
+    Object_7: THREE.Mesh;
+    Object_8: THREE.Mesh;
+    Object_9: THREE.Mesh;
+    Object_10: THREE.Mesh;
+    Object_11: THREE.Mesh;
+    Object_12: THREE.Mesh;
     // Object_2가 없어서 임시로 추가합니다. 실제 gltfjsx 결과에 맞춰주세요.
-    Object_2: THREE.LineSegments
-  }
+    Object_2: THREE.LineSegments;
+  };
   materials: {
-    ['Material.002']: THREE.LineBasicMaterial
-    ['Material.001']: THREE.MeshStandardMaterial
-    ['Material.002']: THREE.MeshStandardMaterial
-    ['Material.003']: THREE.MeshStandardMaterial
-  }
+    ["Material.002"]: THREE.LineBasicMaterial;
+    ["Material.001"]: THREE.MeshStandardMaterial;
+    ["Material.003"]: THREE.MeshStandardMaterial;
+  };
   // animations 타입 정의는 gltfjsx 결과에 따라 달라질 수 있습니다.
-  // animations: GLTFAction[] 
-}
+  // animations: GLTFAction[]
+};
 
-export default function CuteRobot(props: JSX.IntrinsicElements['group']) {
-  const group = useRef<THREE.Group>(null) // group에 대한 ref를 생성합니다.
-  const { nodes, materials } = useGLTF('/cute_robot.glb') as any
+export default function CuteRobot(props: JSX.IntrinsicElements["group"]) {
+  const group = useRef<THREE.Group>(null); // group에 대한 ref를 생성합니다.
+  const { nodes, materials } = useGLTF(
+    "/cute_robot.glb",
+  ) as unknown as GLTFResult;
 
   // useFrame 훅을 사용하여 애니메이션을 적용합니다.
   useFrame((state, delta) => {
@@ -62,21 +63,55 @@ export default function CuteRobot(props: JSX.IntrinsicElements['group']) {
         예: <group scale={0.5} position={[0, -0.5, 0]}>
       */}
       <group rotation={[-Math.PI / 2, 0, 0]}>
-
-        {nodes.Object_2 && <lineSegments geometry={nodes.Object_2.geometry} material={materials['Material.002']} />}
-        <mesh geometry={nodes.Object_3.geometry} material={materials['Material.001']} />
-        <mesh geometry={nodes.Object_4.geometry} material={materials['Material.002']} />
-        <mesh geometry={nodes.Object_5.geometry} material={materials['Material.002']} />
-        <mesh geometry={nodes.Object_6.geometry} material={materials['Material.002']} />
-        <mesh geometry={nodes.Object_7.geometry} material={materials['Material.002']} />
-        <mesh geometry={nodes.Object_8.geometry} material={materials['Material.002']} />
-        <mesh geometry={nodes.Object_9.geometry} material={materials['Material.002']} />
-        <mesh geometry={nodes.Object_10.geometry} material={materials['Material.002']} />
-        <mesh geometry={nodes.Object_11.geometry} material={materials['Material.002']} />
-        <mesh geometry={nodes.Object_12.geometry} material={materials['Material.003']} />
+        {nodes.Object_2 && (
+          <lineSegments
+            geometry={nodes.Object_2.geometry}
+            material={materials["Material.002"]}
+          />
+        )}
+        <mesh
+          geometry={nodes.Object_3.geometry}
+          material={materials["Material.001"]}
+        />
+        <mesh
+          geometry={nodes.Object_4.geometry}
+          material={materials["Material.002"]}
+        />
+        <mesh
+          geometry={nodes.Object_5.geometry}
+          material={materials["Material.002"]}
+        />
+        <mesh
+          geometry={nodes.Object_6.geometry}
+          material={materials["Material.002"]}
+        />
+        <mesh
+          geometry={nodes.Object_7.geometry}
+          material={materials["Material.002"]}
+        />
+        <mesh
+          geometry={nodes.Object_8.geometry}
+          material={materials["Material.002"]}
+        />
+        <mesh
+          geometry={nodes.Object_9.geometry}
+          material={materials["Material.002"]}
+        />
+        <mesh
+          geometry={nodes.Object_10.geometry}
+          material={materials["Material.002"]}
+        />
+        <mesh
+          geometry={nodes.Object_11.geometry}
+          material={materials["Material.002"]}
+        />
+        <mesh
+          geometry={nodes.Object_12.geometry}
+          material={materials["Material.003"]}
+        />
       </group>
     </group>
-  )
+  );
 }
 
-useGLTF.preload('/cute_robot.glb')
+useGLTF.preload("/cute_robot.glb");

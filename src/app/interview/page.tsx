@@ -64,7 +64,7 @@ export default function InterviewPage() {
   const [loading, setLoading] = useState<boolean>(false);
 
   // 소켓 상태 store
-  const { isConnecting, isConnected, analysisComplete } = useAppSelector(
+  const { isConnected, analysisComplete } = useAppSelector(
     (state) => state.socket,
   );
 

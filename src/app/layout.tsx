@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Noto_Sans_KR } from "next/font/google";
+import { Noto_Sans_KR } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { ReduxProvider } from "@/store/provider";

@@ -2,7 +2,6 @@
 
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { logoutUser } from "@/store/auth/authSlice";
 import { useAppDispatch } from "@/hooks/storeHook";
@@ -11,17 +10,16 @@ import { SidebarTrigger } from "../ui/sidebar";
 import { Button } from "../ui/button";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
 export default function MainHeader() {
   const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
   const user = useSelector((state: RootState) => state.auth.user);
-  const router = useRouter();
   const dispatch = useAppDispatch();
+  const router = useLoadingRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { theme, setTheme, themes } = useTheme();
-
-  console.log(themes);
+  const { theme, setTheme } = useTheme();
 
   const handleLogout = async () => {
     try {
@@ -34,7 +32,7 @@ export default function MainHeader() {
       });
       console.log("프론트 로그아웃");
 
-      router.push("/");
+      router.refresh();
     } catch (err) {
       console.error("로그아웃 실패:", err);
     }
@@ -57,7 +55,7 @@ export default function MainHeader() {
             {/* 내정보 버튼 */}
             <button
               className="hover:underline relative cursor-pointer"
-              onClick={() => setIsModalOpen((prev) => !prev)}
+              onClick={() => router.push("/info")}
             >
               내정보
             </button>

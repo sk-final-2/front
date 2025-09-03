@@ -50,9 +50,9 @@ export default function TotalGraphComponent({
 
   return (
     <div className="w-full my-10">
-      <Card className="w-full">
+      <Card className="w-full border-border">
         <CardHeader className="items-center pb-4">
-          <CardTitle className="text-xl">분석 차트</CardTitle>
+          <CardTitle className="text-xl">평균 점수</CardTitle>
           <CardDescription className="font-bold">
             사용자의 면접 기록을 바탕으로 생성되었습니다.
           </CardDescription>
@@ -77,11 +77,7 @@ export default function TotalGraphComponent({
             </RadarChart>
           </ChartContainer>
         </CardContent>
-        <CardFooter className="flex-col gap-2 text-sm">
-          <div>
-            <span>여기에 추가 내용 있으면 작성</span>
-          </div>
-        </CardFooter>
+        
       </Card>
     </div>
   );
