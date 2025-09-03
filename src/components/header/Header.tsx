@@ -10,13 +10,13 @@ import { SidebarTrigger } from "../ui/sidebar";
 import { Button } from "../ui/button";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
 export default function MainHeader() {
   const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useLoadingRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { theme, setTheme } = useTheme();
@@ -55,7 +55,7 @@ export default function MainHeader() {
             {/* 내정보 버튼 */}
             <button
               className="hover:underline relative cursor-pointer"
-              onClick={() => setIsModalOpen((prev) => !prev)}
+              onClick={() => router.push("/info")}
             >
               내정보
             </button>

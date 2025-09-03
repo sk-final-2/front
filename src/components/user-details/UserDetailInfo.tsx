@@ -1,6 +1,6 @@
 "use client";
 
-import { CategoryType } from "@/app/user-info/page";
+import { CategoryType } from "@/app/info/page";
 import { Card } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 import { getUserBaseInfo } from "@/store/user-details/userDetailsSlice";
