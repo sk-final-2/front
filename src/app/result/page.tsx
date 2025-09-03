@@ -8,8 +8,9 @@ import QuestionListComponent from "@/components/result/QuestionListComponent";
 import TotalEvaluationComponent from "@/components/result/TotalEvaluationComponent";
 import TotalGraphComponent from "@/components/result/TotalGraphComponent";
 import { Button } from "@/components/ui/button";
-import { useAppSelector } from "@/hooks/storeHook";
+import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 import Link from "next/link";
+import { stopLoading } from "@/store/loading/loadingSlice";
 import { Suspense, useEffect, useState, useMemo } from "react";
 
 /**
@@ -58,6 +59,12 @@ const ResultPage = () => {
     // 유니크 + 정렬
     return Array.from(new Set(seqs)).sort((a, b) => a - b);
   }, [count, answerAnalyses]);
+
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    dispatch(stopLoading());
+  }, [dispatch]);
 
   // ✅ 현재 선택된 seq가 리스트 범위를 벗어나지 않도록 클램프
   useEffect(() => {

@@ -52,7 +52,7 @@ export default function UserInterviewResults() {
           <Card
             key={item.uuid}
             className=" cursor-pointer border-[1px] border-border"
-            onClick={() => router.push(`/result/${item.uuid}`)}
+            onClick={() => router.push(`/info/result/${item.uuid}`)}
           >
             <CardContent className="flex flex-col gap-2">
               <div className="w-full flex flex-row justify-between">

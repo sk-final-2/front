@@ -7,16 +7,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { stopLoading } from "@/store/loading/loadingSlice";
-import { getUserInterview } from "@/store/user-details/userDetailsSlice";
+import { getUserInterview, GetUserInterviewListResponseData } from "@/store/user-details/userDetailsSlice";
 import { House } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 
-export default function UserInterviewResultPage({
-  params,
-}: {
-  params: string;
-}) {
+export default function UserInterviewResultPage({params} : {params: Promise<{interviewId: string}>}) {
   // 로딩 라우터
   const router = useLoadingRouter();
   const dispatch = useAppDispatch();
@@ -53,16 +49,23 @@ export default function UserInterviewResultPage({
   const sidebarWidth = isSidebarCollapsed ? "w-20" : "w-64";
 
   // interviewId 받아오기
-  const interviewId = params;
+  const resolveParams = use(params);
+  const {interviewId} = resolveParams;
 
   // 면접 결과 리스트
-  const { interview } = useAppSelector((state) => state.user_details);
+  const { interview, interviews } = useAppSelector((state) => state.user_details);
+  
+  // 현재 선택된 면접 상태
+   const [currentInterviewIndex, setCurrentInterviewIndex] = useState<number>(1);
 
   // 면접 결과 받아오기
   useEffect(() => {
-    dispatch(getUserInterview({ interviewId }));
+    const currentIndex = interviews.findIndex((item) => item.uuid == interviewId);
+    setCurrentInterviewIndex(currentIndex);
+
+    
     dispatch(stopLoading());
-  }, [dispatch, interviewId]);
+  }, [dispatch, interviews, interviewId]);
 
   // 현재 선택된 질문
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(1);
@@ -152,22 +155,22 @@ export default function UserInterviewResultPage({
                       면접 정보
                     </div>
                     <div className="text-lg font-semibold mb-2">
-                      직무: {interview?.job}
+                      직무: {interviews[currentInterviewIndex]?.job}
                     </div>
                     <div className="text-lg font-semibold mb-2">
-                      경력: {interview?.career}
+                      경력: {interviews[currentInterviewIndex]?.career}
                     </div>
                     <div className="text-lg font-semibold mb-2">
-                      유형: {interview?.type}
+                      유형: {interviews[currentInterviewIndex]?.type}
                     </div>
                     <div className="text-lg font-semibold mb-2">
-                      난이도: {interview?.level}
+                      난이도: {interviews[currentInterviewIndex]?.level}
                     </div>
                     <div className="text-lg font-semibold mb-2">
-                      언어: {interview?.language}
+                      언어: {interviews[currentInterviewIndex]?.language}
                     </div>
                     <div className="text-lg font-semibold mb-2">
-                      질문 수: {interview?.count}
+                      질문 수: {interviews[currentInterviewIndex]?.count}
                     </div>
                   </div>
                 </CardContent>
@@ -177,33 +180,33 @@ export default function UserInterviewResultPage({
               <div className="w-full row-span-2">
                 <TotalGraphComponent
                   score={
-                    interview?.avgScore[0]?.score
-                      ? interview?.avgScore[0].score
+                    interviews[currentInterviewIndex]?.avgScore[0]?.score
+                      ? interviews[currentInterviewIndex]?.avgScore[0].score
                       : 0.0
                   }
                   emotionScore={
-                    interview?.avgScore[0]?.emotionScore
-                      ? interview?.avgScore[0].emotionScore
+                    interviews[currentInterviewIndex]?.avgScore[0]?.emotionScore
+                      ? interviews[currentInterviewIndex]?.avgScore[0].emotionScore
                       : 0.0
                   }
                   blinkScore={
-                    interview?.avgScore[0]?.blinkScore
-                      ? interview?.avgScore[0].blinkScore
+                    interviews[currentInterviewIndex]?.avgScore[0]?.blinkScore
+                      ? interviews[currentInterviewIndex]?.avgScore[0].blinkScore
                       : 0.0
                   }
                   eyeScore={
-                    interview?.avgScore[0]?.eyeScore
-                      ? interview?.avgScore[0].eyeScore
+                    interviews[currentInterviewIndex]?.avgScore[0]?.eyeScore
+                      ? interviews[currentInterviewIndex]?.avgScore[0].eyeScore
                       : 0.0
                   }
                   headScore={
-                    interview?.avgScore[0]?.headScore
-                      ? interview?.avgScore[0].headScore
+                    interviews[currentInterviewIndex]?.avgScore[0]?.headScore
+                      ? interviews[currentInterviewIndex]?.avgScore[0].headScore
                       : 0.0
                   }
                   handScore={
-                    interview?.avgScore[0]?.handScore
-                      ? interview?.avgScore[0].handScore
+                    interviews[currentInterviewIndex]?.avgScore[0]?.handScore
+                      ? interviews[currentInterviewIndex]?.avgScore[0].handScore
                       : 0.0
                   }
                 />
@@ -223,7 +226,7 @@ export default function UserInterviewResultPage({
                         질문 :{" "}
                         <span className="font-semibold">
                           {
-                            interview?.answerAnalyses[currentQuestionIndex - 1]
+                            interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
                               .question
                           }
                         </span>
@@ -232,7 +235,7 @@ export default function UserInterviewResultPage({
                         답변 :{" "}
                         <span className="font-semibold">
                           {
-                            interview?.answerAnalyses[currentQuestionIndex - 1]
+                            interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
                               .answer
                           }
                         </span>
@@ -241,7 +244,7 @@ export default function UserInterviewResultPage({
                         피드백 :{" "}
                         <span className="font-semibold">
                           {
-                            interview?.answerAnalyses[currentQuestionIndex - 1]
+                            interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
                               .good
                           }
                         </span>
@@ -250,7 +253,7 @@ export default function UserInterviewResultPage({
                         개선점 :{" "}
                         <span className="font-semibold">
                           {
-                            interview?.answerAnalyses[currentQuestionIndex - 1]
+                            interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
                               .bad
                           }
                         </span>
@@ -259,7 +262,7 @@ export default function UserInterviewResultPage({
                         감정 평가 :{" "}
                         <span className="font-semibold">
                           {
-                            interview?.answerAnalyses[currentQuestionIndex - 1]
+                            interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
                               .emotionText
                           }
                         </span>
@@ -268,7 +271,7 @@ export default function UserInterviewResultPage({
                         말투 평가 :{" "}
                         <span className="font-semibold">
                           {
-                            interview?.answerAnalyses[currentQuestionIndex - 1]
+                            interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
                               .mediapipeText
                           }
                         </span>
@@ -280,38 +283,38 @@ export default function UserInterviewResultPage({
               {/** Bar Chart 답변 점수 */}
               <AnswerEvaluateBarChart
                 score={
-                  interview?.answerAnalyses[currentQuestionIndex - 1].score
-                    ? interview?.answerAnalyses[currentQuestionIndex - 1].score
+                  interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1].score
+                    ? interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1].score
                     : 0.0
                 }
                 emotionScore={
-                  interview?.answerAnalyses[currentQuestionIndex - 1]
+                  interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
                     .emotionScore
-                    ? interview?.answerAnalyses[currentQuestionIndex - 1]
+                    ? interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
                         .emotionScore
                     : 0.0
                 }
                 blinkScore={
-                  interview?.answerAnalyses[currentQuestionIndex - 1].blinkScore
-                    ? interview?.answerAnalyses[currentQuestionIndex - 1]
+                  interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1].blinkScore
+                    ? interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
                         .blinkScore
                     : 0.0
                 }
                 eyeScore={
-                  interview?.answerAnalyses[currentQuestionIndex - 1].eyeScore
-                    ? interview?.answerAnalyses[currentQuestionIndex - 1]
+                  interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1].eyeScore
+                    ? interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
                         .eyeScore
                     : 0.0
                 }
                 headScore={
-                  interview?.answerAnalyses[currentQuestionIndex - 1].headScore
-                    ? interview?.answerAnalyses[currentQuestionIndex - 1]
+                  interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1].headScore
+                    ? interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
                         .headScore
                     : 0.0
                 }
                 handScore={
-                  interview?.answerAnalyses[currentQuestionIndex - 1].handScore
-                    ? interview?.answerAnalyses[currentQuestionIndex - 1]
+                  interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1].handScore
+                    ? interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
                         .handScore
                     : 0.0
                 }

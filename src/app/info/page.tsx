@@ -12,6 +12,7 @@ import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun } from "lucide-react";
 import { stopLoading } from "@/store/loading/loadingSlice";
+import { getUserInterviewList } from "@/store/user-details/userDetailsSlice";
 
 export type CategoryType = "info" | "interviews";
 
@@ -27,6 +28,7 @@ const UserInfoPage = () => {
   const [currentCategory, setCurrentCategory] = useState<CategoryType>("info");
 
   useEffect(() => {
+    dispatch(getUserInterviewList(null));
     dispatch(stopLoading());
   }, [dispatch]);
 

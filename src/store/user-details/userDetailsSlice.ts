@@ -145,10 +145,11 @@ export const getUserInterview = createAsyncThunk<
   GetUserInterviewResponse,
   { interviewId: string },
   { rejectValue: string }
->("/get/user/interview", async (interviewId, { rejectWithValue }) => {
+>("/get/user/interview", async (data, { rejectWithValue }) => {
   try {
+    console.log(data.interviewId);
     const response = await api.get<GetUserInterviewResponse>(
-      `/api/interview-results/${interviewId}`,
+      `/api/interview-results/${data.interviewId}`,
       {
         headers: {
           "Content-Type": "application/json",
