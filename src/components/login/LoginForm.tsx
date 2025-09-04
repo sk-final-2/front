@@ -10,6 +10,7 @@ import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 import { loginUser } from "@/store/auth/authSlice";
 import { stopLoading } from "@/store/loading/loadingSlice";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+import Image from "next/image";
 
 const isValidEmail = (email: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -239,6 +240,13 @@ export default function LoginForm({
           </form>
           <div className="bg-muted relative hidden md:block">
             {/* <MainScene /> */}
+            <Image
+              src="/welcome.png"
+              alt="로그인 그림"
+              fill
+              style={{ objectFit: "fill" }}
+              
+            />
           </div>
         </CardContent>
       </Card>

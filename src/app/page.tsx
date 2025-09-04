@@ -34,6 +34,8 @@ export default function Home() {
 
           {/** 기능 섹션 */}
           <FeaturesSection />
+
+          {/** 가이드라인 섹션 */}
         </Suspense>
       </main>
     </SidebarProvider>

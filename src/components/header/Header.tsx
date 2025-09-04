@@ -39,7 +39,7 @@ export default function MainHeader() {
   };
 
   return (
-    <header className="p-4 flex justify-between items-center fixed left-0 right-0 z-9 bg-background shadow-lg">
+    <header className="p-4 flex justify-between items-center fixed left-0 right-0 z-9 bg-none shadow-lg">
       <Image
         src="/REAI.png"
         alt="icon"
