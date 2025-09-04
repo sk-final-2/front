@@ -1,11 +1,13 @@
+// src/lib/axiosInstance.ts
 import axios from "axios";
 
-const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL, // .env 파일에 API 기본 주소를 설정
+const isServer = typeof window === "undefined";
+
+const api = axios.create({
+  baseURL: isServer
+    ? process.env.SERVER_API_URL || "http://spring-backend.recruitai.local:8080"
+    : process.env.NEXT_PUBLIC_API_URL || "",   // 브라우저는 '' → /api/... 그대로 나감
   withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
 
-export default apiClient;
+export default api;
