@@ -283,37 +283,37 @@ export default function UserInterviewResultPage({params} : {params: Promise<{int
               {/** Bar Chart 답변 점수 */}
               <AnswerEvaluateBarChart
                 score={
-                  interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1].score
+                  interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]?.score
                     ? interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1].score
                     : 0.0
                 }
                 emotionScore={
                   interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
-                    .emotionScore
+                    ?.emotionScore
                     ? interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
                         .emotionScore
                     : 0.0
                 }
                 blinkScore={
-                  interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1].blinkScore
+                  interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]?.blinkScore
                     ? interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
                         .blinkScore
                     : 0.0
                 }
                 eyeScore={
-                  interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1].eyeScore
+                  interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]?.eyeScore
                     ? interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
                         .eyeScore
                     : 0.0
                 }
                 headScore={
-                  interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1].headScore
+                  interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]?.headScore
                     ? interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
                         .headScore
                     : 0.0
                 }
                 handScore={
-                  interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1].handScore
+                  interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]?.handScore
                     ? interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
                         .handScore
                     : 0.0
