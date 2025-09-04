@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useRef, useState } from "react";
 
 interface Props {
@@ -7,8 +6,8 @@ interface Props {
   onAutoSubmit: (video: Blob) => void;
   onManualSubmit: (video: Blob) => void;
   stream: MediaStream | null;
-  onTimeInit?: (totalSec: number) => void; // ✅ 추가
-  onTimeTick?: (leftSec: number) => void; // ✅ 추가
+  onTimeInit?: (totalSec: number) => void;
+  onTimeTick?: (leftSec: number) => void;
 }
 
 export default function RecordingControls({
@@ -21,70 +20,74 @@ export default function RecordingControls({
 }: Props) {
   const [timeLeft, setTimeLeft] = useState(60);
   const [canSubmit, setCanSubmit] = useState(false);
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const hasSubmitted = useRef(false); // ✅ 중복 제출 방지용 ref
+  const timerRef = useRef<number | null>(null); // ✅ browser type
+  const hasSubmitted = useRef(false);
   const startedRef = useRef(false);
 
-  // ✅ 콜백 ref는 null로 초기화
   const initCbRef = useRef<((totalSec: number) => void) | null>(null);
   const tickCbRef = useRef<((leftSec: number) => void) | null>(null);
 
-  // 최신 콜백을 ref에 저장
-  useEffect(() => {
-    initCbRef.current = onTimeInit ?? null;
-  }, [onTimeInit]);
+  useEffect(() => { initCbRef.current = onTimeInit ?? null; }, [onTimeInit]);
+  useEffect(() => { tickCbRef.current = onTimeTick ?? null; }, [onTimeTick]);
 
-  useEffect(() => {
-    tickCbRef.current = onTimeTick ?? null;
-  }, [onTimeTick]);
-
-  // 🔴 녹화 시작
+  // ✅ 안전한 시작: timeslice 제거 + 코덱/비트레이트(가능시)
   const startRecording = () => {
     if (!stream) return;
+
+    // 혹시 살아있던 레코더가 있다면 정리
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      try { mediaRecorderRef.current.stop(); } catch {}
+    }
+
     chunksRef.current = [];
 
-    const recorder = new MediaRecorder(stream);
-    mediaRecorderRef.current = recorder;
-
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        chunksRef.current.push(e.data);
-      }
+    // 브라우저가 지원하지 않으면 mimeType는 무시됨
+    const options: MediaRecorderOptions = {
+      mimeType: "video/webm;codecs=vp9,opus",
+      audioBitsPerSecond: 128_000,
+      videoBitsPerSecond: 2_000_000,
     };
 
-    recorder.start(100); // 또는 recorder.start(1000) for chunk every 1s
+    let recorder: MediaRecorder;
+    try {
+      recorder = new MediaRecorder(stream, options);
+    } catch {
+      // fallback (브라우저가 vp9 미지원 등)
+      recorder = new MediaRecorder(stream);
+    }
+
+    recorder.ondataavailable = (e) => {
+      if (e.data && e.data.size) chunksRef.current.push(e.data);
+    };
+
+    // ❌ recorder.start(100) 금지
+    recorder.start(); // ✅ 한 번에 기록 (마지막에 stop 시 최종 조각 전달)
+    mediaRecorderRef.current = recorder;
   };
 
-  // 🟢 녹화 종료 및 Blob 반환
-  const stopRecording = (): Promise<Blob> => {
-    return new Promise((resolve) => {
+  // ✅ 안전한 정지: 마지막 조각까지 받은 뒤 Blob 생성
+  const stopRecording = (): Promise<Blob> =>
+    new Promise((resolve) => {
       const recorder = mediaRecorderRef.current;
       if (!recorder || recorder.state === "inactive") {
         resolve(new Blob());
         return;
       }
 
-      recorder.onstop = () => {
+      const handleStop = () => {
+        recorder.removeEventListener("stop", handleStop);
         const blob = new Blob(chunksRef.current, { type: "video/webm" });
-        console.log("🎬 자동제출용 blob 생성 완료", blob);
+        chunksRef.current = []; // 다음 녹화 대비 초기화
         resolve(blob);
       };
 
-      // ✅ ondataavailable 수집 완료 보장 후 stop
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunksRef.current.push(e.data);
-        }
-      };
-
-      // ✅ setTimeout을 활용해서 stop()을 살짝 지연시킴
-      setTimeout(() => {
-        recorder.stop();
-      }, 100); // 100ms 정도 지연
+      recorder.addEventListener("stop", handleStop);
+      // ❗ ondataavailable을 여기서 재정의하지 말 것
+      recorder.stop(); // stop 호출 → 마지막 dataavailable → stop 순으로 들어옴
     });
-  };
 
   // 🕒 질문 시작 시 타이머 + 녹화 시작
   useEffect(() => {
@@ -99,26 +102,19 @@ export default function RecordingControls({
     setCanSubmit(false);
     hasSubmitted.current = false;
 
-    // 부모 알림도 이펙트/타이머 등 "렌더 이후"에서만 호출
     initCbRef.current?.(TOTAL);
     tickCbRef.current?.(TOTAL);
 
     let left = TOTAL;
-
-    const id = setInterval(() => {
-      // 1) next 계산
+    const id = window.setInterval(() => {
       const next = Math.max(0, left - 1);
-
-      // 2) 상태 업데이트 (업데이터 함수 사용 X)
       setTimeLeft(next);
-
-      // 3) 사이드이펙트는 상태 업데이트 바깥에서
       tickCbRef.current?.(next);
 
       if (left === 55) setCanSubmit(true);
-
       if (left <= 1) {
-        clearInterval(id);
+        window.clearInterval(id);
+        timerRef.current = null;
         handleAutoSubmit();
       }
 
@@ -127,8 +123,12 @@ export default function RecordingControls({
 
     timerRef.current = id;
 
+    // cleanup (질문 바뀜/언마운트)
     return () => {
-      clearInterval(id);
+      if (timerRef.current) {
+        window.clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
       startedRef.current = false;
     };
   }, [questionStarted, stream]);
@@ -137,19 +137,31 @@ export default function RecordingControls({
   const handleAutoSubmit = async () => {
     if (hasSubmitted.current) return;
     hasSubmitted.current = true;
-
     const blob = await stopRecording();
     onAutoSubmit(blob);
   };
 
-  // 🧍 수동 제출
+  // 수동 제출
   const handleManualSubmit = async () => {
-    if (hasSubmitted.current) return; // ✅ 중복 방지
+    if (hasSubmitted.current) return;
     hasSubmitted.current = true;
-    clearInterval(timerRef.current!);
+    if (timerRef.current) {
+      window.clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
     const blob = await stopRecording();
     onManualSubmit(blob);
   };
+
+  // 컴포넌트 완전 언마운트 시 미디어레코더 정리
+  useEffect(() => {
+    return () => {
+      try {
+        const r = mediaRecorderRef.current;
+        if (r && r.state !== "inactive") r.stop();
+      } catch {}
+    };
+  }, []);
 
   return (
     <div className="h-10 flex items-center justify-end gap-3">
