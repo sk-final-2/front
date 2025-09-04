@@ -227,7 +227,7 @@ export default function UserInterviewResultPage({params} : {params: Promise<{int
                         <span className="font-semibold">
                           {
                             interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
-                              .question
+                              ?.question
                           }
                         </span>
                       </div>
@@ -236,7 +236,7 @@ export default function UserInterviewResultPage({params} : {params: Promise<{int
                         <span className="font-semibold">
                           {
                             interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
-                              .answer
+                              ?.answer
                           }
                         </span>
                       </div>
@@ -245,7 +245,7 @@ export default function UserInterviewResultPage({params} : {params: Promise<{int
                         <span className="font-semibold">
                           {
                             interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
-                              .good
+                              ?.good
                           }
                         </span>
                       </div>
@@ -254,7 +254,7 @@ export default function UserInterviewResultPage({params} : {params: Promise<{int
                         <span className="font-semibold">
                           {
                             interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
-                              .bad
+                              ?.bad
                           }
                         </span>
                       </div>
@@ -263,7 +263,7 @@ export default function UserInterviewResultPage({params} : {params: Promise<{int
                         <span className="font-semibold">
                           {
                             interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
-                              .emotionText
+                              ?.emotionText
                           }
                         </span>
                       </div>
@@ -272,7 +272,7 @@ export default function UserInterviewResultPage({params} : {params: Promise<{int
                         <span className="font-semibold">
                           {
                             interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]
-                              .mediapipeText
+                              ?.mediapipeText
                           }
                         </span>
                       </div>
