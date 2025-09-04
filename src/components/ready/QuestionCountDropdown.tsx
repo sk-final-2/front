@@ -12,7 +12,7 @@ interface QuestionCountDropdownProps {
 const QuestionCountDropdown = ({
   selectedCount,
   onCountChange,
-  options = [3, 4, 5, 6], // 기본 옵션
+  options = [2, 3, 4, 5, 6], // 기본 옵션
 }: QuestionCountDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
 

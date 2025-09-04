@@ -75,9 +75,9 @@ const ReadyPage = () => {
   const [fileText, setFileText] = useState<string>("");
 
   // 질문 갯수 상태
-  const [questionCount, setQuestionCount] = useState<number>(3);
+  const [questionCount, setQuestionCount] = useState<number>(2);
   // 동적 정적 모드 상태
-  const [interviewMode, setInterviewMode] = useState<ModeType>("DYNAMIC");
+  const [interviewMode, setInterviewMode] = useState<ModeType>("STATIC");
 
   // 난이도 상태
   const [difficulty, setDifficulty] = useState<LevelType>("중");
@@ -248,7 +248,7 @@ const ReadyPage = () => {
                 key={"STATIC"}
                 onClick={() => {
                   setInterviewMode("STATIC");
-                  setQuestionCount(3);
+                  setQuestionCount(2);
                 }}
               >
                 정적 모드

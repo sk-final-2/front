@@ -9,7 +9,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useAppSelector } from "@/hooks/storeHook";
+import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 import { useOutsideClick } from "@/hooks/useOutsideClick";
 import {
   DropdownMenu,
@@ -18,6 +18,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronUp, User2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { logoutUser } from "@/store/auth/authSlice";
+import { useRouter } from "next/navigation";
 
 export default function RightSideBar() {
   const {
@@ -33,6 +36,9 @@ export default function RightSideBar() {
   const dropdownRef = useOutsideClick<HTMLDivElement>(() => {
     setOpen(false);
   });
+
+  const dispatch = useAppDispatch();
+  const router = useRouter();
 
   // 인증 상태 store
   const { isLoggedIn, user } = useAppSelector((state) => state.auth);
@@ -54,11 +60,35 @@ export default function RightSideBar() {
     );
   }
 
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutUser()).unwrap();
+      console.log("백 로그아웃");
+
+      await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      console.log("프론트 로그아웃");
+
+      setOpen(false);
+      router.refresh();
+    } catch (err) {
+      console.error("로그아웃 실패:", err);
+    }
+  };
+
   return (
     <Sidebar variant="floating" side="right" className="z-51" ref={dropdownRef}>
       <SidebarHeader />
       <SidebarContent>
         <SidebarGroup>로그인 했음</SidebarGroup>
+        <Button
+          onClick={handleLogout}
+          className="cursor-pointer text-destructive "
+        >
+          로그아웃
+        </Button>
       </SidebarContent>
       {/** Footer */}
       {/* <SidebarFooter>
