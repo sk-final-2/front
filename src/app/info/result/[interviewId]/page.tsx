@@ -116,13 +116,13 @@ export default function UserInterviewResultPage({params} : {params: Promise<{int
           {/** 네비게이션 메뉴 리스트 */}
           <div className="w-full h-full mt-10">
             <div className=" h-full w-full">
-              {interview?.answerAnalyses.map((item) => (
+              {interviews[currentInterviewIndex]?.answerAnalyses.map((item) => (
                 <div
                   className={`h-14 w-full
                     font-semibold
                     mt-4 text-center flex justify-center items-center
                     cursor-pointer rounded-xl transition-all duration-200 ${
-                      currentQuestionIndex == item.seq
+                      currentQuestionIndex+1 == item.seq
                         ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted"
                     }`}
