@@ -7,7 +7,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { stopLoading } from "@/store/loading/loadingSlice";
-import { getUserInterview, GetUserInterviewListResponseData } from "@/store/user-details/userDetailsSlice";
 import { House } from "lucide-react";
 import Image from "next/image";
 import { use, useEffect, useState } from "react";
@@ -122,7 +121,7 @@ export default function UserInterviewResultPage({params} : {params: Promise<{int
                     font-semibold
                     mt-4 text-center flex justify-center items-center
                     cursor-pointer rounded-xl transition-all duration-200 ${
-                      currentQuestionIndex+1 == item.seq
+                      currentQuestionIndex == item.seq
                         ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted"
                     }`}
