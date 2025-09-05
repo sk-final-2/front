@@ -27,7 +27,7 @@ import {
 const chartConfig = {
   점수: {
     label: "점수",
-    color: "var(--chart-2)",
+    color: "var(--chart-5)",
   },
   label: {
     color: "var(--background)",
@@ -83,7 +83,7 @@ export default function AnswerEvaluateBarChart({
               tickFormatter={(value) => value.slice(0, 3)}
               hide
             />
-            <XAxis dataKey="점수" type="number" hide />
+            <XAxis dataKey="점수" type="number" hide domain={[0, 105]} />
             <ChartTooltip
               cursor={false}
               content={<ChartTooltipContent indicator="line" />}

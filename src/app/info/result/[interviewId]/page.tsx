@@ -267,7 +267,7 @@ export default function UserInterviewResultPage({params} : {params: Promise<{int
                         </span>
                       </div>
                       <div>
-                        말투 평가 :{" "}
+                        동작 감지 :{" "}
                         <span className="font-semibold">
                           {
                             interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]

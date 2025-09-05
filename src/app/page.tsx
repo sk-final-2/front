@@ -7,16 +7,17 @@ import RecommendTargetSection from "@/components/home/RecommendTargetSection";
 import RightSideBar from "@/components/home/RightSideBar";
 import Loading from "@/components/loading/Loading";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { useAppDispatch } from "@/hooks/storeHook";
+import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 import { stopLoading } from "@/store/loading/loadingSlice";
 import { Suspense, useEffect } from "react";
 
 export default function Home() {
   const dispatch = useAppDispatch();
+  const { isLoading } = useAppSelector((state) => state.loading);
 
   useEffect(() => {
     dispatch(stopLoading());
-  }, [dispatch]);
+  }, [dispatch, isLoading]);
 
   return (
     <SidebarProvider defaultOpen={false}>

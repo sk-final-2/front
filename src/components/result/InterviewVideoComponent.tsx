@@ -1,7 +1,7 @@
 import { TimeStampListType } from "@/store/interview/resultSlice";
-import { useEffect, useRef, useState } from "react";
-import { Carousel, CarouselContent, CarouselItem } from "../ui/carousel";
-import { Card, CardContent } from "../ui/card";
+import { useRef, useState } from "react";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { Card, CardContent } from "@/components/ui/card";
 
 const InterviewVideoComponent = ({
   interviewId,
@@ -30,7 +30,6 @@ const InterviewVideoComponent = ({
   };
 
   const handleTimeStampClick = (item: TimeStampListType) => {
-    const time = item.time; // 00:01, 00:13
     if (videoRef.current) {
       const [minutes, seconds] = item.time.split(":").map(Number);
       const seekTime = minutes * 60 + seconds;
@@ -47,7 +46,7 @@ const InterviewVideoComponent = ({
         controls
         width="780"
         height="420"
-        src={`http://localhost:8080/api/interview/media?interviewId=${interviewId}&seq=${currentSeq}`}
+        src={`${process.env.NEXT_PUBLIC_API_URL}/api/interview/media?interviewId=${interviewId}&seq=${currentSeq}`}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
       ></video>
@@ -59,10 +58,10 @@ const InterviewVideoComponent = ({
               <CarouselItem
                 key={idx}
                 onClick={() => handleTimeStampClick(item)}
-                className="bg-accent"
+                className="bg-background md:basis-1/3 lg:basis-1/4"
               >
                 <Card>
-                  <CardContent className="flex flex-col text-accent-foreground">
+                  <CardContent className="flex flex-col text-foreground">
                     <span>{item.time ?? `Timestamp ${idx + 1}`}</span>
                     <span>{item.reason}</span>
                   </CardContent>

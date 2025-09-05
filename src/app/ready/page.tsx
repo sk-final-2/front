@@ -15,7 +15,7 @@ import {
   firstQuestionBody,
   getFirstQuestion,
 } from "@/store/interview/interviewSlice";
-import { stopLoading } from "@/store/loading/loadingSlice";
+import { startLoading, stopLoading } from "@/store/loading/loadingSlice";
 import { Suspense, useEffect, useState } from "react";
 import {
   AlertDialog,
@@ -181,8 +181,21 @@ const ReadyPage = () => {
       console.log(responseData);
 
       router.replace(`/media-check`);
+    } else {
+      if (status === "failed" && error) {
+        alert(`면접 질문 생성에 실패했습니다: ${error}`);
+        dispatch(stopLoading());
+      }
     }
-  }, [status, interviewId, currentQuestion, currentSeq, error, router]);
+  }, [
+    status,
+    interviewId,
+    currentQuestion,
+    currentSeq,
+    error,
+    router,
+    dispatch,
+  ]);
 
   // 면접 페이지로 이동하는 핸들러
   const goToInterviewPage = async () => {
@@ -204,7 +217,7 @@ const ReadyPage = () => {
         language: language,
         seq: 1,
       };
-
+      dispatch(startLoading());
       dispatch(getFirstQuestion(bodyData));
     } catch (error) {
       console.error(error);
