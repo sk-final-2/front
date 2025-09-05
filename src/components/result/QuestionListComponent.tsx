@@ -17,21 +17,24 @@ const QuestionListComponent = ({
   }
 
   return (
-    <div className="flex gap-3">
-      {seqList.map((item) => (
-        <Button
-          variant="default"
-          className={`cursor-pointer hover:scale-105 size-10 ${
-            seq === item
-              ? "scale-105 border-[1px] bg-primary-foreground text-primary hover:text-primary hover:bg-primary-foreground"
-              : ""
-          }`}
-          key={item}
-          onClick={() => handleCurrentSeq(item)}
-        >
-          {item}
-        </Button>
-      ))}
+    <div className="flex flex-wrap gap-2">
+      {seqList.map((item) => {
+        const active = seq === item;
+        return (
+          <Button
+            key={item}
+            onClick={() => handleCurrentSeq(item)}
+            className={`px-4 py-2 rounded-lg transition-all ${
+              active
+                ? "bg-primary text-primary-foreground shadow"
+                : "bg-muted text-foreground hover:bg-accent"
+            }`}
+            variant="default"
+          >
+            질문 {item}
+          </Button>
+        );
+      })}
     </div>
   );
 };

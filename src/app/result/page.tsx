@@ -67,90 +67,85 @@ const ResultPage = () => {
       <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground">
         <p className="text-2xl font-bold text-destructive mb-4">Error</p>
         <p>{error}</p>
-        <Button className="cursor-pointer" onClick={() => router.push("/")}>
-          메인으로 돌아가기
-        </Button>
+        <Button onClick={() => router.push("/")}>메인으로 돌아가기</Button>
       </div>
     );
   }
 
   return (
-    <div className="bg-secondary min-h-screen">
-      <header className="bg-background/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
-          <h1 className="text-2xl font-bold">면접 결과</h1>
-          <Button className="cursor-pointer" onClick={() => router.push("/")}>
-            메인으로 돌아가기
-          </Button>
+    <div className="min-h-screen bg-secondary">
+      {/* 헤더: 그대로 */}
+      <header className="bg-background/80 backdrop-blur-sm sticky top-0 z-40 border-b">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <h1 className="text-2xl font-semibold tracking-tight">면접 결과</h1>
+          <Button onClick={() => router.push("/")}>메인으로 돌아가기</Button>
         </div>
       </header>
 
-      <main className="container mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
-        {/* Left Column */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          <InterviewInfoComponent
-            createdAt={createdAt}
-            job={job}
-            career={career}
-            type={type}
-            level={level}
-            language={language}
-          />
+      {/* 메인: 단일 컬럼으로 순서만 재배치 */}
+      <main className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 py-6 lg:py-8 space-y-6">
+        {/* 1) 면접 정보 */}
+        <InterviewInfoComponent
+          createdAt={createdAt}
+          job={job}
+          career={career}
+          type={type}
+          level={level}
+          language={language}
+        />
 
-          <span>질문 및 답변</span>
+        {/* 2) 질문 번호 버튼 */}
+        <Card className="p-4 md:p-5 border-border">
+          <h2 className="text-base font-semibold mb-3">질문 목록</h2>
+          <QuestionListComponent
+            seq={currentSeq}
+            seqList={seqList}
+            handleCurrentSeq={handleCurrentSeq}
+          />
+        </Card>
+
+        {/* 3) 질문 & 답변 */}
+        <section className="space-y-4">
+          
           <QuestionAnswerComponent
             question={answerAnalyses[currentSeq - 1]?.question}
             answer={answerAnalyses[currentSeq - 1]?.answer}
           />
+        </section>
 
-          <span>답변 피드백</span>
+        {/* 4) 피드백 */}
+        <section className="space-y-4">
+          
           <AnswerFeedbackComponent
             good={answerAnalyses[currentSeq - 1]?.good}
             bad={answerAnalyses[currentSeq - 1]?.bad}
           />
-        </div>
+        </section>
 
-        {/* Right Column */}
-        <div className="lg:col-span-1 flex flex-col gap-6 sticky top-24">
-          <Card>
-            <CardHeader>
-              <CardTitle>질문 목록</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <QuestionListComponent
-                seq={currentSeq}
-                seqList={seqList}
-                handleCurrentSeq={handleCurrentSeq}
-              />
-            </CardContent>
-          </Card>
+        {/* 5) 영상 (컴포넌트 내부 구조/스타일 그대로, 6) 타임스탬프는 내부에서 영상 아래에 표시됨) */}
+        <Card className="p-4 md:p-5 border-border">
+          <h2 className="text-base font-semibold mb-3">면접 영상</h2>
+          <Suspense fallback={<p className="text-sm text-muted-foreground">Loading video...</p>}>
+            <InterviewVideoComponent
+              interviewId={interviewId}
+              currentSeq={currentSeq}
+              timestamp={answerAnalyses[currentSeq - 1]?.timestamp}
+            />
+          </Suspense>
+        </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>면접 영상</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Suspense fallback={<p>Loading video...</p>}>
-                <InterviewVideoComponent
-                  interviewId={interviewId}
-                  currentSeq={currentSeq}
-                  timestamp={answerAnalyses[currentSeq - 1]?.timestamp}
-                />
-              </Suspense>
-            </CardContent>
-          </Card>
+        {/* 7) 육각형 그래프 (그대로) */}
+        <TotalGraphComponent
+          score={avgScore[0]?.score ?? 0.0}
+          emotionScore={avgScore[0]?.emotionScore ?? 0.0}
+          blinkScore={avgScore[0]?.blinkScore ?? 0.0}
+          eyeScore={avgScore[0]?.eyeScore ?? 0.0}
+          headScore={avgScore[0]?.headScore ?? 0.0}
+          handScore={avgScore[0]?.handScore ?? 0.0}
+        />
 
-          <TotalGraphComponent
-            score={avgScore[0]?.score ?? 0.0}
-            emotionScore={avgScore[0]?.emotionScore ?? 0.0}
-            blinkScore={avgScore[0]?.blinkScore ?? 0.0}
-            eyeScore={avgScore[0]?.eyeScore ?? 0.0}
-            headScore={avgScore[0]?.headScore ?? 0.0}
-            handScore={avgScore[0]?.handScore ?? 0.0}
-          />
-
-          {/* <TotalEvaluationComponent /> */}
-        </div>
+        {/* 8) 최종 평가 (내용 나중 연결) */}
+        <TotalEvaluationComponent />
       </main>
     </div>
   );

@@ -38,39 +38,43 @@ const InterviewVideoComponent = ({
   };
 
   return (
-    <div className="mt-5 flex md:flex-col flex-row">
-      <video
-        key={currentSeq}
-        className="rounded-2xl"
-        ref={videoRef}
-        controls
-        width="780"
-        height="420"
-        src={`${process.env.NEXT_PUBLIC_API_URL}/api/interview/media?interviewId=${interviewId}&seq=${currentSeq}`}
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-      ></video>
-      {/** 타임 스탬프 리스트 */}
-      <div className="flex flex-row">
-        <Carousel>
-          <CarouselContent className="flex gap-2">
-            {timestamp.map((item, idx) => (
-              <CarouselItem
-                key={idx}
-                onClick={() => handleTimeStampClick(item)}
-                className="bg-background md:basis-1/3 lg:basis-1/4"
-              >
-                <Card>
-                  <CardContent className="flex flex-col text-foreground">
-                    <span>{item.time ?? `Timestamp ${idx + 1}`}</span>
-                    <span>{item.reason}</span>
-                  </CardContent>
-                </Card>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-        </Carousel>
+    <div className="space-y-4">
+      <div className="rounded-xl overflow-hidden bg-black/90">
+        <video
+          key={currentSeq}
+          ref={videoRef}
+          controls
+          className="w-full h-auto aspect-video"
+          src={`${process.env.NEXT_PUBLIC_API_URL}/api/interview/media?interviewId=${interviewId}&seq=${currentSeq}`}
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+        />
       </div>
+
+      {/* 타임스탬프 */}
+      {timestamp?.length > 0 && (
+        <div>
+          <div className="text-sm text-muted-foreground mb-2">질문 {currentSeq} 구간</div>
+          <Carousel>
+            <CarouselContent className="flex gap-2">
+              {timestamp.map((item, idx) => (
+                <CarouselItem
+                  key={idx}
+                  onClick={() => handleTimeStampClick(item)}
+                  className="md:basis-1/3 lg:basis-1/4 cursor-pointer"
+                >
+                  <Card className="hover:bg-accent transition-colors border-border">
+                    <CardContent className="p-3">
+                      <div className="text-xs text-muted-foreground">{item.time ?? `Timestamp ${idx + 1}`}</div>
+                      <div className="text-sm font-medium">{item.reason}</div>
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
+        </div>
+      )}
     </div>
   );
 };
