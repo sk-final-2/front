@@ -12,6 +12,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 import Link from "next/link";
 import { stopLoading } from "@/store/loading/loadingSlice";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Suspense, useEffect, useState, useMemo } from "react";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
@@ -33,6 +43,14 @@ const ResultPage = () => {
   const { interviewId } = useAppSelector((state) => state.interview);
 
   const router = useLoadingRouter();
+
+  const [openConfirm, setOpenConfirm] = useState(false);
+
+  // ✅ 메인으로 이동 (새로고침 + 뒤로가기 방지)
+  const goHomeWithHardReload = () => {
+    // 필요시 Redux 정리 로직이 있으면 여기서 dispatch(...)
+    window.location.replace("/"); // 히스토리 대체 + 풀 리로드
+  };
 
   const [currentSeq, setCurrentSeq] = useState(1);
   const handleCurrentSeq = (seq: number) => {
@@ -67,7 +85,23 @@ const ResultPage = () => {
       <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground">
         <p className="text-2xl font-bold text-destructive mb-4">Error</p>
         <p>{error}</p>
-        <Button onClick={() => router.push("/")}>메인으로 돌아가기</Button>
+        <Button onClick={() => setOpenConfirm(true)}>메인으로 돌아가기</Button>
+        <AlertDialog open={openConfirm} onOpenChange={setOpenConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>메인으로 이동</AlertDialogTitle>
+              <AlertDialogDescription>
+                메인으로 이동하면 결과 페이지로 되돌아올 수 없어요. 이동할까요?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>취소</AlertDialogCancel>
+              <AlertDialogAction onClick={goHomeWithHardReload}>
+                이동
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
@@ -78,7 +112,7 @@ const ResultPage = () => {
       <header className="bg-background/80 backdrop-blur-sm sticky top-0 z-40 border-b">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">면접 결과</h1>
-          <Button onClick={() => router.push("/")}>메인으로 돌아가기</Button>
+          <Button onClick={() => setOpenConfirm(true)}>메인으로 돌아가기</Button>
         </div>
       </header>
 
@@ -147,6 +181,23 @@ const ResultPage = () => {
         {/* 8) 최종 평가 (내용 나중 연결) */}
         <TotalEvaluationComponent />
       </main>
+      
+      <AlertDialog open={openConfirm} onOpenChange={setOpenConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>메인으로 이동</AlertDialogTitle>
+            <AlertDialogDescription>
+              메인으로 이동하면 결과 페이지로 되돌아올 수 없어요. 이동할까요?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={goHomeWithHardReload}>
+              이동
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
