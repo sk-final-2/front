@@ -80,6 +80,20 @@ const ResultPage = () => {
     }
   }, [seqList, currentSeq]);
 
+  // ✅ 뒤로가기(popstate) 발생 시 메인으로 강제 새로고침 이동
+  useEffect(() => {
+    // 🔹 이 줄이 핵심: 더미 히스토리 한 번 쌓기
+    history.pushState(null, "", location.href);
+
+    const onPopState = () => {
+      // 강제 새로고침 + 히스토리 덮기
+      window.location.replace("/");
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
   if (status === "failed") {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground">
@@ -112,7 +126,9 @@ const ResultPage = () => {
       <header className="bg-background/80 backdrop-blur-sm sticky top-0 z-40 border-b">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">면접 결과</h1>
-          <Button onClick={() => setOpenConfirm(true)}>메인으로 돌아가기</Button>
+          <Button onClick={() => setOpenConfirm(true)}>
+            메인으로 돌아가기
+          </Button>
         </div>
       </header>
 
@@ -140,7 +156,6 @@ const ResultPage = () => {
 
         {/* 3) 질문 & 답변 */}
         <section className="space-y-4">
-          
           <QuestionAnswerComponent
             question={answerAnalyses[currentSeq - 1]?.question}
             answer={answerAnalyses[currentSeq - 1]?.answer}
@@ -149,7 +164,6 @@ const ResultPage = () => {
 
         {/* 4) 피드백 */}
         <section className="space-y-4">
-          
           <AnswerFeedbackComponent
             good={answerAnalyses[currentSeq - 1]?.good}
             bad={answerAnalyses[currentSeq - 1]?.bad}
@@ -159,7 +173,11 @@ const ResultPage = () => {
         {/* 5) 영상 (컴포넌트 내부 구조/스타일 그대로, 6) 타임스탬프는 내부에서 영상 아래에 표시됨) */}
         <Card className="p-4 md:p-5 border-border">
           <h2 className="text-base font-semibold mb-3">면접 영상</h2>
-          <Suspense fallback={<p className="text-sm text-muted-foreground">Loading video...</p>}>
+          <Suspense
+            fallback={
+              <p className="text-sm text-muted-foreground">Loading video...</p>
+            }
+          >
             <InterviewVideoComponent
               interviewId={interviewId}
               currentSeq={currentSeq}
@@ -181,7 +199,7 @@ const ResultPage = () => {
         {/* 8) 최종 평가 (내용 나중 연결) */}
         <TotalEvaluationComponent />
       </main>
-      
+
       <AlertDialog open={openConfirm} onOpenChange={setOpenConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
