@@ -283,14 +283,16 @@ export default function Home() {
 
   // 보기 팝업 열기
   async function openProfile() {
-    try {
-      const m = await fetchMyPage();
-      setMp(m);
-      bumpKey();
-      setShowProfile(true);
-    } catch (e: any) {
-      Alert.alert('내 정보', e?.response?.data?.message || e?.message || '내 정보 로드 실패');
-    }
+    setMp(null);
+    bumpKey();
+    setShowProfile(true);
+
+    fetchMyPage()
+      .then((m) => setMp(m))
+      .catch((e:any) => {
+        Alert.alert('내 정보', e?.response?.data?.message || e?.message || '내 정보 로드 실패');
+        setShowProfile(false); //정보 로드 실패 시 닫아주기
+      });
   }
 
   async function onStartInterview() {
