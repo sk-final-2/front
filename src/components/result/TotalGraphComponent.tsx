@@ -60,37 +60,39 @@ export default function TotalGraphComponent({
             사용자의 면접 기록을 바탕으로 생성되었습니다.
           </CardDescription>
         </CardHeader>
-        <CardContent className="pb-0">
-          <ChartContainer
-            config={chartConfig}
-            className="mx-auto aspect-square w-[400px]"
-          >
-            <RadarChart data={chartData}>
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent hideLabel />}
-              />
-              <PolarAngleAxis dataKey="item" className="text-sm font-bold" />
-              <PolarGrid />
-              <Radar
-                dataKey="점수"
-                fill="var(--color-average)"
-                fillOpacity={0}
-                stroke="var(--color-average)"
-                strokeWidth={2}
-              />
-              <Radar
-                dataKey="평균"
-                fill="var(--color-answerScore)"
-                fillOpacity={0.6}
-                stroke="var(--color-answerScore)"
-              />
-            </RadarChart>
-          </ChartContainer>
-        </CardContent>
-        <CardFooter className="flex-col gap-2 text-sm">
-          <ChartLegend className="mt-8" content={<ChartLegendContent />} />
-        </CardFooter>
+        <ChartContainer
+          config={chartConfig}
+          className="mx-auto aspect-square w-[400px]"
+        >
+          <>
+            <CardContent className="pb-0">
+              <RadarChart data={chartData}>
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent hideLabel />}
+                />
+                <PolarAngleAxis dataKey="item" className="text-sm font-bold" />
+                <PolarGrid />
+                <Radar
+                  dataKey="점수"
+                  fill="var(--color-average)"
+                  fillOpacity={0}
+                  stroke="var(--color-average)"
+                  strokeWidth={2}
+                />
+                <Radar
+                  dataKey="평균"
+                  fill="var(--color-answerScore)"
+                  fillOpacity={0.6}
+                  stroke="var(--color-answerScore)"
+                />
+              </RadarChart>
+            </CardContent>
+            <CardFooter className="flex-col gap-2 text-sm">
+              <ChartLegend className="mt-8" content={<ChartLegendContent />} />
+            </CardFooter>
+          </>
+        </ChartContainer>
       </Card>
     </div>
   );
