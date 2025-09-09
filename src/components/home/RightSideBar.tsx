@@ -15,8 +15,6 @@ import { House, LogOut, MessagesSquare, User2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logoutUser } from "@/store/auth/authSlice";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
-import { NavUser } from "./NavUser";
-import { useState } from "react";
 
 const navigationMenu = [
   {
