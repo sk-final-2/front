@@ -27,7 +27,7 @@ export default function TipsAndControls({
   return (
     <div
       className="
-        rounded-xl shadow-sm bg-muted p-4 md:p-5 shadow-sm
+        rounded-xl shadow-sm bg-muted p-4 md:p-5
         grid grid-cols-[1fr_auto] items-center gap-4
       "
     >
