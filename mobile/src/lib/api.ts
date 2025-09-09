@@ -298,3 +298,14 @@ export async function deleteMyAccount() {
   
   return unwrap<string>(res); 
 }
+
+// 이메일 인증
+export async function sendEmailCode(email: string) {
+  const res = await api.post('/api/email/send', { email });
+  return unwrap<string>(res); // 이메일 인증 요청 완료
+}
+
+export async function verifyEmailCode(email: string, code: string) {
+  const res = await api.post('/api/email/verify', { email, code });
+  return unwrap<string>(res); // 인증 성공
+}
