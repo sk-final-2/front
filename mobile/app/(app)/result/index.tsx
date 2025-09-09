@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Dimensions
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Constants from 'expo-constants';
-import Svg, { G, Polygon, Line, Text as SvgText } from 'react-native-svg';
+import Svg, { G, Polygon, Line, Circle, Text as SvgText, Defs, RadialGradient, LinearGradient, Stop } from 'react-native-svg';
 import { getResult } from '../../../src/lib/resultCache';
 import { getAccessToken } from '../../../src/lib/auth';
 import FadeSlideInText from '../../../components/FadeSlideInText';
@@ -133,6 +133,42 @@ function getScoreBadgeStyle(score: number) {
   return { color: '#bf1b1bff', border: '#d87575ff' };
 }
 
+// 문제 번호에 대한 내 점수도 추가
+const CAT_LABELS = ['감정', '눈 깜빡임', '시선 처리', '고개 움직임', '손 움직임'] as const;
+
+function byCatFromAnalysis(a: AnswerAnalysis | undefined) {
+  if (!a) {
+    return CAT_LABELS.map(label => ({ label, value: 0 }));
+  }
+  return [
+    { label: '감정',       value: toNum(a.emotionScore) },
+    { label: '눈 깜빡임', value: toNum(a.blinkScore) },
+    { label: '시선 처리', value: toNum(a.eyeScore) },
+    { label: '고개 움직임', value: toNum(a.headScore) },
+    { label: '손 움직임',   value: toNum(a.handScore) },
+  ];
+}
+
+function avgByCatFromAnalyses(arr: AnswerAnalysis[] = []) {
+  if (!arr.length) return CAT_LABELS.map(label => ({ label, value: 0 }));
+  const sum = { emotion:0, blink:0, eye:0, head:0, hand:0 };
+  arr.forEach(a => {
+    sum.emotion += toNum(a.emotionScore);
+    sum.blink   += toNum(a.blinkScore);
+    sum.eye     += toNum(a.eyeScore);
+    sum.head    += toNum(a.headScore);
+    sum.hand    += toNum(a.handScore);
+  });
+  const n = arr.length || 1;
+  return [
+    { label: '감정',       value: sum.emotion / n },
+    { label: '눈 깜빡임', value: sum.blink   / n },
+    { label: '시선 처리', value: sum.eye     / n },
+    { label: '고개 움직임', value: sum.head    / n },
+    { label: '손 움직임',   value: sum.hand    / n },
+  ];
+}
+
 export default function ResultScreen() {
   const r = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -200,6 +236,17 @@ export default function ResultScreen() {
   const playerRef = useRef<any>(null);
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // 4) 현재 문항에 대한 내 점수
+  const myCurByCat = useMemo(() => byCatFromAnalysis(current), [current]);
+  // 전체 평균(동일 구조)
+  const peerByCat = overall.byCat.map(c => ({ label: c.label, value: toNum(c.value) }));
+
+  // 카테고리별 비교 데이터 생성
+  const compareItems = CAT_LABELS.map(label => {
+    const peer = toNum(peerByCat.find(x => x.label === label)?.value);
+    const mine = toNum(myCurByCat.find(x => x.label === label)?.value);
+    return { label, peer, mine, diff: mine - peer };
+  });
 
   const onPressTs = (ts: string) => {
     const p = playerRef.current;
@@ -544,24 +591,58 @@ export default function ResultScreen() {
 
       {/* 평균 점수 (오각형 레이더) */}
       <View style={[styles.card, { marginTop: 10, alignItems: 'center' }]}>
-        <Text style={styles.sectionTitle}>- 평균 점수- </Text>
+        <Text style={styles.sectionTitle}>- 평균 점수 - </Text>
 
-        <RadarChart
-          data={overall.byCat.map(c => ({ label: c.label, value: toNum(c.value) }))}
-          size={Math.min(screenW - 32, 320)}  // 카드 너비에 맞춤
-          max={100}
-          rings={5}
+        {(() => {
+          const peerVals = peerByCat.map(d => toNum(d.value));
+
+          return (
+            <RadarChart
+              key={`radar-${idx}-${reloadTick}`}
+              labels={CAT_LABELS as unknown as string[]}
+              series={[
+                // 전체 평균
+                {
+                  name: '전체 평균',
+                  values: peerByCat.map(d => toNum(d.value)),
+                  stroke: '#3b83f65d',
+                  fill: 'rgba(59,130,246,0.18)',
+                  strokeWidth: 2.5,
+                },
+                // 현재 문항 내 점수
+                {
+                  name: '내 점수(문항)',
+                  values: myCurByCat.map(d => toNum(d.value)),
+                  stroke: '#ff000057',
+                  fill: 'none',
+                  strokeWidth: 3,
+                },
+              ]}
+              size={Math.min(screenW - 32, 320)}
+              max={100}
+              rings={5}
+              backgroundFill="rgba(255, 255, 255, 0.1)" // 배경 원판 채움 색
+            />
+          );
+        })()}
+
+        <View style={{ flexDirection:'row', gap:12, marginTop:-8, alignItems:'center' }}>
+          <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+            <View style={{ width:12, height:12, borderRadius:999, backgroundColor:'rgba(59,130,246,0.8)' }} />
+            <Text style={{ fontSize:12, color: THEME.text }}>전체 평균</Text>
+          </View>
+          <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+            <View style={{ width:12, height:12, borderRadius:999, backgroundColor:'#ff000057' }} />
+            <Text style={{ fontSize:12, color: THEME.text }}>내 점수(문항 {current.seq})</Text>
+          </View>
+        </View>
+        {/* 점수 라벨: 전체 평균(파랑) + 내 점수(초록) */}
+        <CompareBars
+          items={compareItems}
+          peerColor="rgba(59, 131, 246, 0.45)"
+          mineColor="#ff000057"
         />
 
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: -30 }}>
-          {overall.byCat.map((c) => (
-            <View key={c.label} style={{ paddingHorizontal: 10, paddingVertical: 6, backgroundColor: '#f3f4f6', borderRadius: 999 }}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#111827' }}>
-                {c.label} <Text style={{ color: '#3B82F6' }}>{fmtScore(c.value)}<Text style={{ fontSize: 12, fontWeight: '700', color: '#111827' }}>{'점'}</Text></Text>
-              </Text>
-            </View>
-          ))}
-        </View>
       </View>
     </Animated.ScrollView>
   );
@@ -648,7 +729,7 @@ function QuestionVideo({
         contentFit="contain"
         onError={(e) => {
           console.warn('video error', e);
-          setError('영상을 불러오는 중 문제가 발생했어.');
+          setError('영상을 불러오는 중 문제가 발생했습니다.');
           setLoading(false);
         }}
       />
@@ -698,119 +779,198 @@ function Bar({ label, value }: { label: string; value: number }) {
 }
 
 function RadarChart({
-  data,
+  labels,
+  series,
   size = 280,
   max = 100,
   rings = 5,
+  backgroundFill = 'transparent', // ← 배경 원판 채움
 }: {
-  data: { label: string; value: number }[];
+  labels: string[];
+  series: { name: string; values: number[]; stroke?: string; fill?: string; strokeWidth?: number }[];
   size?: number; max?: number; rings?: number;
+  backgroundFill?: string;
 }) {
   // ➜ 라벨 공간을 위해 바깥 패딩
   const PADDING = 20; // 16~28 사이로 조절 가능
   const W = size + PADDING * 2;
   const H = size + PADDING * 2;
-
-  const n = data.length;
+  const n = labels.length;
   const cx = W / 2, cy = H / 2;
-
-  // ➜ 라벨 겹침 줄이려고 반지름 살짝 감소
   const radius = (size / 2) - 8;
-
   // ➜ 화면/사이즈에 따라 라벨 폰트 자동 축소
   const labelFontSize = size < 260 ? 11 : 12;
 
   const angle = (i: number) => -Math.PI / 2 + (i * 2 * Math.PI / n);
-  const clamp = (v: number) => Math.max(0, Math.min(max, v));
-  const point = (val: number, i: number) => {
+  const clampVal = (v: number) => Math.max(0, Math.min(max, Number(v) || 0));
+
+  // 배경 폴리곤 좌표
+  const outerPts = labels.map((_, i) => {
     const a = angle(i);
-    const r = radius * (clamp(Number(val) || 0) / max);
-    const x = cx + r * Math.cos(a);
-    const y = cy + r * Math.sin(a);
-    return `${x},${y}`;
-  };
+    return `${cx + radius * Math.cos(a)},${cy + radius * Math.sin(a)}`;
+  }).join(' ');
 
-  const areaPoints = data.map((d, i) => point(d.value ?? 0, i)).join(' ');
-
+  // 그리드(링)
   const ringPolys = Array.from({ length: rings }, (_, k) => {
     const rr = (k + 1) / rings;
-    const pts = data.map((_, i) => {
+    const pts = labels.map((_, i) => {
       const a = angle(i);
-      const x = cx + radius * rr * Math.cos(a);
-      const y = cy + radius * rr * Math.sin(a);
-      return `${x},${y}`;
+      return `${cx + radius * rr * Math.cos(a)},${cy + radius * rr * Math.sin(a)}`;
     }).join(' ');
     return <Polygon key={k} points={pts} fill="none" stroke="#e5e7eb" />;
   });
 
-  const spokes = data.map((_, i) => {
+  // 방사선
+  const spokes = labels.map((_, i) => {
     const a = angle(i);
-    const x = cx + radius * Math.cos(a);
-    const y = cy + radius * Math.sin(a);
-    return <Line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#e5e7eb" />;
+    return <Line key={i} x1={cx} y1={cy} x2={cx + radius * Math.cos(a)} y2={cy + radius * Math.sin(a)} stroke="#e5e7eb" />;
   });
 
   // 라벨 여백/보정 상수
 const LABEL_GAP = 14;    // 축에서 라벨까지 기본 간격
-const INSET_X   = -20;     // 좌우 라벨을 안쪽으로 당기는 픽셀
+const INSET_X   = -23;     // 좌우 라벨을 안쪽으로 당기는 픽셀
 const ADJ_TOP   = 10;     // 맨 위 라벨을 아래로 내리는 픽셀
-const ADJ_BOTTOM= 2;     // 맨 아래 라벨을 살짝 올리는 픽셀
+const ADJ_BOTTOM= 0;     // 맨 아래 라벨을 살짝 올리는 픽셀
 
-const labels = data.map((d, i) => {
-  const a = angle(i);
-  const cosA = Math.cos(a);
-  const sinA = Math.sin(a);
+const labelNodes = labels.map((label, i) => {
+    const a = angle(i);
+    const cosA = Math.cos(a), sinA = Math.sin(a);
+    let lx = cx + (radius + LABEL_GAP) * cosA;
+    let ly = cy + (radius + LABEL_GAP) * sinA;
+    const isVertical = Math.abs(cosA) < 0.01;
+    const ta = isVertical ? 'middle' : (cosA > 0 ? 'end' : 'start');
+    if (!isVertical) lx += cosA > 0 ? -INSET_X : INSET_X;
+    else { if (sinA < 0) ly += ADJ_TOP; else ly -= ADJ_BOTTOM; }
+    return (
+      <SvgText key={label} x={lx} y={ly} fontSize={size < 300 ? 11 : 12} fill="#146effff" textAnchor={ta as any}>
+        {label}
+      </SvgText>
+    );
+  });
 
-  // 기본 위치(축 끝에서 LABEL_GAP만큼 바깥)
-  let lx = cx + (radius + LABEL_GAP) * cosA;
-  let ly = cy + (radius + LABEL_GAP) * sinA;
+  // 시리즈: 선만 그리기 + 선택 도트
+  const seriesNodes = series.map((s, idx) => {
+    const color = s.stroke ?? (idx === 0 ? '#3b82f6' : '#10b981');
+    const pts = labels.map((_, i) => {
+      const a = angle(i);
+      const r = radius * (clampVal(s.values[i]) / max);
+      return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
+    }).join(' ');
 
-  // 앵커: 오른쪽은 안쪽으로('end'), 왼쪽은 안쪽으로('start'), 위/아래는 중앙
-  const isVertical = Math.abs(cosA) < 0.01;
-  const ta = isVertical ? 'middle' : (cosA > 0 ? 'end' : 'start');
-
-  // ✔ 좌우 라벨은 축에서 더 "안쪽"으로 INSET_X만큼 추가 이동
-  if (!isVertical) {
-    lx += cosA > 0 ? -INSET_X : INSET_X;  // 오른쪽이면 왼쪽(-), 왼쪽이면 오른쪽(+)
-  } else {
-    // ✔ 맨 위/맨 아래 라벨은 살짝 세로 보정
-    if (sinA < 0) ly += ADJ_TOP;      // top(위) → 조금 내리기(+)
-    else          ly -= ADJ_BOTTOM;   // bottom(아래) → 조금 올리기(-)
-  }
+    return (
+      <G key={s.name}>
+        {s.fill && s.fill !== 'none' && (
+          <Polygon points={pts} fill={s.fill} />
+        )}
+        <Polygon points={pts} fill="none" stroke={color} strokeWidth={s.strokeWidth ?? 2.5} />
+      </G>
+    );
+  });
 
   return (
-    <SvgText
-      key={d.label}
-      x={lx}
-      y={ly}
-      fontSize={size < 300 ? 11 : 12}
-      fill="#146effff"
-      textAnchor={ta as any}
-    >
-      {d.label}
-    </SvgText>
-  );
-});
-
-  return (
-    <Svg
-      width={W}
-      height={H}
-      // ➜ 텍스트가 SVG 바깥으로 나가도 보이도록
-      style={{ overflow: 'visible' }}
-    >
+    <Svg width={W} height={H} style={{ overflow: 'visible' }}>
       <G>
+        {/* 배경 원판 */}
+        <Polygon points={outerPts} fill={backgroundFill} />
         {ringPolys}
         {spokes}
-        <Polygon
-          points={areaPoints}
-          fill="rgba(52, 63, 209, 0.15)"
-          stroke="#609cfdff"
-          strokeWidth={2}
-        />
-        {labels}
+        {seriesNodes}
+        {labelNodes}
       </G>
     </Svg>
+  );
+}
+
+function ScoreChipsRow({
+  data,
+  color,
+  keyPrefix,
+  style,
+}: {
+  data: { label: string; value: any }[];
+  color: string;
+  keyPrefix: string;
+  style?: any;
+}) {
+  return (
+    <View style={[{ flexDirection:'row', flexWrap:'wrap', marginTop: 8, gap:8, justifyContent:'center' }, style]}>
+      {data.map((c) => (
+        <View key={`${keyPrefix}-${c.label}`} style={{ paddingHorizontal:10, paddingVertical:6, backgroundColor:'#f3f4f6', borderRadius:999 }}>
+          <Text style={{ fontSize:12, fontWeight:'700', color:'#111827' }}>
+            {c.label}{' '}
+            <Text style={{ color }}>{fmtScore(c.value)}
+              <Text style={{ fontSize:12, fontWeight:'700', color:'#111827' }}>{'점'}</Text>
+            </Text>
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+
+function CompareBars({
+  items,
+  peerColor = '#3b83f65d',   // 전체 평균
+  mineColor = '#ff000057',   // 내 점수
+}: {
+  items: { label: string; peer: number; mine: number; diff: number }[];
+  peerColor?: string;
+  mineColor?: string;
+}) {
+  return (
+    <View style={{ width: '100%', gap: 10, marginTop: 20 }}>
+      <View style={{ flexDirection:'row', gap:16, alignSelf:'center' }}>
+          <Text style={styles.sectionTitle}>- 전체 평균과의 점수 비교 - </Text>
+      </View>
+
+      {items.map(it => (
+        <View key={it.label} style={{ gap: 6 }}>
+          {/* 라벨 + 숫자/증감 */}
+          <View style={{ flexDirection:'row', alignItems:'flex-end', justifyContent:'space-between' }}>
+            <Text style={{ fontSize:12, color:'#6b7280' }}>{it.label}</Text>
+            <View style={{ flexDirection:'row', alignItems:'center', gap:10 }}>
+              <Text style={{ fontSize:12, fontWeight:'800', color: peerColor }}>{fmtScore(it.peer)}</Text>
+              <Text style={{ fontSize:12, fontWeight:'800', color: mineColor }}>{fmtScore(it.mine)}</Text>
+              <Text style={{
+                fontSize:12, fontWeight:'800',
+                color: it.diff >= 0 ? '#10b981' : '#ef4444'
+              }}>
+                {it.diff >= 0 ? `▲${fmtScore(it.diff)}` : `▼${fmtScore(Math.abs(it.diff))}`}
+              </Text>
+            </View>
+          </View>
+
+          {/* 이중(2줄) 바: 위=전체 평균, 아래=내 점수 */}
+          <View style={{ gap: 6 }}>
+            {/* 전체 평균 바 */}
+            <View style={{ height:10, borderRadius:999, backgroundColor:'#f3f4f6', overflow:'hidden' }}>
+              <View
+                style={{
+                  position:'absolute', left:0, top:0, bottom:0,
+                  width: `${Math.max(0, Math.min(100, it.peer))}%`,
+                  backgroundColor: 'rgba(59,130,246,0.18)',
+                  borderRightWidth: 2,
+                  borderColor: peerColor,
+                }}
+              />
+            </View>
+            {/* 내 점수 바 */}
+            <View style={{ height:10, borderRadius:999, backgroundColor:'#f3f4f6', overflow:'hidden' }}>
+              <View
+                style={{
+                  position:'absolute', left:0, top:0, bottom:0,
+                  width: `${Math.max(0, Math.min(100, it.mine))}%`,
+                  backgroundColor: 'rgba(246, 59, 59, 0.18)',
+                  borderRightWidth: 2,
+                  borderColor: mineColor,
+                }}
+              />
+            </View>
+          </View>
+        </View>
+      ))}
+    </View>
   );
 }
 

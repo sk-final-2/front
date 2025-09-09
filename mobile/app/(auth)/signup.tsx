@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, Stack, useNavigation } from 'expo-router';
 import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, BackHandler } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { signup } from '../../src/lib/api';
+import { signup, sendEmailCode, verifyEmailCode } from '../../src/lib/api';
 import AddressSearchModal from '../../components/AddressSearchModal';
 
 type Gender = 'MALE' | 'FEMALE';
@@ -20,7 +20,6 @@ const INPUT_HEIGHT = Platform.select({ ios: 45, android: 48 });
 export default function SignUpScreen() {
   const r = useRouter();
   const nav = useNavigation();
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [zipcode, setZipcode] = useState('');
@@ -31,6 +30,69 @@ export default function SignUpScreen() {
   const [birthDate, setBirthDate] = useState<Date>(new Date(2000, 0, 1));
   const [pickerVisible, setPickerVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [emailCode, setEmailCode] = useState('');
+  const [sendLoading, setSendLoading] = useState(false);
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [codeSentTo, setCodeSentTo] = useState<string | null>(null); // 어떤 이메일로 보냈는지
+  const [leftSec, setLeftSec] = useState(0); // 재전송 타이머(초)
+  const VERIF_TTL = 180; // 3분
+
+  // 이메일이 바뀌면 인증 초기화
+  useEffect(() => {
+    setEmailVerified(false);
+    setEmailCode('');
+    // 보낸 주소와 다르면 타이머도 숨김
+    if (codeSentTo && codeSentTo !== email) {
+      setLeftSec(0);
+    }
+  }, [email]);
+
+  useEffect(() => {
+    if (leftSec <= 0) return;
+    const t = setInterval(() => setLeftSec(s => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(t);
+  }, [leftSec]);
+
+  const sendCode = async () => {
+    const emailOk = /^\S+@\S+\.\S+$/.test(email);
+    if (!emailOk) {
+      Alert.alert('입력 확인', '이메일 형식을 확인해주세요!');
+      return;
+    }
+    try {
+      setSendLoading(true);
+      await sendEmailCode(email);
+      setCodeSentTo(email);
+      setLeftSec(VERIF_TTL);
+      Alert.alert('이메일 인증', '인증코드를 전송했어요. 메일함을 확인해주세요.');
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.message || '인증코드 전송 실패';
+      Alert.alert('오류', msg);
+    } finally {
+      setSendLoading(false);
+    }
+  };
+
+  const doVerify = async () => {
+    if (!emailCode.trim()) {
+      Alert.alert('입력 확인', '인증코드를 입력해주세요.');
+      return;
+    }
+    try {
+      setVerifyLoading(true);
+      await verifyEmailCode(email, emailCode.trim());
+      setEmailVerified(true);
+      setLeftSec(0);
+      Alert.alert('이메일 인증', '인증이 완료됐어요!');
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.message || '인증 실패';
+      Alert.alert('오류', msg);
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
 
   const validate = () => {
     const emailOk = /^\S+@\S+\.\S+$/.test(email);
@@ -41,6 +103,7 @@ export default function SignUpScreen() {
     const addr2Ok = address2.length <= 255;
 
     if (!emailOk) return '이메일 형식을 확인해주세요!';
+    if (!emailVerified) return '이메일 인증을 먼저 완료해주세요.';
     if (!pwOk) return '비밀번호는 8~20자입니다.';
     if (!nameOk) return '이름은 1~30자입니다.';
     if (!zipOk) return '우편번호는 10자 이하입니다.';
@@ -110,14 +173,66 @@ export default function SignUpScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>회원가입</Text>
 
-        <LabeledInput
-          label="이메일"
-          value={email}
-          onChangeText={setEmail}
-          placeholder="you@example.com"
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+        {/* 이메일 */}
+        <Text style={styles.label}>이메일</Text>
+        <View style={[styles.row, { gap: 8, marginBottom: 10 }]}>
+          <TextInput
+            style={[styles.input, { flex: 1 }]}
+            placeholder="you@example.com"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            editable={!emailVerified} // 인증 후 잠글지 여부(원하면 true로)
+          />
+
+          {emailVerified ? (
+            <View style={styles.verifiedBadge}>
+              <Text style={styles.verifiedText}>인증완료</Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              onPress={sendCode}
+              style={[styles.smallBtn, sendLoading && { opacity: 0.6 }]}
+              disabled={sendLoading}
+            >
+              {sendLoading ? <ActivityIndicator /> : <Text style={styles.smallBtnText}>
+                {leftSec > 0 ? '재전송' : '인증코드 받기'}
+              </Text>}
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* 코드 입력: 보낸 적 있고 아직 인증 전 + 보낸 이메일이 현재 입력 이메일과 동일할 때만 노출 */}
+        {!emailVerified && codeSentTo === email && (
+          <View style={{ marginBottom: 12 }}>
+            <View style={[styles.row, { gap: 8 }]}>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                placeholder="인증코드 6자리"
+                value={emailCode}
+                onChangeText={(t) => setEmailCode(t.replace(/\s/g, '').slice(0, 10))} // 길이 여유
+                keyboardType="number-pad"
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                onPress={doVerify}
+                style={[styles.smallBtn, verifyLoading && { opacity: 0.6 }]}
+                disabled={verifyLoading}
+              >
+                {verifyLoading ? <ActivityIndicator /> : <Text style={styles.smallBtnText}>인증 확인</Text>}
+              </TouchableOpacity>
+            </View>
+
+            {/* 남은 시간/재전송 안내 */}
+            {leftSec > 0 && (
+              <Text style={{ marginTop: 6, fontSize: 12, color: '#6b7280' }}>
+                {`남은시간 ${String(Math.floor(leftSec / 60)).padStart(2, '0')}:${String(leftSec % 60).padStart(2, '0')} (시간 만료 후 재전송 가능)`}
+              </Text>
+            )}
+          </View>
+        )}
+
         <LabeledInput
           label="비밀번호 (8~20자)"
           value={password}
@@ -220,8 +335,8 @@ export default function SignUpScreen() {
 
         <TouchableOpacity
           onPress={onSubmit}
-          style={[styles.button, loading && { opacity: 0.6 }]}
-          disabled={loading}
+          style={[styles.button, (loading || !emailVerified) && { opacity: 0.6 }]}
+          disabled={loading || !emailVerified}
         >
           {loading ? <ActivityIndicator /> : <Text style={styles.buttonText}>가입하기</Text>}
         </TouchableOpacity>
@@ -335,5 +450,34 @@ const styles = StyleSheet.create({
   },
   sectionGap: {
     marginBottom: 13,
+  },
+  smallBtn: {
+    backgroundColor: '#111827',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 110,
+  },
+  smallBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  verifiedBadge: {
+    backgroundColor: '#16a34a22',
+    borderColor: '#16a34a',
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    height: Platform.select({ ios: 45, android: 48 }),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  verifiedText: {
+    color: '#16a34a',
+    fontWeight: '800',
+    fontSize: 13,
   },
 });
