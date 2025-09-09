@@ -18,7 +18,7 @@ const AnswerFeedbackComponent = ({
       </div>
       <div>
         <div className="text-sm font-semibold mb-2">개선점</div>
-        <div className="bg-amber-50 text-amber-900 rounded-lg p-4">
+        <div className="bg-pink-50 text-pink-900 rounded-lg p-4">
           {bad || "개선점이 없습니다."}
         </div>
       </div>
