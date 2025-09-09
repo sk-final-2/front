@@ -27,7 +27,8 @@ const InterviewTypeSelector = ({
         <Card
           key={image.alt}
           onClick={() => handleTypeChange(image.type as InterviewType)}
-          className={`flex flex-col items-center justify-center flex-1 bg-white rounded-xl shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-xl ${selectedType === image.type ? 'border-primary border-4' : 'border-transparent border-4'}`}>
+          className={`flex flex-col items-center justify-center flex-1 bg-white rounded-xl shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-xl
+           ${selectedType === image.type ? 'border-primary border-4' : 'border-border border-4'}`}>
           <CardContent className="p-6 flex flex-col items-center justify-center gap-4">
             <div className="relative w-32 h-32 md:w-40 md:h-40">
               <Image
@@ -37,7 +38,7 @@ const InterviewTypeSelector = ({
                 objectFit="contain"
               />
             </div>
-            <span className="text-center text-xl md:text-2xl font-bold">
+            <span className="text-black text-center text-xl md:text-2xl font-bold">
               {image.alt}
             </span>
           </CardContent>

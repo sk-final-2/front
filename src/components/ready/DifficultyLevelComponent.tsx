@@ -31,7 +31,7 @@ const DifficultyLevelComponent = ({
         {Levels.map((level) => (
           <div
             key={level}
-            className={`flex-1 cursor-pointer flex justify-center items-center text-lg font-bold h-20 border-2 border-solid rounded-lg transition duration-300 hover:scale-105  ${
+            className={`flex-1 cursor-pointer flex justify-center items-center text-lg font-bold h-20 border-2 border-border rounded-lg transition duration-300 hover:scale-105  ${
               level === difficulty
                 ? LevelColorMap[level]
                 : "bg-[#FFFFFF] text-[#6c757d]"

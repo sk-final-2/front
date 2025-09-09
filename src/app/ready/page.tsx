@@ -253,7 +253,7 @@ const ReadyPage = () => {
             {/** 동적 or 정적(질문 수 설정) 선택 */}
             <div className="flex flex-row gap-5 flex-1 min-w-lg min-h-25 mb-4">
               <div
-                className={`flex items-center justify-center flex-1 rounded-xl border-2 border-solid cursor-pointer transition duration-200 ${
+                className={`flex items-center justify-center flex-1 rounded-xl border-2 border-border cursor-pointer transition duration-200 ${
                   interviewMode === "STATIC"
                     ? "bg-primary text-primary-foreground"
                     : "bg-background"
@@ -267,7 +267,7 @@ const ReadyPage = () => {
                 정적 모드
               </div>
               <div
-                className={`flex items-center justify-center flex-1 rounded-xl border-2 border-solid cursor-pointer transition duration-200 ${
+                className={`flex items-center justify-center flex-1 rounded-xl border-2 border-border cursor-pointer transition duration-200 ${
                   interviewMode === "DYNAMIC"
                     ? "bg-primary text-primary-foreground"
                     : "bg-background"

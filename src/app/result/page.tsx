@@ -23,7 +23,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Suspense, useEffect, useState, useMemo } from "react";
-import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
 const ResultPage = () => {
   const {
@@ -41,8 +40,6 @@ const ResultPage = () => {
   } = useAppSelector((state) => state.result);
 
   const { interviewId } = useAppSelector((state) => state.interview);
-
-  const router = useLoadingRouter();
 
   const [openConfirm, setOpenConfirm] = useState(false);
 
@@ -188,16 +185,12 @@ const ResultPage = () => {
 
         {/* 7) 육각형 그래프 (그대로) */}
         <TotalGraphComponent
-          score={avgScore[0]?.score ?? 0.0}
-          emotionScore={avgScore[0]?.emotionScore ?? 0.0}
-          blinkScore={avgScore[0]?.blinkScore ?? 0.0}
-          eyeScore={avgScore[0]?.eyeScore ?? 0.0}
-          headScore={avgScore[0]?.headScore ?? 0.0}
-          handScore={avgScore[0]?.handScore ?? 0.0}
+          avgScore={avgScore[0]}
+          answerScore={answerAnalyses[currentSeq - 1]}
         />
 
         {/* 8) 최종 평가 (내용 나중 연결) */}
-        <TotalEvaluationComponent />
+        {/* <TotalEvaluationComponent /> */}
       </main>
 
       <AlertDialog open={openConfirm} onOpenChange={setOpenConfirm}>

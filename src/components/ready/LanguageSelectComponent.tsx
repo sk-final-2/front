@@ -28,8 +28,8 @@ const LanguageSelectComponent = ({
             onClick={() => handleLanguageChange(lang)}
             className={`flex-1 flex text-md font-bold flex-col justify-center items-center cursor-pointer rounded-lg transition hover:-translate-y-4 duration-300 ${
               language === lang
-                ? "border-[3px] border-amber-500"
-                : "border-[1px] border-gray-400"
+                ? "border-2 border-amber-500"
+                : "border-2 border-border"
             }`}
           >
             <Flag title={lang} width={100} height={100} />

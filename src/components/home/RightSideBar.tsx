@@ -11,34 +11,47 @@ import {
 } from "@/components/ui/sidebar";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 import { useOutsideClick } from "@/hooks/useOutsideClick";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ChevronUp, User2 } from "lucide-react";
+import { House, LogOut, MessagesSquare, User2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logoutUser } from "@/store/auth/authSlice";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+import { NavUser } from "./NavUser";
+import { useState } from "react";
 
-export default function RightSideBar() {
-  const {
-    state,
-    open,
-    setOpen,
-    openMobile,
-    setOpenMobile,
-    isMobile,
-    toggleSidebar,
-  } = useSidebar();
+const navigationMenu = [
+  {
+    name: "메인 페이지",
+    href: "/",
+    icon: <House className="w-6 mt-2 ml-2" />,
+    authRequired: false,
+  },
+  {
+    name: "면접 시작",
+    href: "/ready",
+    icon: <MessagesSquare className="w-6 mt-2 ml-2" />,
+    authRequired: true,
+  },
+  {
+    name: "내 정보",
+    href: "/info",
+    icon: <User2 className="w-6 mt-2 ml-2" />,
+    authRequired: true,
+  },
+];
 
-  const dropdownRef = useOutsideClick<HTMLDivElement>(() => {
+interface RightSideBarProps {
+  onAuthRequired: () => void;
+}
+
+export default function RightSideBar({ onAuthRequired }: RightSideBarProps) {
+  const { setOpen } = useSidebar();
+
+  const sideBarRef = useOutsideClick<HTMLDivElement>(() => {
     setOpen(false);
   });
 
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useLoadingRouter();
 
   // 인증 상태 store
   const { isLoggedIn, user } = useAppSelector((state) => state.auth);
@@ -50,11 +63,43 @@ export default function RightSideBar() {
         variant="floating"
         side="right"
         className="z-51"
-        ref={dropdownRef}
+        ref={sideBarRef}
       >
-        <SidebarHeader />
-        <SidebarContent>
-          <SidebarGroup>로그인 안함</SidebarGroup>
+        <SidebarHeader className="h-32 flex items-center justify-center">
+          <div className="flex flex-col gap-2 justify-center items-center">
+            <span className="text-center">로그인이 필요합니다.</span>
+            <Button
+              className="cursor-pointer w-24"
+              onClick={() => {
+                router.push("/login");
+                setOpen(false);
+              }}
+            >
+              로그인
+            </Button>
+          </div>
+        </SidebarHeader>
+        <SidebarContent className="flex flex-col items-center">
+          <SidebarGroup className="flex flex-col mt-4 gap-4 justify-center">
+            {/** 여기에 네비게이션 메뉴 */}
+            {navigationMenu.map((menu) => (
+              <div
+                key={menu.name}
+                className="w-full flex gap-4 cursor-pointer hover:bg-border rounded-3xl"
+                onClick={() => {
+                  if (menu.authRequired) {
+                    onAuthRequired(); // 부모 컴포넌트에 알림
+                  } else {
+                    router.push(menu.href); // 인증이 필요없는 메뉴는 바로 이동
+                  }
+                  setOpen(false); // 어떤 메뉴를 클릭하든 사이드바는 닫기
+                }}
+              >
+                {menu.icon}
+                <span className="w-full p-2">{menu.name}</span>
+              </div>
+            ))}
+          </SidebarGroup>
         </SidebarContent>
       </Sidebar>
     );
@@ -79,50 +124,42 @@ export default function RightSideBar() {
   };
 
   return (
-    <Sidebar variant="floating" side="right" className="z-51" ref={dropdownRef}>
-      <SidebarHeader />
+    <Sidebar variant="floating" side="right" className="z-51" ref={sideBarRef}>
+      <SidebarHeader className="h-32 flex items-center justify-center">
+        {/** 유저 정보 */}
+        <div className="flex flex-col gap-2 justify-center items-center">
+          <span className="text-center">환영합니다, {user?.name}님!</span>
+        </div>
+      </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>로그인 했음</SidebarGroup>
-        <Button
-          onClick={handleLogout}
-          className="cursor-pointer text-destructive "
-        >
-          로그아웃
-        </Button>
+        <SidebarGroup className="flex flex-col mt-4 gap-4 justify-center">
+          {/** 여기에 네비게이션 메뉴 */}
+          {navigationMenu.map((menu) => (
+            <div
+              key={menu.name}
+              className="w-full flex gap-4 cursor-pointer hover:bg-border rounded-3xl"
+              onClick={() => {
+                router.push(menu.href);
+
+                setOpen(false);
+              }}
+            >
+              {menu.icon}
+              <span className="w-full p-2">{menu.name}</span>
+            </div>
+          ))}
+        </SidebarGroup>
+        
       </SidebarContent>
       {/** Footer */}
-      {/* <SidebarFooter>
+      <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton>
-                  <User2 />
-                  {user?.name}
-                  <ChevronUp className="ml-auto" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                side="top"
-                className="w-[--radix-popper-anchor-width] z-60"
-                onPointerDown={(e) => {
-                  e.stopPropagation();
-                }}
-              >
-                <DropdownMenuItem>
-                  <span>Account</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <span>Billing</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <span>Sign out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
+          <SidebarContent className="cursor-pointer flex flex-row items-center gap-4 hover:bg-muted rounded-3xl" onClick={handleLogout}>
+            <LogOut className="w-6 my-2 ml-4"/>
+            <span className="my-2 ml-2 text-destructive">Log out</span>
+          </SidebarContent>
         </SidebarMenu>
-      </SidebarFooter> */}
+      </SidebarFooter>
     </Sidebar>
   );
 }

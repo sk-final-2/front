@@ -52,7 +52,7 @@ export default function UserInterviewResultPage({params} : {params: Promise<{int
   const {interviewId} = resolveParams;
 
   // 면접 결과 리스트
-  const { interview, interviews } = useAppSelector((state) => state.user_details);
+  const { interviews } = useAppSelector((state) => state.user_details);
   
   // 현재 선택된 면접 상태
    const [currentInterviewIndex, setCurrentInterviewIndex] = useState<number>(1);
@@ -178,36 +178,8 @@ export default function UserInterviewResultPage({params} : {params: Promise<{int
               {/** 그래프 컴포넌트 */}
               <div className="w-full row-span-2">
                 <TotalGraphComponent
-                  score={
-                    interviews[currentInterviewIndex]?.avgScore[0]?.score
-                      ? interviews[currentInterviewIndex]?.avgScore[0].score
-                      : 0.0
-                  }
-                  emotionScore={
-                    interviews[currentInterviewIndex]?.avgScore[0]?.emotionScore
-                      ? interviews[currentInterviewIndex]?.avgScore[0].emotionScore
-                      : 0.0
-                  }
-                  blinkScore={
-                    interviews[currentInterviewIndex]?.avgScore[0]?.blinkScore
-                      ? interviews[currentInterviewIndex]?.avgScore[0].blinkScore
-                      : 0.0
-                  }
-                  eyeScore={
-                    interviews[currentInterviewIndex]?.avgScore[0]?.eyeScore
-                      ? interviews[currentInterviewIndex]?.avgScore[0].eyeScore
-                      : 0.0
-                  }
-                  headScore={
-                    interviews[currentInterviewIndex]?.avgScore[0]?.headScore
-                      ? interviews[currentInterviewIndex]?.avgScore[0].headScore
-                      : 0.0
-                  }
-                  handScore={
-                    interviews[currentInterviewIndex]?.avgScore[0]?.handScore
-                      ? interviews[currentInterviewIndex]?.avgScore[0].handScore
-                      : 0.0
-                  }
+                  avgScore={interviews[currentInterviewIndex]?.avgScore[0]}
+                  answerScore={interviews[currentInterviewIndex]?.answerAnalyses[currentQuestionIndex - 1]}
                 />
               </div>
             </div>

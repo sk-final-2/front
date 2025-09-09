@@ -36,7 +36,7 @@ const JobSelectorForm = ({
 
   return (
     <div>
-      <Card className="w-full min-w-md max-w-lg rounded-lg p-8 shadow-lg">
+      <Card className="w-full min-w-md max-w-lg rounded-lg p-8 shadow-lg border-border border-[1px]">
         {/** 직무 선택 드롭다운 */}
         <h2 className="m-0 text-center text-2xl font-bold text-foreground">
           직무 & 경력 선택
