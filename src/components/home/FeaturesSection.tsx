@@ -54,8 +54,12 @@ export default function FeaturesSection() {
       variants={containerVariants}
     >
       <div className="text-center mb-12">
-        <h2 className="text-3xl md:text-4xl font-bold">AI가 제공하는 개인 맞춤형 면접 코칭</h2>
-        <p className="text-muted-foreground mt-2">당신의 합격까지 함께합니다.</p>
+        <h2 className="text-3xl md:text-4xl font-bold">
+          AI가 제공하는 개인 맞춤형 면접 코칭
+        </h2>
+        <p className="text-muted-foreground mt-2">
+          당신의 합격까지 함께합니다.
+        </p>
       </div>
 
       <motion.div
@@ -64,21 +68,25 @@ export default function FeaturesSection() {
       >
         {FEATURES.map((feature) => (
           <motion.div key={feature.title} variants={cardVariants}>
-            <Card className="flex flex-col cursor-pointer hover:scale-105 transition text-center h-full p-6 bg-white text-black border-border hover:shadow-lg rounded-xl overflow-hidden">
+            <Card className="flex flex-col cursor-pointer hover:scale-105 transition text-center h-full p-6 bg-white text-black border-border shadow-lg rounded-xl overflow-hidden">
               <CardHeader>
-                <CardTitle className="text-xl font-semibold">{feature.title}</CardTitle>
+                <CardTitle className="text-xl font-semibold">
+                  {feature.title}
+                </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center flex-grow">
                 <div className="relative w-full h-40 mb-4">
                   <Image
                     src={feature.image}
                     alt={feature.title}
-                    layout="fill"
-                    objectFit="contain"
+                    fill
+                    style={{ objectFit: "contain" }}
                     className="mx-auto"
                   />
                 </div>
-                <p className="text-muted-foreground mt-auto">{feature.content}</p>
+                <p className="text-muted-foreground mt-auto">
+                  {feature.content}
+                </p>
               </CardContent>
             </Card>
           </motion.div>

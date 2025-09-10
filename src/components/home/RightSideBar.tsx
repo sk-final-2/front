@@ -5,8 +5,6 @@ import {
   SidebarGroup,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
@@ -15,6 +13,8 @@ import { House, LogOut, MessagesSquare, User2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logoutUser } from "@/store/auth/authSlice";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+import { useRouter } from "next/navigation";
+import { stopLoading } from "@/store/loading/loadingSlice";
 
 const navigationMenu = [
   {
@@ -49,7 +49,8 @@ export default function RightSideBar({ onAuthRequired }: RightSideBarProps) {
   });
 
   const dispatch = useAppDispatch();
-  const router = useLoadingRouter();
+  const loadingRouter = useLoadingRouter();
+  const router = useRouter();
 
   // 인증 상태 store
   const { isLoggedIn, user } = useAppSelector((state) => state.auth);
@@ -69,7 +70,7 @@ export default function RightSideBar({ onAuthRequired }: RightSideBarProps) {
             <Button
               className="cursor-pointer w-24"
               onClick={() => {
-                router.push("/login");
+                loadingRouter.push("/login");
                 setOpen(false);
               }}
             >
@@ -88,7 +89,7 @@ export default function RightSideBar({ onAuthRequired }: RightSideBarProps) {
                   if (menu.authRequired) {
                     onAuthRequired(); // 부모 컴포넌트에 알림
                   } else {
-                    router.push(menu.href); // 인증이 필요없는 메뉴는 바로 이동
+                    loadingRouter.push(menu.href); // 인증이 필요없는 메뉴는 바로 이동
                   }
                   setOpen(false); // 어떤 메뉴를 클릭하든 사이드바는 닫기
                 }}
@@ -115,7 +116,7 @@ export default function RightSideBar({ onAuthRequired }: RightSideBarProps) {
       console.log("프론트 로그아웃");
 
       setOpen(false);
-      router.refresh();
+      loadingRouter.refresh();
     } catch (err) {
       console.error("로그아웃 실패:", err);
     }
@@ -137,7 +138,7 @@ export default function RightSideBar({ onAuthRequired }: RightSideBarProps) {
               key={menu.name}
               className="w-full flex gap-4 cursor-pointer hover:bg-border rounded-3xl"
               onClick={() => {
-                router.push(menu.href);
+                loadingRouter.push(menu.href);
 
                 setOpen(false);
               }}
@@ -147,13 +148,15 @@ export default function RightSideBar({ onAuthRequired }: RightSideBarProps) {
             </div>
           ))}
         </SidebarGroup>
-        
       </SidebarContent>
       {/** Footer */}
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarContent className="cursor-pointer flex flex-row items-center gap-4 hover:bg-muted rounded-3xl" onClick={handleLogout}>
-            <LogOut className="w-6 my-2 ml-4"/>
+          <SidebarContent
+            className="cursor-pointer flex flex-row items-center gap-4 hover:bg-muted rounded-3xl"
+            onClick={handleLogout}
+          >
+            <LogOut className="w-6 my-2 ml-4" />
             <span className="my-2 ml-2 text-destructive">Log out</span>
           </SidebarContent>
         </SidebarMenu>

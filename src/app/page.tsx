@@ -3,7 +3,7 @@
 import MainHeader from "@/components/header/Header";
 import RightSideBar from "@/components/home/RightSideBar";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { useAppDispatch } from "@/hooks/storeHook";
+import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
 import { stopLoading } from "@/store/loading/loadingSlice";
 import { useEffect, useState, Suspense } from "react";
 import {
@@ -36,6 +36,7 @@ export default function Home() {
   const dispatch = useAppDispatch();
   const router = useLoadingRouter();
   const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const { isLoading } = useAppSelector((state) => state.loading);
 
   const handleAuthRequired = () => {
     setIsAlertOpen(true); // AlertDialog를 열기
@@ -43,7 +44,7 @@ export default function Home() {
 
   useEffect(() => {
     dispatch(stopLoading());
-  }, [dispatch]);
+  }, [dispatch, isLoading]);
 
   return (
     <SidebarProvider defaultOpen={false}>
