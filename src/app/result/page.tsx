@@ -5,12 +5,10 @@ import InterviewInfoComponent from "@/components/result/InterviewInfoComponent";
 import InterviewVideoComponent from "@/components/result/InterviewVideoComponent";
 import QuestionAnswerComponent from "@/components/result/QuestionAnswerComponent";
 import QuestionListComponent from "@/components/result/QuestionListComponent";
-import TotalEvaluationComponent from "@/components/result/TotalEvaluationComponent";
 import TotalGraphComponent from "@/components/result/TotalGraphComponent";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
-import Link from "next/link";
 import { stopLoading } from "@/store/loading/loadingSlice";
 import {
   AlertDialog,
@@ -45,6 +43,11 @@ const ResultPage = () => {
 
   // ✅ 메인으로 이동 (새로고침 + 뒤로가기 방지)
   const goHomeWithHardReload = () => {
+    /**
+     * TODO: 영상 삭제 요청 API 호출 {process.env.NEXT_PUBLIC_API_URL}/api/interview/media/ack post
+     * @params { interviewId: string }
+     */
+
     // 필요시 Redux 정리 로직이 있으면 여기서 dispatch(...)
     window.location.replace("/"); // 히스토리 대체 + 풀 리로드
   };

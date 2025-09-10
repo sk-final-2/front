@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { logoutUser } from "@/store/auth/authSlice";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useRouter } from "next/navigation";
-import { stopLoading } from "@/store/loading/loadingSlice";
 
 const navigationMenu = [
   {
@@ -50,7 +49,6 @@ export default function RightSideBar({ onAuthRequired }: RightSideBarProps) {
 
   const dispatch = useAppDispatch();
   const loadingRouter = useLoadingRouter();
-  const router = useRouter();
 
   // 인증 상태 store
   const { isLoggedIn, user } = useAppSelector((state) => state.auth);

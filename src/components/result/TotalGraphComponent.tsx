@@ -13,8 +13,6 @@ import {
 import {
   ChartConfig,
   ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
@@ -40,16 +38,16 @@ export default function TotalGraphComponent({
   answerScore: AnswerAnalyseType | AnswerAnalysesArrayType;
 }) {
   const chartData = [
-    { item: "score", 평균: avgScore.score, 점수: answerScore.score },
+    { item: "score", 평균: avgScore?.score, 점수: answerScore?.score },
     {
       item: "emotion",
-      평균: avgScore.emotionScore,
-      점수: answerScore.emotionScore,
+      평균: avgScore?.emotionScore,
+      점수: answerScore?.emotionScore,
     },
-    { item: "blink", 평균: avgScore.blinkScore, 점수: answerScore.blinkScore },
-    { item: "eye", 평균: avgScore.eyeScore, 점수: answerScore.eyeScore },
-    { item: "head", 평균: avgScore.headScore, 점수: answerScore.headScore },
-    { item: "hand", 평균: avgScore.handScore, 점수: answerScore.handScore },
+    { item: "blink", 평균: avgScore?.blinkScore, 점수: answerScore?.blinkScore },
+    { item: "eye", 평균: avgScore?.eyeScore, 점수: answerScore?.eyeScore },
+    { item: "head", 평균: avgScore?.headScore, 점수: answerScore?.headScore },
+    { item: "hand", 평균: avgScore?.handScore, 점수: answerScore?.handScore },
   ];
   return (
     <div className="w-full my-10">
