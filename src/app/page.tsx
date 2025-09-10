@@ -1,15 +1,11 @@
 "use client";
 
 import MainHeader from "@/components/header/Header";
-import FeaturesSection from "@/components/home/FeaturesSection";
-import HeroSection from "@/components/home/HeroSection";
-import RecommendTargetSection from "@/components/home/RecommendTargetSection";
 import RightSideBar from "@/components/home/RightSideBar";
-import Loading from "@/components/loading/Loading";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { useAppDispatch, useAppSelector } from "@/hooks/storeHook";
+import { useAppDispatch } from "@/hooks/storeHook";
 import { stopLoading } from "@/store/loading/loadingSlice";
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,14 +15,26 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+import dynamic from "next/dynamic";
+import Loading from "@/components/loading/Loading";
+
+const HeroSection = dynamic(() => import("@/components/home/HeroSection"), {
+  ssr: true,
+});
+const RecommendTargetSection = dynamic(
+  () => import("@/components/home/RecommendTargetSection"),
+  { ssr: true },
+);
+const FeaturesSection = dynamic(
+  () => import("@/components/home/FeaturesSection"),
+  { ssr: true },
+);
 
 export default function Home() {
   const dispatch = useAppDispatch();
   const router = useLoadingRouter();
-  const { isLoading } = useAppSelector((state) => state.loading);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
 
   const handleAuthRequired = () => {
@@ -35,7 +43,7 @@ export default function Home() {
 
   useEffect(() => {
     dispatch(stopLoading());
-  }, [dispatch, isLoading]);
+  }, [dispatch]);
 
   return (
     <SidebarProvider defaultOpen={false}>
@@ -67,7 +75,7 @@ export default function Home() {
 
         <MainHeader />
 
-        <Suspense fallback={<Loading message="페이지 불러오는 중..." />}>
+        <Suspense fallback={<Loading message="로딩중..." />}>
           {/** 히어로 섹션 */}
           <HeroSection />
 
@@ -76,9 +84,9 @@ export default function Home() {
 
           {/** 기능 섹션 */}
           <FeaturesSection />
-
-          {/** 가이드라인 섹션 */}
         </Suspense>
+
+        {/** 가이드라인 섹션 */}
       </main>
     </SidebarProvider>
   );

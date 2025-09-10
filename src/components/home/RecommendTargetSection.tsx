@@ -61,15 +61,17 @@ export default function RecommendTargetSection() {
           <motion.div key={t.target} variants={cardVariants}>
             <Card className="flex flex-col cursor-pointer hover:scale-105 duration-300 transition-all text-center h-full p-6 bg-white text-black shadow-lg rounded-xl border-border overflow-hidden">
               <CardHeader>
-                <CardTitle className="text-xl font-semibold">{t.target}</CardTitle>
+                <CardTitle className="text-xl font-semibold">
+                  {t.target}
+                </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center flex-grow">
                 <div className="relative w-full h-48 mb-4">
                   <Image
                     src={t.image}
                     alt={t.target}
-                    layout="fill"
-                    objectFit="contain"
+                    fill
+                    style={{ objectFit: "contain" }}
                     className="mx-auto"
                   />
                 </div>
