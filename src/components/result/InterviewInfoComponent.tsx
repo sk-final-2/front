@@ -26,7 +26,7 @@ const Item = ({
       ? "bg-emerald-50 text-emerald-600"
       : tone === "warning"
       ? "bg-amber-50 text-amber-600"
-      : "bg-primary/10 text-primary";
+      : "bg-blue-50 text-blue-600";
   return (
     <div className="flex items-center">
       <div className={`p-3 rounded-full ${toneBg}`}>{icon}</div>
