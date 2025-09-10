@@ -27,7 +27,7 @@ import {
 const chartConfig = {
   점수: {
     label: "점수",
-    color: "var(--chart-5)",
+    color: "rgb(16 185 129 / 0.5)",
   },
   label: {
     color: "var(--background)",
@@ -61,7 +61,7 @@ export default function AnswerEvaluateBarChart({
   return (
     <Card className="ml-10 mt-5 border-border">
       <CardHeader>
-        <CardTitle>답변 종합 점수</CardTitle>
+        <CardTitle className="text-2xl font-semibold">답변 종합 점수</CardTitle>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
