@@ -8,6 +8,11 @@ import { getResult } from '../../../src/lib/resultCache';
 import { getAccessToken } from '../../../src/lib/auth';
 import FadeSlideInText from '../../../components/FadeSlideInText';
 import { Ionicons } from '@expo/vector-icons';
+import AntDesign from '@expo/vector-icons/AntDesign';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
 
 const { API_BASE } = (Constants.expoConfig?.extra ?? {}) as any;
 
@@ -315,7 +320,7 @@ export default function ResultScreen() {
 
   // ALL 모드: 기존처럼 구간 칩
   const allView = (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+    <View style={styles.chipsWrap}>
       {segments.map((seg) => (
         <TouchableOpacity
           key={`all-${seg.start}`}
@@ -353,12 +358,13 @@ export default function ResultScreen() {
   }, [timestamps, multiBuckets, bucketSec]);
 
   const multiView = multiGrouped.length ? (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+    <View style={styles.tsWrap}>
       {multiGrouped.map(({ sec, reasons }) => (
         <TouchableOpacity
           key={`multi-${sec}`}
           onPress={() => onPlaySegment(sec, sec + MULTI_PREVIEW_SEC)}
-          style={styles.tsChip}
+          style={styles.tsChipInline}
+          activeOpacity={0.85}
         >
           <Text style={styles.tsChipTime}>{secToMmss(sec)}</Text>
           <Text style={styles.tsChipReason}> · {reasons.join(', ')}</Text>
@@ -374,7 +380,10 @@ export default function ResultScreen() {
         {/* 헤더
          + 토글 */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={styles.sectionTitle}>🚨 감점 포인트</Text>
+          <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+            <AntDesign name="warning" size={20} color="#ef4444" style={{ marginTop: -8 }}/>
+            <Text style={styles.sectionTitle}>감점 포인트</Text>
+          </View>
 
           {/* 토글 (pill) */}
           <View style={styles.toggleWrap}>
@@ -395,6 +404,50 @@ export default function ResultScreen() {
 
         {/* 본문 */}
         {mode === 'all' ? allView : multiView}
+      </View>
+    );
+  }
+
+  // 만점 메달 섹션
+  function PerfectMedals({
+    scores,
+  }: {
+    scores: { emotion?: number; blink?: number; eye?: number; head?: number; hand?: number };
+  }) {
+    const items = [
+      { key: 'emotion', label: '감정',       icon: <MaterialCommunityIcons name="emoticon" size={14} color="#fff" /> },
+      { key: 'blink',   label: '눈 깜빡임',   icon: <Ionicons name="eye" size={14} color="#fff" /> },
+      { key: 'eye',     label: '시선 처리',       icon: <Ionicons name="trail-sign-outline" size={14} color="#fff" /> },
+      { key: 'head',    label: '고개 움직임',       icon: <MaterialCommunityIcons name="head" size={14} color="#fff" /> },
+      { key: 'hand',    label: '손 움직임',         icon: <MaterialIcons name="back-hand" size={14} color="#fff" /> },
+    ] as const;
+
+    const perfects = items.filter(it => Math.round(scores[it.key as keyof typeof scores] ?? 0) === 100);
+
+    return (
+      <View style={{ gap: 8, marginTop: -10 }}>
+        <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+          <FontAwesome name="trophy" size={18} color="#f59e0b" />
+          <Text style={{ fontSize: 13, fontWeight: '800', color:'#111827' }}>만점 메달</Text>
+        </View>
+
+        {perfects.length ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={medals.row}
+          >
+            {perfects.map(it => (
+              <MedalBadge key={it.key} label={it.label}>
+                {it.icon}
+              </MedalBadge>
+            ))}
+          </ScrollView>
+        ) : (
+          <Text style={{ fontSize:12, color:'#6b7280' }}>
+            이번엔 만점 항목이 없어요. 다음엔 노려봐요!
+          </Text>
+        )}
       </View>
     );
   }
@@ -458,7 +511,7 @@ export default function ResultScreen() {
           <Text style={styles.meta}>언어: {result.language}</Text>
         </View>
 
-        <View style={[styles.resultRow, { marginTop: 6 }]}>
+        <View style={[styles.resultRow]}>
           <Ionicons name="calendar-outline" size={16} color="#3B82F6" />
           <Text style={styles.meta}>면접 일시: {result.createdAt}</Text>
         </View>
@@ -485,8 +538,13 @@ export default function ResultScreen() {
       {/* 현재 질문 제목/요약 */}
       <View style={[styles.card, { marginTop: 12 }]}>
         {/* 상단: 질문 */}
-        <Text style={[styles.title, { marginBottom: 12 }]}>📊 면접 결과</Text>
-        <Text style={styles.qTitle}>질문 {current.seq}. {current.question}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+          <Text style={styles.title}>면접 결과</Text>
+        </View>
+        <View style={styles.resultRow}>
+          <AntDesign name="questioncircleo" size={20} color="#3B82F6" style={{ marginTop: -10 }}/>
+          <Text style={styles.meta}>질문 {current.seq}. {current.question}</Text>
+        </View>
 
         {/* 하단: 점수/등급 뱃지 2개 */}
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
@@ -520,7 +578,10 @@ export default function ResultScreen() {
 
       {/* 영상 + 타임스탬프 */}
       <View style={[styles.card, { marginTop: 12 }]}>
-        <Text style={styles.sectionTitle}>🎥 질문 {current.seq} 답변 영상</Text>
+        <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:8 }}>
+          <MaterialCommunityIcons name="video-vintage" size={20} color="#3B82F6" style={{ marginTop: -8 }}/>
+          <Text style={styles.sectionTitle}>질문 {current.seq} 답변 영상</Text>
+        </View>
 
         <View style={{ position: 'relative', borderRadius: 8, overflow: 'hidden' }}>
           {id ? (
@@ -569,29 +630,66 @@ export default function ResultScreen() {
       {/* 상세 정보 */}
       <View style={[styles.card, { marginTop: 12, gap: 10 }]}>
         <Text style={styles.sectionTitle}>자세한 정보</Text>
-        <KV k="😊 긍정 피드백" v={current.good} />
-        <KV k="😭 아쉬운 점" v={current.bad} />
-        {current.emotionText ? <KV k="😁 감정 분석" v={current.emotionText} /> : null}
+        <KV k={
+          <Text style={styles.kvKey}>
+          <MaterialCommunityIcons name="robot-happy" size={20} color="#10b981" />
+            긍정 피드백
+          </Text>
+        } v={current.good} />
+        <KV k={
+          <Text style={styles.kvKey}>
+            <MaterialCommunityIcons name="robot-confused" size={20} color="#f97316" />
+            아쉬운 점
+          </Text>
+        } v={current.bad} />
+        {current.emotionText ? (
+          <KV k={
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+              <MaterialCommunityIcons name="emoticon" size={20} color="#f59e0b" />
+                <Text style={[styles.kvKey]}>
+                  감정 분석
+                </Text>
+            </View>
+        } v={current.emotionText} />
+        ) : null}
         {current.mediapipeText ? (
           <KV
-            k="🏃‍♂️ 동작 분석"
+            k={
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+                <MaterialIcons name="accessibility" size={20} color="#3b82f6" style={{ marginTop: 4 }}/>
+                <Text style={[styles.kvKey]}>
+                  동작 분석
+                </Text>
+              </View>
+            }
             v={
               <Text style={styles.kvVal}>
                 {formatMediapipeText(current.mediapipeText).map((line, i) => (
                   <Text key={i}>
                     • {line}
-                    {"\n"}
+                    {'\n'}
                   </Text>
                 ))}
               </Text>
             }
           />
         ) : null}
+
+        {/* 만점 메달 영역 */}
+        <PerfectMedals
+          scores={{
+            emotion: current.emotionScore,
+            blink: current.blinkScore,
+            eye: current.eyeScore,
+            head: current.headScore,
+            hand: current.handScore,
+          }}
+        />
       </View>
 
       {/* 평균 점수 (오각형 레이더) */}
       <View style={[styles.card, { marginTop: 10, alignItems: 'center' }]}>
-        <Text style={styles.sectionTitle}>- 평균 점수 - </Text>
+        <Text style={styles.sectionTitle}>- {result.job}의 평균 점수 - </Text>
 
         {(() => {
           const peerVals = peerByCat.map(d => toNum(d.value));
@@ -754,11 +852,22 @@ function QuestionVideo({
 
 /* ------- 작은 컴포넌트들 ------- */
 
-function KV({ k, v }: { k: string; v: string }) {
+function KV({ k, v, style }: { k: React.ReactNode; v: React.ReactNode, style?: any; }) {
   return (
-    <View style={{ gap: 6 }}>
-      <Text style={styles.kvKey}>{k}</Text>
-      <Text style={styles.kvVal}>{v}</Text>
+    <View style={[{ gap: 4 }, style]}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        {typeof k === 'string' ? (
+          <Text style={styles.kvKey}>{k}</Text>
+        ) : (
+          k
+        )}
+      </View>
+
+      {typeof v === 'string' ? (
+        <Text style={styles.kvVal}>{v}</Text>
+      ) : (
+        v
+      )}
     </View>
   );
 }
@@ -974,6 +1083,34 @@ function CompareBars({
   );
 }
 
+// 메달 뱃지 (리본 + 원형 그라데이션)
+function MedalBadge({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <View style={medals.item}>
+      <View style={medals.medalBox}>
+        {/* ^ 모양 리본 (메달 뒤) */}
+        <View style={medals.ribbonCaret}>
+          <View style={[medals.ribbonArm, medals.caretLeft]} />
+          <View style={[medals.ribbonArm, medals.caretRight]} />
+          <View style={medals.ribbonKnotTop} />
+        </View>
+
+        {/* 메달 원 */}
+        <ExpoLinearGradient
+          colors={['#fbbf24', '#f59e0b']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={medals.medalCircle}
+        >
+          {children /* 아이콘(별/이모지 등) */}
+        </ExpoLinearGradient>
+      </View>
+      {/* 라벨 */}
+      <Text style={medals.label}>{label}</Text>
+    </View>
+  );
+}
+
 /* ------- 스타일 ------- */
 const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: '800', color: THEME.text },
@@ -1007,16 +1144,43 @@ const styles = StyleSheet.create({
 
   sectionTitle: { fontSize: 14, fontWeight: '800', color: THEME.text, marginBottom: 8 },
 
+  chipsWrap: {
+      width: '100%',
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      columnGap: 8,
+      rowGap: 8,
+      marginTop: 8,
+    },
+
   tsChip: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     backgroundColor: '#f3f4f6',
     borderRadius: 999,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    maxWidth: '100%',
+    flexShrink: 1,
   },
-  tsChipTime: { fontSize: 12, fontWeight: '800', color: THEME.text },
-  tsChipReason: { fontSize: 12, color: THEME.muted },
+  tsChipTime: { fontSize: 12, fontWeight: '800', color: THEME.text, marginRight: 2, },
+  tsChipReason: { fontSize: 12, color: THEME.muted, flexShrink: 1, flexWrap: 'wrap', },
+  tsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    marginTop: 8,
+  },
+  tsChipInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 999,
+    marginRight: 8,
+    marginBottom: 8,
+  },
 
   kvKey: { fontSize: 13, color: THEME.muted },
   kvVal: { color: THEME.text, lineHeight: 20 },
@@ -1123,4 +1287,85 @@ const ss = StyleSheet.create({
     fontSize: 12,
     color: '#3B82F6',
   },
+});
+
+const MEDAL_SIZE = 36;
+
+const medals = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingRight: 4,
+  },
+  item: {
+    alignItems: 'center',
+    width: 72,
+  },
+  medalBox: {
+    width: MEDAL_SIZE + 18,
+    height: MEDAL_SIZE + 48,   // 위로 리본 공간
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    position: 'relative',
+    overflow: 'visible',
+  },
+
+  // ^ 리본 영역: 메달 위에 붙여 놓고 팔을 '아래 기준'으로 위로 뻗게
+  ribbonCaret: {
+    position: 'absolute',
+    bottom: MEDAL_SIZE - 6,
+    width: MEDAL_SIZE + 14,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    zIndex: 0,
+  },
+  ribbonArm: {
+    position: 'absolute',
+    bottom: 0,
+    width: 18,
+    height: 48,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+  },
+  caretLeft: {
+    left: (MEDAL_SIZE + 14) / 2 - 9,
+    backgroundColor: '#f97316',
+    transform: [{ translateX: -9 }, { rotate: '-26deg' }],
+  },
+  caretRight: {
+    right: (MEDAL_SIZE + 14) / 2 - 9,
+    backgroundColor: '#ea580c',
+    transform: [{ translateX: 9 }, { rotate: '26deg' }],
+  },
+  // 위쪽 매듭(선택): ^ 꼭짓점에 작게
+  ribbonKnotTop: {
+    position: 'absolute',
+    top: 0,
+    width: 24,
+    height: 12,
+    backgroundColor: '#d97706',
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
+    borderBottomLeftRadius: 2,
+    borderBottomRightRadius: 2,
+  },
+
+  medalCircle: {
+    position: 'absolute',
+    bottom: 0,
+    width: MEDAL_SIZE,
+    height: MEDAL_SIZE,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    zIndex: 1,
+  },
+  label: { marginTop: 6, fontSize: 11, fontWeight: '800', color: '#111827' },
 });
