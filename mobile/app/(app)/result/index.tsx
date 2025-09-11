@@ -543,7 +543,7 @@ export default function ResultScreen() {
         </View>
         <View style={styles.resultRow}>
           <AntDesign name="questioncircleo" size={20} color="#3B82F6" style={{ marginTop: -10 }}/>
-          <Text style={styles.meta}>질문 {current.seq}. {current.question}</Text>
+          <Text style={[styles.meta, { flex: 1, flexShrink: 1, minWidth: 0 }]}>질문 {current.seq}. {current.question}</Text>
         </View>
 
         {/* 하단: 점수/등급 뱃지 2개 */}
