@@ -1,26 +1,33 @@
+# syntax=docker/dockerfile:1.6   # ← 중요! secret mount 쓰려면 필요
+
 # STAGE 1 : Builder
 FROM node:22.18.0-alpine AS builder
 
 WORKDIR /app
+
+# 더 빠른 캐시를 위해 deps 먼저
 COPY package*.json ./
-RUN npm install
+RUN npm ci
+
+# 앱 소스 복사
 COPY . .
-# next.config.js에 output: 'standalone' 설정이 되어 있어야 합니다.
-RUN npm run build
+
+# 빌드 시에만 .env.production을 시크릿 파일로 주입
+# 이미지 레이어/히스토리에 남지 않음
+RUN --mount=type=secret,id=envfile,target=/app/.env.production \
+    npm run build
 
 # STAGE 2 : Production Runner
 FROM node:22.18.0-alpine AS runner
 
 WORKDIR /app
+ENV NODE_ENV=production
 
-# 빌드 스테이지에서 생성된 독립 실행 파일들을 복사합니다.
+# standalone 산출물 복사
 COPY --from=builder /app/.next/standalone ./
-# 정적 파일 및 public 폴더를 복사합니다.
+# 정적 파일 & public
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# 애플리케이션은 3000번 포트를 사용합니다.
 EXPOSE 3000
-
-# 독립 실행 모드의 서버 파일을 실행합니다.
 CMD ["node", "server.js"]

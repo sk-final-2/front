@@ -1,0 +1,91 @@
+name: Frontend Deploy (main & dev with secrets)
+
+on:
+  push:
+    branches: [ main, dev ]
+
+concurrency:
+  group: frontend-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # OIDC로 AWS 임시 자격증명
+      - name: Configure AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Who am I?
+        run: aws sts get-caller-identity
+
+      # 공통 변수
+      - name: Set base env
+        run: |
+          echo "ECR_REGISTRY=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com" >> $GITHUB_ENV
+          echo "ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY_FRONTEND }}" >> $GITHUB_ENV
+
+      # ECR 로그인 + Buildx
+      - uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+
+      # === main (prod) ===
+      - name: Build & Push (prod)
+        if: github.ref_name == 'main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          secrets: |
+            envfile=${{ secrets.FRONT_ENV_PROD }}
+
+      - name: Deploy (prod)
+        if: github.ref_name == 'main'
+        run: |
+          aws ecs update-service \
+            --cluster "${{ secrets.ECS_CLUSTER_PROD }}" \
+            --service "${{ secrets.ECS_SERVICE_PROD }}" \
+            --force-new-deployment \
+            --region "${{ secrets.AWS_REGION }}"
+          aws ecs wait services-stable \
+            --cluster "${{ secrets.ECS_CLUSTER_PROD }}" \
+            --services "${{ secrets.ECS_SERVICE_PROD }}" \
+            --region "${{ secrets.AWS_REGION }}"
+
+      # === dev ===
+      - name: Build & Push (dev)
+        if: github.ref_name == 'dev'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:dev
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          secrets: |
+            envfile=${{ secrets.FRONT_ENV_DEV }}
+
+      - name: Deploy (dev)
+        if: github.ref_name == 'dev'
+        run: |
+          aws ecs update-service \
+            --cluster "${{ secrets.ECS_CLUSTER_DEV }}" \
+            --service "${{ secrets.ECS_SERVICE_DEV }}" \
+            --force-new-deployment \
+            --region "${{ secrets.AWS_REGION }}"
+          aws ecs wait services-stable \
+            --cluster "${{ secrets.ECS_CLUSTER_DEV }}" \
+            --services "${{ secrets.ECS_SERVICE_DEV }}" \
+            --region "${{ secrets.AWS_REGION }}"
