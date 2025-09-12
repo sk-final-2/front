@@ -35,47 +35,15 @@ import {
   Area,
   AreaChart,
 } from "recharts";
+import {
+  applicationTrends,
+  departmentPerformance,
+  hiringFunnel,
+  sourceAnalysis,
+  timeToHire,
+} from "@/data/volunteers";
 
 export function Analytics() {
-  const applicationTrends = [
-    { month: "1월", applications: 65, hired: 8 },
-    { month: "2월", applications: 78, hired: 12 },
-    { month: "3월", applications: 95, hired: 15 },
-    { month: "4월", applications: 102, hired: 18 },
-    { month: "5월", applications: 89, hired: 14 },
-    { month: "6월", applications: 156, hired: 23 },
-  ];
-
-  const hiringFunnel = [
-    { stage: "지원", count: 156, percentage: 100 },
-    { stage: "서류 통과", count: 89, percentage: 57 },
-    { stage: "1차 면접", count: 56, percentage: 36 },
-    { stage: "2차 면접", count: 34, percentage: 22 },
-    { stage: "최종 합격", count: 23, percentage: 15 },
-  ];
-
-  const departmentPerformance = [
-    { department: "개발팀", applications: 68, hired: 12, rate: 17.6 },
-    { department: "디자인팀", applications: 34, hired: 6, rate: 17.6 },
-    { department: "기획팀", applications: 28, hired: 3, rate: 10.7 },
-    { department: "마케팅팀", applications: 26, hired: 2, rate: 7.7 },
-  ];
-
-  const sourceAnalysis = [
-    { name: "채용 사이트", value: 45, color: "#8884d8" },
-    { name: "추천", value: 28, color: "#82ca9d" },
-    { name: "링크드인", value: 18, color: "#ffc658" },
-    { name: "직접 지원", value: 9, color: "#ff7300" },
-  ];
-
-  const timeToHire = [
-    { position: "프론트엔드", days: 28 },
-    { position: "백엔드", days: 35 },
-    { position: "디자이너", days: 22 },
-    { position: "기획자", days: 31 },
-    { position: "마케터", days: 26 },
-  ];
-
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -271,7 +239,7 @@ export function Analytics() {
               {departmentPerformance.map((dept) => (
                 <div
                   key={dept.department}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className="flex items-center justify-between p-3 border border-border rounded-lg"
                 >
                   <div className="flex-1">
                     <p className="font-medium">{dept.department}</p>
@@ -292,16 +260,62 @@ export function Analytics() {
         <Card>
           <CardHeader>
             <CardTitle>직무별 평균 채용 기간</CardTitle>
-            <CardDescription>직무별 채용 완료까지 소요 일수</CardDescription>
+            <CardDescription>
+              직무별 채용 완료까지 소요된 평균 일수
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={timeToHire} layout="horizontal">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis dataKey="position" type="category" width={80} />
-                <Tooltip />
-                <Bar dataKey="days" fill="#8884d8" />
+            {/* ResponsiveContainer를 사용하여 차트 크기를 부모 요소에 맞춥니다. */}
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart
+                data={timeToHire}
+                layout="vertical" // 가로 막대그래프를 위해 "vertical"로 설정
+                margin={{
+                  top: 5,
+                  right: 30,
+                  left: 20,
+                  bottom: 5,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                {/* X축은 숫자(일수)를 나타냅니다. */}
+                <XAxis
+                  type="number"
+                  stroke="#888888"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `${value}일`}
+                />
+                {/* Y축은 카테고리(직무)를 나타냅니다. */}
+                <YAxis
+                  dataKey="position"
+                  type="category"
+                  stroke="#888888"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  width={80} // 직무 이름이 잘리지 않도록 너비 확보
+                />
+                <Tooltip
+                  cursor={{ fill: "transparent" }}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="rounded-lg border bg-background p-2 shadow-sm">
+                          <p className="text-sm font-medium">{`${payload[0].payload.position}`}</p>
+                          <p className="text-sm text-muted-foreground">{`평균 ${payload[0].value}일 소요`}</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar
+                  dataKey="days"
+                  fill="var(--chart-1)" // 테마에 맞는 색상 변수 사용 권장
+                  radius={[0, 8, 8, 0]} // 막대의 오른쪽 모서리를 둥글게 처리
+                />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -322,7 +336,7 @@ export function Analytics() {
                 <h4 className="font-medium text-green-800">긍정적 트렌드</h4>
               </div>
               <ul className="text-sm text-green-700 space-y-1">
-                <li>• 6월 지원자 수 전월 대비 75% 증가</li>
+                <li>• 8월 지원자 수 전월 대비 75% 증가</li>
                 <li>• 채용 사이트를 통한 양질의 지원자 유입 증가</li>
                 <li>• 디자인팀 합격률 업계 평균 대비 높음</li>
               </ul>

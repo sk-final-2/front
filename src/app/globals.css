@@ -39,6 +39,11 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-pie-chart-1: var(--pie-chart-1);
+  --color-pie-chart-2: var(--pie-chart-2);
+  --color-pie-chart-3: var(--pie-chart-3);
+  --color-pie-chart-4: var(--pie-chart-4);
+  --color-pie-chart-5: var(--pie-chart-5);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -81,6 +86,11 @@
   --chart-3: #8b5cf6; /* Violet */
   --chart-4: #ec4899; /* Pink */
   --chart-5: #6366f1; /* Indigo */
+  --pie-chart-1: rgba(59, 130, 246, 1);
+  --pie-chart-2: rgba(59, 130, 246, 0.8);
+  --pie-chart-3: rgba(59, 130, 246, 0.6);
+  --pie-chart-4: rgba(59, 130, 246, 0.4);
+  --pie-chart-5: rgba(59, 130, 246, 0.2);
 }
 
 .dark {
@@ -115,4 +125,9 @@
   --chart-3: #a78bfa; /* Bright Violet */
   --chart-4: #f472b6; /* Bright Pink */
   --chart-5: #818cf8; /* Bright Indigo */
+  --pie-chart-1: rgba(59, 130, 246, 1);
+  --pie-chart-2: rgba(59, 130, 246, 0.8);
+  --pie-chart-3: rgba(59, 130, 246, 0.6);
+  --pie-chart-4: rgba(59, 130, 246, 0.4);
+  --pie-chart-5: rgba(59, 130, 246, 0.2);
 }

@@ -21,7 +21,7 @@ export default function AdminPage() {
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
-        return <Dashboard />;
+        return <Dashboard handleTabChange={handleTabChange} />;
       case "jobs":
         return <JobPostings />;
       case "applicants":
@@ -31,7 +31,7 @@ export default function AdminPage() {
       case "analytics":
         return <Analytics />;
       default:
-        return <Dashboard />;
+        return <Dashboard handleTabChange={handleTabChange} />;
     }
   };
 
