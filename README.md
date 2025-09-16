@@ -1,73 +1,44 @@
-# SK-Final-2: Domain Specific GenAI Front-end
+# Re:AI (Rehearse with AI & Reinforce with AI)
 
-이 프로젝트는 "Domain Specific GenAI"를 위한 프론트엔드 애플리케이션입니다. [Next.js](https://nextjs.org/)를 기반으로 구축되었으며, 최신 웹 기술을 활용하여 빠르고 효율적인 개발을 지향합니다.
+![REAI Logo](./public/REAI.png)
 
-## 🚀 시작하기
+**REAI는 AI 기술을 활용하여 사용자의 면접 능력을 향상시키는 개인 맞춤형 면접 연습 플랫폼입니다.** 
+사용자는 실제와 유사한 면접 환경에서 AI 아바타와 함께 인터뷰를 진행하고, 종료 후에는 심층적인 분석과 피드백을 통해 자신의 강점과 약점을 파악할 수 있습니다.
 
-프로젝트를 로컬 환경에서 실행하기 위한 안내입니다.
+## ✨ 주요 기능
 
-### 사전 준비
-
-- [Node.js](https://nodejs.org/en/) (버전 20.x 이상 권장)
-- `npm` 또는 `yarn`
-
-### 설치 및 실행
-
-1.  **저장소 복제**
-    ```bash
-    git clone <repository-url>
-    cd front
-    ```
-
-2.  **의존성 설치**
-    ```bash
-    npm install
-    ```
-
-3.  **개발 서버 실행**
-    ```bash
-    npm run dev
-    ```
-
-    이제 브라우저에서 [http://localhost:3000](http://localhost:3000)으로 접속하여 애플리케이션을 확인할 수 있습니다.
-
-## 📜 주요 스크립트
-
-`package.json`에 정의된 주요 스크립트는 다음과 같습니다.
-
--   `npm run dev`: Turbopack을 사용하여 개발 서버를 실행합니다.
--   `npm run build`: 프로덕션용으로 애플리케이션을 빌드합니다.
--   `npm run start`: 빌드된 프로덕션 서버를 시작합니다.
--   `npm run lint`: ESLint를 사용하여 코드 스타일 문제를 확인합니다.
+- **🤖 AI 아바타와 함께하는 실전 면접 시뮬레이션**: 3D AI 아바타와 음성으로 대화하며 실제 면접과 같은 긴장감 속에서 연습할 수 있습니다.
+- **🎯 다양한 면접 유형 지원**: 직무별(기술, 인성) 및 종합 면접 등 다양한 시나리오를 선택하여 집중적으로 대비할 수 있습니다.
+- **📊 심층 분석 및 피드백**: 면접 종료 후, 답변 내용, 사용 어휘, 음성 톤, 시선 처리 등을 종합적으로 분석하여 상세한 리포트를 제공합니다.
+- **📱 크로스 플랫폼 지원**: 웹(PC) 환경뿐만 아니라 모바일 앱(Android, iOS)을 통해서도 언제 어디서든 면접을 연습할 수 있습니다.
 
 ## 🛠️ 기술 스택
 
-이 프로젝트는 다음의 기술들을 중심으로 구성되어 있습니다.
+### Frontend (Web)
 
--   **Framework**: [Next.js](https://nextjs.org/) 15
--   **Language**: [TypeScript](https://www.typescriptlang.org/)
--   **Styling**: [Tailwind CSS](https://tailwindcss.com/) 4
--   **UI/Component Library**: [React](https://react.dev/) 19
--   **Linting**: [ESLint](https://eslint.org/)
--   **Formatting**: [Prettier](https://prettier.io/)
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white) ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white) ![Redux](https://img.shields.io/badge/Redux-764ABC?style=for-the-badge&logo=redux&logoColor=white) ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwind-css&logoColor=white) ![Shadcn/UI](https://img.shields.io/badge/shadcn/ui-000000?style=for-the-badge) ![Three.js](https://img.shields.io/badge/Three.js-000000?style=for-the-badge&logo=three.js&logoColor=white) ![Axios](https://img.shields.io/badge/Axios-5A29E4?style=for-the-badge&logo=axios&logoColor=white)
 
-## ⚙️ 코드 스타일 및 품질
+### Mobile
 
--   **ESLint**: `next/core-web-vitals` 설정을 기반으로 코드 품질을 관리합니다. 코드 문제를 확인하려면 `npm run lint`를 실행하세요.
--   **Prettier**: `.prettierrc` 파일에 정의된 규칙에 따라 코드 형식을 일관되게 유지합니다.
+![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![Expo](https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 
-## 📂 디렉토리 구조
+### Infra & Deployment
+
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white) ![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)
+
+## 📁 프로젝트 구조
 
 ```
-/
-├── public/           # 정적 에셋 (이미지, 폰트 등)
-├── src/
-│   └── app/          # Next.js 앱 라우터
-│       ├── layout.tsx  # 전역 레이아웃
-│       └── page.tsx    # 메인 페이지
-├── .eslintrc.mjs     # ESLint 설정
-├── next.config.ts    # Next.js 설정
-├── postcss.config.mjs # PostCSS 설정 (Tailwind)
-├── tailwind.config.ts # Tailwind CSS 설정
-└── tsconfig.json     # TypeScript 설정
+.
+├── mobile/         # React Native (Expo) 모바일 앱 프로젝트
+├── public/         # 정적 에셋 (이미지, 3D 모델 등)
+├── src/            # Next.js 웹 애플리케이션 소스 코드
+│   ├── app/        # App Router 기반 페이지 및 API 라우트
+│   ├── components/ # 공통 컴포넌트
+│   ├── hooks/      # 커스텀 훅
+│   ├── lib/        # 유틸리티 및 라이브러리 설정
+│   └── store/      # Redux 상태 관리
+├── Dockerfile      # 웹 애플리케이션 Docker 이미지 빌드 설정
+├── nginx/          # Nginx 설정
+└── ...
 ```
